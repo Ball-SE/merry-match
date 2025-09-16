@@ -1,5 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
 @import "tailwindcss";
 
+@theme {
+    --font-nunito: "Nunito", sans-serif;
+    --font-sans: var(--font-poppins);
+}
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -24,3 +29,71 @@ body {
   color: var(--foreground);
   font-family: "Nunito";
 }
+
+.header-1{
+  font-weight: 900;
+  font-size: 60px;
+  font-family: var(--font-nunito);
+}
+
+.header-2{
+  font-weight: 800;
+  font-size: 46px;
+  font-style: extra-bold;
+  font-family: var(--font-nunito);
+}
+
+.header-3{
+  font-weight: 700;
+  font-size: 32px;
+  font-style: bold;
+  font-family: var(--font-nunito);
+}
+
+.header-4{
+  font-weight: 600;
+  font-size: 24px;
+  font-style: bold;
+  font-family: var(--font-nunito);
+}
+
+.button-primary{
+  border-radius: 99px;;
+  font-family: var(--font-nunito);
+  color:#E4E6ED;
+  font-weight: 700;
+  font-size: 16px;
+  font-style: bold;
+  padding: 12px 24px;
+}
+
+.button-secondary{
+  border-radius: 99px;;
+  font-family: var(--font-nunito);
+  color:#95002B;
+  font-weight: 700;
+  font-size: 16px;
+  font-style: bold;
+  padding: 12px 24px;
+}
+
+.button-disabled{
+  border-radius: 99px;;
+  font-family: var(--font-nunito);
+  background-color: #E4E6ED;
+  color:#9AA1B9;
+  font-weight: 700;
+  font-size: 16px;
+  font-style: bold;
+  padding: 12px 24px;
+}
+
+.button-ghost{
+  border-radius: 99px;;
+  font-family: var(--font-nunito);
+  font-weight: 700;
+  font-size: 16px;
+  font-style: bold;
+  padding: 12px 24px;
+}
+
