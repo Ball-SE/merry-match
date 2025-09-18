@@ -3,6 +3,7 @@ import StepIndicator from "@/components/register/StepIndicator";
 import RegisterStep from "@/components/register/RegisterStep";
 import FooterSummitStep from "@/components/register/FooterSummitStep";
 import { useState } from "react";
+import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -36,28 +37,16 @@ export default function Home() {
 
   const validateStep = (step: number) => {
     if (step === 1) {
-      return (
-        formData.name &&
-        formData.dateOfBirth &&
-        formData.location &&
-        formData.city &&
-        formData.username &&
-        formData.email &&
-        formData.password &&
-        formData.confirmPassword &&
-        formData.password === formData.confirmPassword
-      );
+      const validation = validateBasicInfo(formData);
+      return validation.isValid;
     }
     if (step === 2) {
-      return (
-        formData.sexualIdentities &&
-        formData.sexualPreferences &&
-        formData.racialPreferences &&
-        formData.meetingInterests
-      );
+      const validation = validateIdentitiesAndInterests(formData);
+      return validation.isValid;
     }
     if (step === 3) {
-      return formData.photos.length >= 2;
+      const validation = validatePhotos(formData.photos);
+      return validation.isValid;
     }
     return false;
   };

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 
 interface FormData {
   name: string;
@@ -45,6 +46,25 @@ function Step1({
   formData: FormData;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
 }) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const handleBlur = (fieldName: string) => {
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+    const validation = validateBasicInfo(formData);
+    setErrors(validation.errors);
+  };
+
+  const getInputClassName = (fieldName: string) => {
+    const baseClass = "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
+    const hasError = touched[fieldName] && errors[fieldName];
+    
+    if (hasError) {
+      return `${baseClass} border-red-500 focus:ring-red-500`;
+    }
+    return `${baseClass} border-gray-300 focus:ring-[#C70039]`;
+  };
+
   return (
     <div>
       <h2 className="mb-6 text-4xl font-bold text-[#A62D82]">Basic Information</h2>
@@ -58,9 +78,13 @@ function Step1({
               name="name"
               value={formData.name}
               onChange={handleInputChange}
+              onBlur={() => handleBlur('name')}
               placeholder="At least 2 characters"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              className={getInputClassName('name')}
             />
+            {touched.name && errors.name && (
+              <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+            )}
           </div>
 
           <div>
@@ -70,8 +94,12 @@ function Step1({
               name="dateOfBirth"
               value={formData.dateOfBirth}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              onBlur={() => handleBlur('dateOfBirth')}
+              className={getInputClassName('dateOfBirth')}
             />
+            {touched.dateOfBirth && errors.dateOfBirth && (
+              <p className="mt-1 text-sm text-red-500">{errors.dateOfBirth}</p>
+            )}
           </div>
         </div>
 
@@ -82,13 +110,17 @@ function Step1({
               name="location"
               value={formData.location}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              onBlur={() => handleBlur('location')}
+              className={getInputClassName('location')}
             >
-              <option value="">Thailand</option>
+              <option value="">Select location</option>
               <option value="bangkok">Bangkok</option>
               <option value="chiang-mai">Chiang Mai</option>
               <option value="phuket">Phuket</option>
             </select>
+            {touched.location && errors.location && (
+              <p className="mt-1 text-sm text-red-500">{errors.location}</p>
+            )}
           </div>
 
           <div>
@@ -97,13 +129,17 @@ function Step1({
               name="city"
               value={formData.city}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              onBlur={() => handleBlur('city')}
+              className={getInputClassName('city')}
             >
-              <option value="">Bangkok</option>
+              <option value="">Select city</option>
               <option value="chatuchak">Chatuchak</option>
               <option value="sukhumvit">Sukhumvit</option>
               <option value="silom">Silom</option>
             </select>
+            {touched.city && errors.city && (
+              <p className="mt-1 text-sm text-red-500">{errors.city}</p>
+            )}
           </div>
         </div>
 
@@ -115,9 +151,13 @@ function Step1({
               name="username"
               value={formData.username}
               onChange={handleInputChange}
+              onBlur={() => handleBlur('username')}
               placeholder="At least 6 characters"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              className={getInputClassName('username')}
             />
+            {touched.username && errors.username && (
+              <p className="mt-1 text-sm text-red-500">{errors.username}</p>
+            )}
           </div>
 
           <div>
@@ -127,9 +167,13 @@ function Step1({
               name="email"
               value={formData.email}
               onChange={handleInputChange}
+              onBlur={() => handleBlur('email')}
               placeholder="name@website.com"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              className={getInputClassName('email')}
             />
+            {touched.email && errors.email && (
+              <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+            )}
           </div>
         </div>
 
@@ -141,9 +185,13 @@ function Step1({
               name="password"
               value={formData.password}
               onChange={handleInputChange}
+              onBlur={() => handleBlur('password')}
               placeholder="At least 8 characters"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              className={getInputClassName('password')}
             />
+            {touched.password && errors.password && (
+              <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+            )}
           </div>
 
           <div>
@@ -153,9 +201,13 @@ function Step1({
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
+              onBlur={() => handleBlur('confirmPassword')}
               placeholder="At least 8 characters"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              className={getInputClassName('confirmPassword')}
             />
+            {touched.confirmPassword && errors.confirmPassword && (
+              <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
+            )}
           </div>
         </div>
       </div>
@@ -174,10 +226,29 @@ function Step2({
   setInterests: (chips: string[]) => void;
 }) {
   const [chipInput, setChipInput] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const handleBlur = (fieldName: string) => {
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+    const validation = validateIdentitiesAndInterests(formData);
+    setErrors(validation.errors);
+  };
+
+  const getInputClassName = (fieldName: string) => {
+    const baseClass = "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
+    const hasError = touched[fieldName] && errors[fieldName];
+    
+    if (hasError) {
+      return `${baseClass} border-red-500 focus:ring-red-500`;
+    }
+    return `${baseClass} border-gray-300 focus:ring-[#C70039]`;
+  };
 
   const addChip = () => {
     const trimmed = chipInput.trim();
     if (!trimmed) return;
+    if ((formData.interests || []).length >= 10) return;
     setInterests([...(formData.interests || []), trimmed]);
     setChipInput("");
   };
@@ -200,13 +271,17 @@ function Step2({
               name="sexualIdentities"
               value={formData.sexualIdentities}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              onBlur={() => handleBlur('sexualIdentities')}
+              className={getInputClassName('sexualIdentities')}
             >
-              <option value="">Male</option>
+              <option value="">Select identity</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="lgbtq+">LGBTQ+</option>
             </select>
+            {touched.sexualIdentities && errors.sexualIdentities && (
+              <p className="mt-1 text-sm text-red-500">{errors.sexualIdentities}</p>
+            )}
           </div>
 
           <div>
@@ -215,13 +290,17 @@ function Step2({
               name="sexualPreferences"
               value={formData.sexualPreferences}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              onBlur={() => handleBlur('sexualPreferences')}
+              className={getInputClassName('sexualPreferences')}
             >
-              <option value="">Female</option>
+              <option value="">Select preference</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="lgbtq+">LGBTQ+</option>
             </select>
+            {touched.sexualPreferences && errors.sexualPreferences && (
+              <p className="mt-1 text-sm text-red-500">{errors.sexualPreferences}</p>
+            )}
           </div>
         </div>
 
@@ -232,15 +311,19 @@ function Step2({
               name="racialPreferences"
               value={formData.racialPreferences}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              onBlur={() => handleBlur('racialPreferences')}
+              className={getInputClassName('racialPreferences')}
             >
-              <option value="">Asian</option>
+              <option value="">Select preference</option>
               <option value="asian">Asian</option>
               <option value="caucasian">Caucasian</option>
               <option value="african">African</option>
               <option value="hispanic">Hispanic</option>
               <option value="mixed">Mixed</option>
             </select>
+            {touched.racialPreferences && errors.racialPreferences && (
+              <p className="mt-1 text-sm text-red-500">{errors.racialPreferences}</p>
+            )}
           </div>
 
           <div>
@@ -249,14 +332,18 @@ function Step2({
               name="meetingInterests"
               value={formData.meetingInterests}
               onChange={handleInputChange}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              onBlur={() => handleBlur('meetingInterests')}
+              className={getInputClassName('meetingInterests')}
             >
-              <option value="">Friends</option>
+              <option value="">Select interest</option>
               <option value="friends">Friends</option>
               <option value="dating">Dating</option>
               <option value="relationship">Long-term relationship</option>
               <option value="casual">Casual meeting</option>
             </select>
+            {touched.meetingInterests && errors.meetingInterests && (
+              <p className="mt-1 text-sm text-red-500">{errors.meetingInterests}</p>
+            )}
           </div>
         </div>
 
@@ -264,7 +351,7 @@ function Step2({
           <label className="mb-2 block text-sm font-medium text-gray-700">
             Hobbies / Interests (Maximum 10)
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-3">
             {(formData.interests || []).map((chip, i) => (
               <span key={`${chip}-${i}`} className="flex items-center gap-2 rounded-full bg-[#F6F7FC] px-3 py-1 text-sm text-[#2A0B21]">
                 {chip}
@@ -277,7 +364,7 @@ function Step2({
               </span>
             ))}
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="flex gap-2">
             <input
               value={chipInput}
               onChange={(e) => setChipInput(e.target.value)}
@@ -288,12 +375,20 @@ function Step2({
                 }
               }}
               placeholder="Type and press Enter to add"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039]"
+              disabled={(formData.interests || []).length >= 10}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039] disabled:bg-gray-100"
             />
-            <button onClick={addChip} className="button-primary bg-[#C70039] text-white">
+            <button 
+              onClick={addChip} 
+              disabled={(formData.interests || []).length >= 10}
+              className="button-primary bg-[#C70039] text-white disabled:opacity-50"
+            >
               Add
             </button>
           </div>
+          {(formData.interests || []).length >= 10 && (
+            <p className="mt-1 text-sm text-yellow-600">Maximum 10 interests reached</p>
+          )}
         </div>
       </div>
     </div>
@@ -308,6 +403,13 @@ function Step3({
   photos: string[];
   setPhotos: (next: string[]) => void;
 }) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateCurrentPhotos = () => {
+    const validation = validatePhotos(photos);
+    setErrors(validation.errors);
+  };
+
   const onFiles = (files: FileList | null) => {
     if (!files) return;
     const readers = Array.from(files).slice(0, 6 - photos.length).map(file => {
@@ -317,13 +419,18 @@ function Step3({
         r.readAsDataURL(file);
       });
     });
-    Promise.all(readers).then(urls => setPhotos([...(photos || []), ...urls]));
+    Promise.all(readers).then(urls => {
+      const newPhotos = [...(photos || []), ...urls];
+      setPhotos(newPhotos);
+      validateCurrentPhotos();
+    });
   };
 
   const remove = (idx: number) => {
     const next = [...photos];
     next.splice(idx, 1);
     setPhotos(next);
+    validateCurrentPhotos();
   };
 
   return (
@@ -331,18 +438,22 @@ function Step3({
       <h2 className="mb-2 text-2xl font-semibold text-[#2A0B21]">Profile pictures</h2>
       <p className="mb-6 text-sm text-gray-600">Upload at least 2 photos</p>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {[0, 1, 2, 3, 4, 5].map((i) => {
           const url = photos[i];
           return (
             <div key={i} className="relative">
-              <div className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
+              <div className={`flex aspect-square items-center justify-center rounded-xl border-2 border-dashed bg-gray-50 ${
+                photos.length < 2 && i < 2 ? 'border-red-300' : 'border-gray-300'
+              }`}>
                 {url ? (
                   <img src={url} alt={`photo-${i}`} className="h-full w-full rounded-xl object-cover" />
                 ) : (
                   <div className="text-center">
                     <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#C70039] text-white">+</div>
-                    <span className="text-xs text-gray-500">{i === 0 ? "Main photo" : "Upload photo"}</span>
+                    <span className="text-xs text-gray-500">
+                      {i === 0 ? "Main photo" : "Upload photo"}
+                    </span>
                   </div>
                 )}
               </div>
@@ -365,6 +476,14 @@ function Step3({
             </div>
           );
         })}
+      </div>
+
+      {errors.photos && (
+        <p className="mt-4 text-sm text-red-500">{errors.photos}</p>
+      )}
+
+      <div className="mt-4 text-sm text-gray-500">
+        {photos.length}/6 photos uploaded
       </div>
     </div>
   );
