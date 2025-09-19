@@ -269,7 +269,21 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
             <button 
               type="button"
               onClick={addDetail}
-              className="button-secondary inline-flex items-center text-sm"
+              style={{
+                borderRadius: '99px',
+                fontFamily: 'Nunito, sans-serif',
+                color: '#C70039',
+                backgroundColor: '#FFE1EA',
+                fontWeight: 700,
+                fontSize: '16px',
+                padding: '12px 24px',
+                transition: 'background 0.2s',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
             >
               + Add detail
             </button>

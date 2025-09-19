@@ -44,7 +44,21 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
             </div>
             <button 
               onClick={handleAddPackage}
-              className="button-primary flex items-center space-x-2 transition-colors"
+              style={{
+                borderRadius: '99px',
+                fontFamily: 'Nunito, sans-serif',
+                color: '#E4E6ED',
+                backgroundColor: '#C70039',
+                fontWeight: 700,
+                fontSize: '16px',
+                padding: '12px 24px',
+                transition: 'background 0.2s',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
             >
               <Plus className="w-4 h-4" />
               <span>Add Package</span>
@@ -56,14 +70,36 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
             <button 
               type="button"
               onClick={() => setCurrentView('list')}
-              className="button-secondary"
+              style={{
+                borderRadius: '99px',
+                fontFamily: 'Nunito, sans-serif',
+                color: '#C70039',
+                backgroundColor: '#FFE1EA',
+                fontWeight: 700,
+                fontSize: '16px',
+                padding: '12px 24px',
+                transition: 'background 0.2s',
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
               Cancel
             </button>
             <button 
               type="submit"
               form="package-form"
-              className="button-primary"
+              style={{
+                borderRadius: '99px',
+                fontFamily: 'Nunito, sans-serif',
+                color: '#E4E6ED',
+                backgroundColor: '#C70039',
+                fontWeight: 700,
+                fontSize: '16px',
+                padding: '12px 24px',
+                transition: 'background 0.2s',
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
               {currentView === 'add' ? 'Create' : 'Save Changes'}
             </button>
