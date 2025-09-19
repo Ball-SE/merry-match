@@ -1,14 +1,16 @@
 import NavBarNonUser from "@/components/NavBarNonUser";  
+import NavBarUsers from "@/components/NavBarUsers";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { Element } from "react-scroll";
 
 function HomePage(){
     return (
         <div className="flex justify-center items-center bg-[#160404]">
             <div className="m-auto w-full ">
-            <NavBarNonUser />
+            <NavBarUsers />
                 {/* Hero Section */}
-                <section className="md:h-[758px] overflow-hidden pt-80 md:pt-44 pb-20 bg-[#160404]">
+                <section className="sm:h-[818px] overflow-hidden pt-85 md:pt-60 sm:pb-20 bg-[#160404]">
                     <div className="m-auto max-w-[1200px]  relative">
 
                         <div className="absolute w-[67px] h-[67px] top-[-60px] left-[-180px] bg-[#532341] rounded-full"></div>
@@ -26,6 +28,7 @@ function HomePage(){
                                 area! <br />
                                 Don't forget to get Merry with us
                                 </p>
+                                {/* authen ตรงนี้ */}
                                 <Link
                                     href="/" className="bg-[#C70039] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-[#950028] transition-colors">
                                 Start matching!
@@ -35,20 +38,20 @@ function HomePage(){
                             {/* Profile Images */}
                             <div className="relative w-1/2 h-[600px]">
                                 <div>
-                                <div className=" absolute left-[-210px] bottom-[920px] md:left-[550px] md:bottom-[760px] w-[286px] h-[500px] rounded-[999px] bg-gray-200 overflow-hidden">
+                                <div className="absolute left-[-115px] bottom-[995px] w-[210px] h-[305px] sm:left-[-210px] sm:bottom-[920px] md:left-[550px] md:bottom-[760px] sm:w-[286px] sm:h-[500px] rounded-[999px] bg-gray-200 overflow-hidden">
                                     <img
                                     src="/assets/image1.png"
                                     alt="Profile1"
                                     className="w-full h-full object-cover rounded-[999px]"
                                     />
                                 </div>
-                                <div className="absolute bottom-[980px] right-[190px] w-[160px] md:bottom-[820px] md:right-[-275px] bg-[#64001D] text-white p-3 rounded-[24px_24px_24px_0px] text-sm font-semibold">
+                                <div className="absolute bottom-[1050px] right-[10px] sm:bottom-[980px] sm:right-[190px] w-[160px] md:bottom-[820px] md:right-[-275px] bg-[#64001D] text-white p-3 rounded-[24px_24px_24px_0px] text-sm font-semibold">
                                     Hi! Nice to meet you
                                 </div>
                                 </div>
 
                                 <div>
-                                <div className="absolute right-[-210px] bottom-[10px] md:right-[510px] md:bottom-[360px] w-[286px] h-[500px] rounded-[999px] bg-gray-200 overflow-hidden">
+                                <div className="absolute sm:right-[-210px] sm:bottom-[10px] right-[-140px] bottom-[150px] w-[217px] h-[376px] md:right-[510px] md:bottom-[360px] sm:w-[286px] sm:h-[500px] rounded-[999px] bg-gray-200 overflow-hidden">
                                     <img
                                     src="/assets/image2.png"
                                     alt="Profile2"
@@ -56,9 +59,9 @@ function HomePage(){
                                     />
                                 </div>
                                 <div className="relative">
-                                    <div className="absolute flex flex-row w-[180px] bottom-[-180px] left-[170px] md:bottom-[150px] md:left-[-230px] bg-[#64001D] text-white p-3 rounded-[24px_24px_0px_24px] text-sm font-semibold">
+                                    <div className="absolute flex flex-row w-[180px] sm:w-[180px] sm:bottom-[-180px] sm:left-[170px] bottom-[-180px] left-[10px] md:bottom-[150px] md:left-[-230px] bg-[#64001D] text-white p-3 rounded-[24px_24px_0px_24px] text-sm font-semibold">
                                     <svg
-                                        className="mr-2"
+                                        className="hidden sm:flex mr-2"
                                         width="10"
                                         height="10"
                                         viewBox="0 0 10 10"
@@ -92,7 +95,8 @@ function HomePage(){
                 </section>
 
                 {/* why merry match */}
-                <section className="m-auto py-20 bg-[#160404]">
+                <Element name="why-merry-match">
+                <section className="m-auto sm:py-20 bg-[#160404]">
                     <div className="flex md:flex-row m-auto mx-auto px-6">
                         <div className="flex flex-col xl:flex-row  lg:flex-col items-center justify-center w-full">
                             <div className="max-w-xl">
@@ -117,8 +121,10 @@ function HomePage(){
                         </div>
                     </div>
                 </section>
+                </Element>
 
                 {/* how to marry */}
+                <Element name="how-to-merry">
                 <section className=" m-auto py-20 bg-[#160404]">
                     <div className="m-auto max-w-[1200px] px-6">
                         <h2 className="text-5xl font-extrabold text-[#DF89C6] text-center mb-12">
@@ -180,10 +186,12 @@ function HomePage(){
                         </div>
                     </div>
                 </section>
+                </Element>
 
                 {/* let's start finding */}
-                <section className=" py-0  md:py-20 bg-[#160404] ">
-                    <div className="m-auto max-w-[1200px] px-6 ">
+                <Element name="start-matching">
+                <section className=" py-0 sm:py-20 bg-[#160404] ">
+                    <div className="m-auto sm:max-w-[1200px] sm:px-6 ">
                         <div className="md:rounded-[32px] overflow-hidden bg-gradient-to-r from-[#820025] to-[#A95BCD] h-[564px] md:h-[369px]  ">
                             <div className="py-20 px-12 text-center relative">
                             <div className="absolute top-[50px] left-[-20px] inset-0 bg-[url('/assets/heart.png')] bg-cover opacity-20"></div>
@@ -191,13 +199,15 @@ function HomePage(){
                                 Let's start finding <br />
                                 and matching someone new
                                 </h2>
-                                <button className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors relative z-10">
+                                {/* authen ตรงนี้ */}
+                                <Link href="/matching-page" className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors relative z-10">
                                 Start Matching!
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </section>
+                </Element>
             <Footer />
             </div>
         </div>
