@@ -83,12 +83,12 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
+} */
 
 body {
   background: var(--background);
@@ -206,3 +206,57 @@ body {
     }
 }
 
+.bm-burger-button {
+  position: fixed;
+  width: 24px;
+  height: 20px;
+  right: 16px;
+  top: 20px;
+  z-index: 20 !important; /* ลดค่า z-index ให้น้อยกว่า navbar */
+}
+
+.bm-burger-bars {
+  background: #373a47;
+}
+
+.bm-menu {
+  background: white;
+  padding: 1rem;
+  font-size: 1rem;
+  z-index: 20 !important; /* ลดค่า z-index ให้น้อยกว่า navbar */
+}
+
+.menu-item {
+  display: block;
+  padding: 0.5rem 0;
+  color: #111827;
+}
+
+.bm-overlay {
+  background: transparent !important;  /* เอาความมืดออก */
+  z-index: 20 !important; /* ลดค่า z-index ให้น้อยกว่า navbar */
+}
+
+.bm-menu-wrap {
+  top: 59px !important; /* เพิ่มระยะห่างจากด้านบนให้มากขึ้นเพื่อไม่ทับ navbar */
+  height: calc(100vh - 60px) !important; /* ปรับความสูงให้เหลือพื้นที่สำหรับ navbar */
+  width: 100vw !important;
+  z-index: 20 !important; /* ลดค่า z-index ให้น้อยกว่า navbar */
+}
+
+
+/* Soft gradient shadow under navbar */
+.navbar-shadow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -25px;
+  height: 24px;                 /* ปรับความสูงเงาได้ */
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.5),
+    rgba(0, 0, 0, 0)
+  );
+}
