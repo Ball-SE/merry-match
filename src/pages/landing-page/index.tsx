@@ -30,7 +30,7 @@ function HomePage(){
                                 </p>
                                 {/* authen ตรงนี้ */}
                                 <Link
-                                    href="/" className="bg-[#C70039] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-[#950028] transition-colors">
+                                    href="/matching" className="bg-[#C70039] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-[#950028] transition-colors">
                                 Start matching!
                                 </Link>
                             </div>
@@ -200,7 +200,7 @@ function HomePage(){
                                 and matching someone new
                                 </h2>
                                 {/* authen ตรงนี้ */}
-                                <Link href="/matching-page" className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors relative z-10">
+                                <Link href="/matching" className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors relative z-10">
                                 Start Matching!
                                 </Link>
                             </div>
