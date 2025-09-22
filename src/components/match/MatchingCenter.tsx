@@ -44,7 +44,8 @@ function MatchingCenter() {
                         <span className="text-[#C70039] text-2xl">❤️</span>
                     </button>
                 </div>
-                    {/* Navigation Arrows */}
+                {/* Navigation Arrows */}
+                <div className="flex flex-row">
                     <button 
                         onClick={() => setCurrentImageIndex(prev => prev > 0 ? prev - 1 : 2 - 1)}
                         className="w-10 h-10 flex items-center justify-center transition-all"
@@ -57,7 +58,7 @@ function MatchingCenter() {
                     >
                         <span className="text-[#9AA1B9] text-lg">→</span>
                     </button>
-                
+                </div>
             </div>
         </div>
     )
