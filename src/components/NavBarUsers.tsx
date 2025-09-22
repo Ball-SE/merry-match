@@ -17,7 +17,7 @@ function NavBarUsers() {
     }
 
     return (
-        <nav className="w-full navbar-shadow bg-white shadow-2xl fixed top-0 left-0 right-0 z-[1300]">
+        <nav className="w-full navbar-shadow bg-white shadow-2xl sticky top-0  z-[1300]">
             <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-row justify-between items-center">
                 <Link href="/" className="w-auto flex flex-row">
                     <h1 className="sm:text-4xl text-xl">Merry</h1>
@@ -26,14 +26,11 @@ function NavBarUsers() {
 
                 {/* Desktop menu */}
                 <div className="hidden md:flex flex-row gap-2">
-                    <ScrollLink 
-                        to="start-matching" 
-                        smooth={true}
-                        duration={500}  
+                    <Link href="/matching" 
                         className="button-ghost cursor-pointer"
                     >
                         Start Matching!
-                    </ScrollLink>
+                    </Link>
                     <Link href="/package"  
                         className="button-ghost cursor-pointer"
                     >
