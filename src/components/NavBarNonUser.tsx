@@ -8,7 +8,7 @@ function NavBarNonUser() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <nav className="w-full bg-white shadow-md sticky top-0 z-50">
+        <nav className="w-full navbar-shadow bg-white shadow-2xl fixed top-0 left-0 right-0 z-[1300]">
             <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-row justify-between items-center">
             <Link href="/" className="w-auto flex flex-row">
                 <h1 className="sm:text-4xl text-xl">Merry</h1>

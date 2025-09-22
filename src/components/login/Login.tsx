@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -101,9 +102,9 @@ const Login: React.FC = () => {
           {/* Register link */}
           <div className="mt-8 sm:mt-6">
             <span className="text-gray-600">Don't have an account? </span>
-            <a href="#" className="text-[#C70039] hover:text-[#FF1659] font-medium">
+            <Link href="/register" className="text-[#C70039] hover:text-[#FF1659] font-medium">
               Register
-            </a>
+            </Link>
           </div>
         </div>
       </div>

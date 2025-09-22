@@ -34,7 +34,7 @@ function NavBarUsers() {
                     >
                         Start Matching!
                     </ScrollLink>
-                    <Link href="/membership"  
+                    <Link href="/package"  
                         className="button-ghost cursor-pointer"
                     >
                         Merry Membership
