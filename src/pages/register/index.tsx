@@ -7,6 +7,8 @@ import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } fro
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     dateOfBirth: "",
@@ -51,11 +53,46 @@ export default function Home() {
     return false;
   };
 
+  // ฟังก์ชันสำหรับเรียก API register
+  const handleSubmitRegister = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'การสมัครสมาชิกล้มเหลว');
+      }
+
+      // แสดงข้อความสำเร็จ
+      alert(result.message || 'การสมัครสมาชิกสำเร็จ!');
+      
+      // เปลี่ยนเส้นทางไปหน้า login หรือหน้าอื่น
+      // Router.push("/login");
+      
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setError(error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const goNext = () => {
     if (currentStep < 3 && validateStep(currentStep)) setCurrentStep(s => s + 1);
     if (currentStep === 3 && validateStep(3)) {
-      // Submit placeholder
-      console.log("Submit:", formData);
+      // เรียก API register
+      void handleSubmitRegister();
     }
   };
 
@@ -89,14 +126,28 @@ export default function Home() {
           />
         </div>
 
+        {/* แสดง error message ถ้ามี */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
         {/* Bottom controls */}
         <FooterSummitStep
           currentStep={currentStep}
           totalSteps={3}
-          canProceed={validateStep(currentStep) as boolean}
+          canProceed={validateStep(currentStep) && !loading}
           onBack={goBack}
           onNext={goNext}
         />
+
+        {/* แสดง loading state */}
+        {loading && (
+          <div className="mt-4 text-center">
+            <p className="text-gray-600">กำลังดำเนินการสมัครสมาชิก...</p>
+          </div>
+        )}
       </div>
     </div>
   );
