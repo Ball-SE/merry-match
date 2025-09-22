@@ -5,13 +5,19 @@ import FooterSummitStep from "@/components/register/FooterSummitStep";
 import { useState } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 
+const getDefaultBirthDate = () => {
+  const today = new Date();
+  const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+  return eighteenYearsAgo.toISOString().split('T')[0];
+};
+
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    dateOfBirth: "",
+    dateOfBirth:  getDefaultBirthDate(), // ตั้งค่าเริ่มต้นเป็น 18 ปีที่แล้ว
     location: "",
     city: "",
     username: "",
