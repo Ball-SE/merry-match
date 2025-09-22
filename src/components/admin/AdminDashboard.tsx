@@ -9,6 +9,8 @@ import PackageList from './PackageList';
 import PackageForm from './PackageForm';
 import DeleteModal from './DeleteModal';
 import ComplaintList from './ComplaintList';
+import ComplaintDetail from './ComplaintDetail';
+import ComplaintModal from './ComplaintModal';
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('merry-package');
@@ -19,6 +21,12 @@ const AdminDashboard: React.FC = () => {
   const [packageSearchTerm, setPackageSearchTerm] = useState<string>('');
   const [complaintSearchTerm, setComplaintSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('All status');
+  
+  // Complaint detail view states
+  const [selectedComplaint, setSelectedComplaint] = useState<ComplaintType | null>(null);
+  const [showComplaintModal, setShowComplaintModal] = useState<boolean>(false);
+  const [modalType, setModalType] = useState<'resolve' | 'cancel'>('resolve');
+
   const [packages, setPackages] = useState<PackageType[]>([
     {
       id: 1,
@@ -72,7 +80,8 @@ const AdminDashboard: React.FC = () => {
       issue: 'I was insulted by Ygritte...',
       description: 'Hello, there was a problem with user "Ygritte" who insulted me during our conversation. This behavior was inappropriate and made me uncomfortable.',
       dateSubmitted: '12/02/2022',
-      status: 'Cancel'
+      status: 'Cancel',
+      canceledDate: '15/02/2022'
     },
     {
       id: 4,
@@ -80,10 +89,12 @@ const AdminDashboard: React.FC = () => {
       issue: 'I was insulted by Ygritte...',
       description: 'Hello, there was a problem with user "Ygritte" who insulted me during our conversation. This behavior was inappropriate and made me uncomfortable.',
       dateSubmitted: '12/02/2022',
-      status: 'Resolved'
+      status: 'Resolved',
+      resolvedDate: '14/02/2022'
     }
   ]);
 
+  // Package handlers (existing code)
   const handleDeletePackage = (id: number): void => {
     const pkg = packages.find(p => p.id === id);
     setPackageToDelete(pkg || null);
@@ -188,6 +199,66 @@ const AdminDashboard: React.FC = () => {
     setPackages(newPackages);
   };
 
+  // Complaint handlers
+  const handleComplaintClick = (complaint: ComplaintType): void => {
+    // Auto-change status from "New" to "Pending" when clicked
+    if (complaint.status === 'New') {
+      const updatedComplaint: ComplaintType = {
+        ...complaint,
+        status: 'Pending'
+      };
+      
+      // Update the complaint in the list
+      setComplaints(complaints.map(c => 
+        c.id === complaint.id ? updatedComplaint : c
+      ));
+      
+      setSelectedComplaint(updatedComplaint);
+    } else {
+      setSelectedComplaint(complaint);
+    }
+  };
+
+  const handleBackToComplaintList = (): void => {
+    setSelectedComplaint(null);
+  };
+
+  const handleResolveComplaint = (complaintId: number): void => {
+    setModalType('resolve');
+    setShowComplaintModal(true);
+  };
+
+  const handleCancelComplaint = (complaintId: number): void => {
+    setModalType('cancel');
+    setShowComplaintModal(true);
+  };
+
+  const confirmComplaintAction = (): void => {
+    if (!selectedComplaint) return;
+
+    const currentDate = new Date().toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+    const updatedComplaint: ComplaintType = {
+      ...selectedComplaint,
+      status: modalType === 'resolve' ? 'Resolved' : 'Cancel',
+      ...(modalType === 'resolve' 
+        ? { resolvedDate: currentDate }
+        : { canceledDate: currentDate }
+      )
+    };
+
+    setComplaints(complaints.map(complaint =>
+      complaint.id === selectedComplaint.id ? updatedComplaint : complaint
+    ));
+
+    setSelectedComplaint(updatedComplaint);
+    setShowComplaintModal(false);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -203,7 +274,7 @@ const AdminDashboard: React.FC = () => {
               searchTerm={packageSearchTerm}
               onSearchChange={setPackageSearchTerm}
             />
-            <div className="p-8 bg-gray-50">
+            <div className="p-8 bg-[#F6F7FC] w-full min-h-[calc(100vh-64px)]">
               {currentView === 'list' && (
                 <PackageList
                   packages={packages}
@@ -236,14 +307,24 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {activeTab === 'complaint' && (
-          <div className="bg-gray-50">
-            <ComplaintList
-              complaints={complaints}
-              searchTerm={complaintSearchTerm}
-              statusFilter={statusFilter}
-              onSearchChange={setComplaintSearchTerm}
-              onStatusFilterChange={setStatusFilter}
-            />
+          <div className="bg-[#F6F7FC] w-full min-h-[calc(100vh-64px)]">
+            {!selectedComplaint ? (
+              <ComplaintList
+                complaints={complaints}
+                searchTerm={complaintSearchTerm}
+                statusFilter={statusFilter}
+                onSearchChange={setComplaintSearchTerm}
+                onStatusFilterChange={setStatusFilter}
+                onComplaintClick={handleComplaintClick}
+              />
+            ) : (
+              <ComplaintDetail
+                complaint={selectedComplaint}
+                onBack={handleBackToComplaintList}
+                onResolve={handleResolveComplaint}
+                onCancel={handleCancelComplaint}
+              />
+            )}
           </div>
         )}
       </div>
@@ -252,6 +333,13 @@ const AdminDashboard: React.FC = () => {
         showDeleteModal={showDeleteModal}
         setShowDeleteModal={setShowDeleteModal}
         confirmDelete={confirmDelete}
+      />
+
+      <ComplaintModal
+        showModal={showComplaintModal}
+        setShowModal={setShowComplaintModal}
+        onConfirm={confirmComplaintAction}
+        type={modalType}
       />
     </div>
   );

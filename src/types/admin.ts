@@ -65,13 +65,31 @@ export interface ComplaintType {
   issue: string;
   description: string;
   dateSubmitted: string;
-  status: 'New' | 'Pending' | 'Resolved' | 'Cancel';
+  status: string;
+  resolvedDate?: string; 
+  canceledDate?: string; 
 }
+
+export interface ComplaintDetailProps {
+  complaint: ComplaintType;
+  onBack: () => void;
+  onResolve: (id: number) => void;
+  onCancel: (id: number) => void;
+}
+
+export interface ComplaintModalProps {
+  showModal: boolean;
+  setShowModal: (show: boolean) => void;
+  onConfirm: () => void;
+  type: 'resolve' | 'cancel';
+}
+
 
 export interface ComplaintListProps {
   complaints: ComplaintType[];
   searchTerm: string;
   statusFilter: string;
   onSearchChange: (term: string) => void;
-  onStatusFilterChange: (status: string) => void;
+  onStatusFilterChange: (filter: string) => void;
+  onComplaintClick?: (complaint: ComplaintType) => void; 
 }
