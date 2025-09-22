@@ -25,34 +25,21 @@ const PackageList: React.FC<PackageListProps> = ({
   });
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-[#D6D9E4]">
-          <tr>
-            <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider w-20">
-              
-            </th>
-            <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
-              Icon
-            </th>
-            <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
-              Package name
-            </th>
-            <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
-              Merry limit
-            </th>
-            <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
-              Created date
-            </th>
-            <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
-              Updated date
-            </th>
-            <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+  <div className="bg-[#F6F7FC]">
+    <div className="rounded-lg shadow overflow-hidden bg-white w-full">
+        <table className="w-full bg-transparent">
+          <thead className="bg-[#D6D9E4]">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider w-20"></th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Icon</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Package name</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Merry limit</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Created date</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Updated date</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
           {filteredPackages.map((pkg, index) => (
             <tr 
               key={pkg.id} 
@@ -124,8 +111,8 @@ const PackageList: React.FC<PackageListProps> = ({
             </tr>
           ))}
         </tbody>
-      </table>
-      
+        </table>
+      </div>
       {filteredPackages.length === 0 && (
         <div className="text-center py-12">
           <p className="text-[#424C6B]">

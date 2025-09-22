@@ -4,12 +4,17 @@ import React from 'react';
 import { Search, ChevronDown } from 'lucide-react';
 import { ComplaintListProps } from '../../types/admin';
 
-const ComplaintList: React.FC<ComplaintListProps> = ({
+interface ComplaintListPropsWithClick extends ComplaintListProps {
+  onComplaintClick: (complaint: any) => void;
+}
+
+const ComplaintList: React.FC<ComplaintListPropsWithClick> = ({
   complaints,
   searchTerm,
   statusFilter,
   onSearchChange,
-  onStatusFilterChange
+  onStatusFilterChange,
+  onComplaintClick
 }) => {
   // Filter complaints based on search term and status
   const filteredComplaints = complaints.filter(complaint => {
@@ -22,21 +27,21 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
 
   const getStatusBadge = (status: string) => {
     const statusStyles = {
-      'New': 'bg-blue-100 text-blue-700',
-      'Pending': 'bg-yellow-100 text-ye[#424C6B]',
-      'Resolved': 'bg-green-100 text-g[#424C6B]',
-      'Cancel': 'bg-gray-100 text-[#424C6B]'
+      'New': 'bg-blue-100 text-blue-700 border border-blue-200',
+      'Pending': 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+      'Resolved': 'bg-green-100 text-green-700 border border-green-200',
+      'Cancel': 'bg-gray-100 text-gray-700 border border-gray-200'
     };
     
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-lg ${statusStyles[status as keyof typeof statusStyles] || 'bg-gray-100 text-[#424C6B]'}`}>
+      <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${statusStyles[status as keyof typeof statusStyles] || 'bg-gray-100 text-[#424C6B] border border-gray-200'}`}>
         {status}
       </span>
     );
   };
 
   return (
- <div className="space-y-0">
+  <div className="space-y-0 bg-[#F6F7FC] min-h-screen">
       {/* Header with Search and Filter */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-8 py-4 flex justify-between items-center">
@@ -50,7 +55,7 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg "
               />
             </div>
             
@@ -74,35 +79,49 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
       </div>
 
       {/* Complaints Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden max-w-5xl mx-auto mt-8">
-        <table className="w-full">
-          <thead className="bg-[#D6D9E4]">
+  <div className="bg-white rounded-lg shadow overflow-hidden max-w-5xl mx-auto mt-8">
+      <table className="w-full">
+        <thead className="bg-[#D6D9E4]">
             <tr>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">User</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Issue</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Description</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Date Submitted</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Status</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
+                User
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
+                Issue
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
+                Description
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
+                Date Submitted
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredComplaints.map((complaint) => (
-              <tr key={complaint.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="text-[15px] font-normal text-gray-900">{complaint.user}</div>
+              <tr 
+                key={complaint.id} 
+                className="hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => onComplaintClick(complaint)}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{complaint.user}</div>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="text-[15px] text-gray-900">{complaint.issue}</div>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{complaint.issue}</div>
                 </td>
-                <td className="px-4 py-3">
-                  <div className="text-[15px] text-gray-900 max-w-xs truncate" title={complaint.description}>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 max-w-xs truncate" title={complaint.description}>
                     {complaint.description}
                   </div>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="text-[15px] text-gray-500">{complaint.dateSubmitted}</div>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{complaint.dateSubmitted}</div>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap">
                   {getStatusBadge(complaint.status)}
                 </td>
               </tr>
