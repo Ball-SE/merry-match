@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
 
@@ -406,6 +406,7 @@ function Step3({
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<boolean[]>(Array(6).fill(false));
+  const folderRef = useRef(`temp-user-${Date.now()}`); // โฟลเดอร์คงที่ต่อ session
 
   const validateCurrentPhotos = () => {
     const validation = validatePhotos(photos);
@@ -418,8 +419,8 @@ function Step3({
     const file = files[0];
     
     // ตรวจสอบขนาดไฟล์ (5MB = 5 * 1024 * 1024 bytes)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB');
+    if (file.size > 8 * 1024 * 1024) {
+      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 8MB');
       return;
     }
 
@@ -438,9 +439,8 @@ function Step3({
     try {
       // สำหรับ demo ใช้ temporary user ID
       // ในการใช้งานจริงควรได้จาก auth context
-      const tempUserId = 'temp-user-' + Date.now();
       
-      const result = await uploadProfilePhoto(file, tempUserId, index);
+      const result = await uploadProfilePhoto(file, folderRef.current, index);
       
       if (result.success && result.url) {
         const newPhotos = [...photos];
