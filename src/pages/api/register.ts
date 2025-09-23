@@ -104,20 +104,20 @@ export default async function handler(
       // await supabase.auth.admin.deleteUser(userId);
 
       return res.status(500).json({
-        error: insertError.message || "ไม่สามารถบันทึกข้อมูลโปรไฟล์ได้",
+        error: insertError.message || "Cannot save profile data",
       });
     }
 
     // ส่งผลลัพธ์สำเร็จกลับ
     return res.status(201).json({
       success: true,
-      message: "การสมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี",
+      message: "Register Successfully Please check your email to verify your account",
       userId: userId,
     });
   } catch (error: any) {
     console.error("Registration Error:", error);
     return res.status(500).json({
-      error: error.message || "เกิดข้อผิดพลาดในระบบ",
+      error: error.message || "System error",
     });
   }
 }
