@@ -82,7 +82,7 @@ export default function Home() {
       }
 
       // แสดงข้อความสำเร็จ
-      alert(result.message || 'Register Successfully');
+      // alert(result.message || 'Register Successfully');
       
       // เปลี่ยนเส้นทางไปหน้า login
       router.push("/login");
