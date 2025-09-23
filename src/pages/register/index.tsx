@@ -4,6 +4,7 @@ import RegisterStep from "@/components/register/RegisterStep";
 import FooterSummitStep from "@/components/register/FooterSummitStep";
 import { useState } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
+import { useRouter } from "next/router";
 
 const getDefaultBirthDate = () => {
   const today = new Date();
@@ -15,6 +16,7 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     dateOfBirth:  getDefaultBirthDate(), // ตั้งค่าเริ่มต้นเป็น 18 ปีที่แล้ว
@@ -76,14 +78,14 @@ export default function Home() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'การสมัครสมาชิกล้มเหลว');
+        throw new Error(result.error || 'Register Failed');
       }
 
       // แสดงข้อความสำเร็จ
-      alert(result.message || 'การสมัครสมาชิกสำเร็จ!');
+      alert(result.message || 'Register Successfully');
       
-      // เปลี่ยนเส้นทางไปหน้า login หรือหน้าอื่น
-      // Router.push("/login");
+      // เปลี่ยนเส้นทางไปหน้า login
+      router.push("/login");
       
     } catch (error: any) {
       console.error('Registration error:', error);
