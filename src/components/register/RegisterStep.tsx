@@ -36,8 +36,10 @@ export default function RegisterStep({
 }: Props) {
   if (currentStep === 1) return <Step1 formData={formData} handleInputChange={handleInputChange} />;
   if (currentStep === 2) return <Step2 formData={formData} handleInputChange={handleInputChange} setInterests={setInterests} />;
-  return <Step3 photos={formData.photos} setPhotos={setPhotos} />;
+  return <Step3 formData={formData} photos={formData.photos} setPhotos={setPhotos} />;
 }
+
+
 
 /* ------------------------------ Step 1 ------------------------------ */
 function Step1({
@@ -397,16 +399,23 @@ function Step2({
 }
 
 /* ------------------------------ Step 3 ------------------------------ */
+
 function Step3({
+  formData,
   photos,
   setPhotos,
 }: {
+  formData: FormData;
   photos: string[];
   setPhotos: (next: string[]) => void;
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [uploading, setUploading] = useState<boolean[]>(Array(6).fill(false));
-  const folderRef = useRef(`temp-user-${Date.now()}`); // โฟลเดอร์คงที่ต่อ session
+  const [uploading, setUploading] = useState<boolean[]>(Array(5).fill(false));
+  const folderRef = useRef(
+    formData.email
+      ? `${formData.email.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '-').slice(0, 24)}`
+      : `temp-user-${Date.now()}`
+  );
 
   const validateCurrentPhotos = () => {
     const validation = validatePhotos(photos);
@@ -462,11 +471,11 @@ function Step3({
         setPhotos(newPhotos);
         validateCurrentPhotos();
       } else {
-        alert(result.error || 'การอัพโหลดรูปภาพล้มเหลว');
+        alert(result.error || 'upload photo failed');
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      alert('การอัพโหลดรูปภาพล้มเหลว');
+      alert('upload photo failed');
     } finally {
       setUploading(prev => {
         const next = [...prev];
