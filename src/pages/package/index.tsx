@@ -1,10 +1,10 @@
-import NavBarUsers from "@/components/NavBarUsers";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 
 export default function PackagePage() {
     return (
         <div className="min-h-screen bg-gray-50">
-            <NavBarUsers />
+            <NavBar />
             
             {/* Main Content */}
             <div className="container mx-auto px-4 py-40">

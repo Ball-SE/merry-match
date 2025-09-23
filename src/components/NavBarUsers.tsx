@@ -5,6 +5,7 @@ import UserProfileNavbar from "./UserProfileNavbar";
 import { slide as Menu } from "react-burger-menu";
 import { AlertNotification } from "./AlertNotification";
 import MessageNavbar from "./MessageNavbar";
+import Image from "next/image";
 
 function NavBarUsers() {
     const [isOpen, setIsOpen] = useState(false);
@@ -47,7 +48,15 @@ function NavBarUsers() {
                         </div>
                         )}
                         <button onClick={handleOpenUserProfile}>
-                            <img src="/assets/user.jpg" alt="user" className="mt-1 w-[50px] h-[40px]" />
+                            <Image 
+                            src="/assets/knal.png" 
+                            alt="user"
+                            width={50}
+                            height={40}
+                            objectFit="cover"
+                            objectPosition="center"
+                            className="rounded-full"
+                            />
                         </button>
                     </div>
                 </div>

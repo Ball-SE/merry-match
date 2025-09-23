@@ -1,14 +1,14 @@
 import MatchingLeft from "@/components/match/MatchingLeft";
 import MatchingCenter from "@/components/match/MatchingCenter";
 import MatchingRight from "@/components/match/MatchingRight";
-import NavBarUsers from "@/components/NavBarUsers";
+import NavBar from "@/components/NavBar";
 
 
 function Matching() {
     return (
         <div className="h-screen flex flex-col">
-            <NavBarUsers />
-            <div className="flex flex-1 w-full">
+            <NavBar />
+            <div className="flex flex-1 w-full pt-5">
                 <div className="basis-1/4 p-4 overflow-auto">
                     <MatchingLeft />
                 </div>
