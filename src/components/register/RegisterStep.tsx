@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
+import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
 
 interface FormData {
   name: string;
@@ -404,29 +405,71 @@ function Step3({
   setPhotos: (next: string[]) => void;
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<boolean[]>(Array(6).fill(false));
 
   const validateCurrentPhotos = () => {
     const validation = validatePhotos(photos);
     setErrors(validation.errors);
   };
 
-  const onFiles = (files: FileList | null) => {
-    if (!files) return;
-    const readers = Array.from(files).slice(0, 6 - photos.length).map(file => {
-      return new Promise<string>((resolve) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result));
-        r.readAsDataURL(file);
+  const onFiles = async (files: FileList | null, index: number) => {
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    
+    // ตรวจสอบขนาดไฟล์ (5MB = 5 * 1024 * 1024 bytes)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB');
+      return;
+    }
+
+    // ตรวจสอบประเภทไฟล์
+    if (!file.type.startsWith('image/')) {
+      alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+      return;
+    }
+
+    setUploading(prev => {
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+
+    try {
+      // สำหรับ demo ใช้ temporary user ID
+      // ในการใช้งานจริงควรได้จาก auth context
+      const tempUserId = 'temp-user-' + Date.now();
+      
+      const result = await uploadProfilePhoto(file, tempUserId, index);
+      
+      if (result.success && result.url) {
+        const newPhotos = [...photos];
+        newPhotos[index] = result.url;
+        setPhotos(newPhotos);
+        validateCurrentPhotos();
+      } else {
+        alert(result.error || 'การอัพโหลดรูปภาพล้มเหลว');
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert('การอัพโหลดรูปภาพล้มเหลว');
+    } finally {
+      setUploading(prev => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
       });
-    });
-    Promise.all(readers).then(urls => {
-      const newPhotos = [...(photos || []), ...urls];
-      setPhotos(newPhotos);
-      validateCurrentPhotos();
-    });
+    }
   };
 
-  const remove = (idx: number) => {
+  const remove = async (idx: number) => {
+    const photoUrl = photos[idx];
+    
+    // ลบรูปจาก Storage ถ้าเป็น URL จริง (ไม่ใช่ data URL)
+    if (photoUrl && photoUrl.startsWith('http')) {
+      await deleteProfilePhoto(photoUrl);
+    }
+    
     const next = [...photos];
     next.splice(idx, 1);
     setPhotos(next);
@@ -441,12 +484,19 @@ function Step3({
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {[0, 1, 2, 3, 4, 5].map((i) => {
           const url = photos[i];
+          const isUploading = uploading[i];
+          
           return (
             <div key={i} className="relative">
               <div className={`flex aspect-square items-center justify-center rounded-xl border-2 border-dashed bg-gray-50 ${
                 photos.length < 2 && i < 2 ? 'border-red-300' : 'border-gray-300'
               }`}>
-                {url ? (
+                {isUploading ? (
+                  <div className="text-center">
+                    <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#C70039]"></div>
+                    <span className="text-xs text-gray-500">Uploading...</span>
+                  </div>
+                ) : url ? (
                   <img src={url} alt={`photo-${i}`} className="h-full w-full rounded-xl object-cover" />
                 ) : (
                   <div className="text-center">
@@ -458,21 +508,21 @@ function Step3({
                 )}
               </div>
 
-              {!url ? (
+              {!url && !isUploading ? (
                 <input
                   type="file"
                   accept="image/*"
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  onChange={(e) => onFiles(e.target.files)}
+                  onChange={(e) => onFiles(e.target.files, i)}
                 />
-              ) : (
+              ) : url && !isUploading ? (
                 <button
                   onClick={() => remove(i)}
                   className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C70039] text-white hover:bg-[#950028]"
                 >
                   ×
                 </button>
-              )}
+              ) : null}
             </div>
           );
         })}
