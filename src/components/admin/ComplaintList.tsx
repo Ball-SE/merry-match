@@ -9,38 +9,73 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
   searchTerm,
   statusFilter,
   onSearchChange,
-  onStatusFilterChange
+  onStatusFilterChange,
+  onComplaintClick
 }) => {
   // Filter complaints based on search term and status
   const filteredComplaints = complaints.filter(complaint => {
-    const matchesSearch = complaint.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         complaint.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm === '' || 
+      complaint.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesStatus = statusFilter === 'All status' || complaint.status === statusFilter;
+    
     return matchesSearch && matchesStatus;
   });
 
+  // Get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'new':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      case 'cancel':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const getStatusBadge = (status: string) => {
-    const statusStyles = {
-      'New': 'bg-blue-100 text-blue-700',
-      'Pending': 'bg-yellow-100 text-ye[#424C6B]',
-      'Resolved': 'bg-green-100 text-g[#424C6B]',
-      'Cancel': 'bg-gray-100 text-[#424C6B]'
-    };
-    
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-lg ${statusStyles[status as keyof typeof statusStyles] || 'bg-gray-100 text-[#424C6B]'}`}>
+      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-lg ${getStatusColor(status)}`}>
         {status}
       </span>
     );
   };
 
+  // Format date
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Truncate text
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   return (
- <div className="space-y-0">
-      {/* Header with Search and Filter */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-8 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Complaint List</h2>
+    <div className="bg-[#F6F7FC]">
+      {/* Top Navigation Bar - matches the style shown in PackageList */}
+      <div className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Complaint List</h1>
           <div className="flex items-center space-x-4">
             {/* Search Input */}
             <div className="relative">
@@ -73,48 +108,71 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
         </div>
       </div>
 
-      {/* Complaints Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden max-w-5xl mx-auto mt-8">
-        <table className="w-full">
-          <thead className="bg-[#D6D9E4]">
-            <tr>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">User</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Issue</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Description</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Date Submitted</th>
-              <th className="px-4 py-3 text-left text-[15px] font-semibold text-[#424C6B]">Status</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredComplaints.map((complaint) => (
-              <tr key={complaint.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="text-[15px] font-normal text-gray-900">{complaint.user}</div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="text-[15px] text-gray-900">{complaint.issue}</div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="text-[15px] text-gray-900 max-w-xs truncate" title={complaint.description}>
-                    {complaint.description}
-                  </div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="text-[15px] text-gray-500">{complaint.dateSubmitted}</div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {getStatusBadge(complaint.status)}
-                </td>
+      {/* Complaints Table - with proper spacing */}
+      <div className="p-6">
+        <div className="rounded-lg shadow overflow-hidden bg-white w-full">
+          <table className="w-full bg-transparent">
+            <thead className="bg-[#D6D9E4]">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">User</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Issue</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Description</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Date submitted</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        
-        {filteredComplaints.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No complaints found matching your criteria.</p>
-          </div>
-        )}
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredComplaints.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    {complaints.length === 0 ? 'No complaints found.' : 'No complaints match your search criteria.'}
+                  </td>
+                </tr>
+              ) : (
+                filteredComplaints.map((complaint) => (
+                  <tr 
+                    key={complaint.id} 
+                    onClick={() => onComplaintClick?.(complaint)}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {truncateText(complaint.user, 20)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {truncateText(complaint.issue, 25)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate" title={complaint.description}>
+                        {truncateText(complaint.description, 60)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-[#424C6B]">
+                        {formatDate(complaint.dateSubmitted)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(complaint.status)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          
+          {/* Results Summary */}
+          {filteredComplaints.length > 0 && (
+            <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+              <p className="text-sm text-gray-700">
+                Showing {filteredComplaints.length} of {complaints.length} complaints
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
