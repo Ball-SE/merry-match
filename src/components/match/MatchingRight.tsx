@@ -8,7 +8,7 @@ function MatchingRight() {
     const [ageRange, setAgeRange] = useState([18, 50])
 
     return (
-        <div className="w-full">
+        <div className="w-full h-full flex flex-col">
             <h1 className="text-black text-base font-bold">Gender you interest</h1>
             <div className="flex flex-col gap-2 mt-5">
                 <div className="flex items-center gap-2">
@@ -61,19 +61,21 @@ function MatchingRight() {
                 />
             </div>
             
-            <div className="border-t-[2px] border-gray-300 mt-10"></div>
-            <div className="flex flex-row gap-5 items-center mt-10">
-                <button 
-                className="w-1/2 button-ghost text-[#C70039] rounded-md p-2"
-                onClick={() => setAgeRange([18, 50])}
-                >
-                    Clear
-                </button>
-                <button 
-                className="w-1/2 button-primary bg-[#C70039] text-white rounded-md p-2"
-                >
-                    Search
+            <div className="mt-auto">
+                <div className="border-t-[2px] border-gray-300 mt-10"></div>
+                <div className="flex flex-row gap-5 items-center mt-10">
+                    <button 
+                    className="w-1/2 button-ghost text-[#C70039] rounded-md p-2"
+                    onClick={() => setAgeRange([18, 50])}
+                    >
+                        Clear
                     </button>
+                    <button 
+                    className="w-1/2 button-primary bg-[#C70039] text-white rounded-md p-2"
+                    >
+                        Search
+                        </button>
+                </div>
             </div>
         </div>
     )
