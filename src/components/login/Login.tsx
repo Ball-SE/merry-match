@@ -1,26 +1,77 @@
-import React, { useState } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
+import { useRouter } from 'next/router';
+import { supabase } from '@/lib/supabase/supabaseClient';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const Login: React.FC = () => {
-  const [formData, setFormData] = useState({
-    usernameOrEmail: '',
-    password: ''
-  });
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (data?.session) router.push('/')
+    }
+    checkSession()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt:', formData);
-  };
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) router.push('/')
+    })
+
+    return () => {
+      authListener?.subscription.unsubscribe()
+    }
+  }, [router])
+
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  // Handle email input change with validation
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setEmail(value)
+    
+    // Clear previous email error
+    setEmailError(null)
+    
+    // Validate email if not empty
+    if (value.trim() && !validateEmail(value)) {
+      setEmailError('Please enter a valid email address')
+    }
+  }
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrorMsg(null)
+    setEmailError(null)
+
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address')
+      setLoading(false)
+      return
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    setLoading(false)
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      console.log('login ok', data)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#FCFCFE] flex flex-col sm:flex-row">
@@ -55,22 +106,27 @@ const Login: React.FC = () => {
           </div>
 
           {/* Login form */}
-          <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-6">
-            {/* Username or Email field */}
+          <form onSubmit={handleLogin} className="space-y-8 sm:space-y-6">
+            {/* Email field */}
             <div>
-              <label htmlFor="usernameOrEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                Username or Email
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email
               </label>
               <input
-                type="text"
-                id="usernameOrEmail"
-                name="usernameOrEmail"
-                value={formData.usernameOrEmail}
-                onChange={handleInputChange}
-                placeholder="Enter Username or Email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                type="email"
+                id="email"
+                name="email"
+                value={email}
+                onChange={handleEmailChange}
+                placeholder="Enter Email"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+                  emailError ? 'border-red-500' : 'border-gray-300'
+                }`}
                 required
               />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1">{emailError}</p>
+              )}
             </div>
 
             {/* Password field */}
@@ -82,8 +138,8 @@ const Login: React.FC = () => {
                 type="password"
                 id="password"
                 name="password"
-                value={formData.password}
-                onChange={handleInputChange}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
                 required
@@ -93,18 +149,29 @@ const Login: React.FC = () => {
             {/* Login button */}
             <button
               type="submit"
-              className="button-primary w-full bg-[#C70039] text-white py-3 px-4 rounded-lg font-medium"
+              className="button-primary w-full bg-[#C70039] hover:bg-[#FF1659] text-white py-3 px-4 rounded-lg font-medium"
             >
-              Log in
+              {loading ? 'Loading...' : 'Login'}
             </button>
+
+            {/* Error message - centered */}
+            {errorMsg && (
+              <div className="text-center">
+                <p className="text-red-500 text-sm font-medium">{errorMsg}</p>
+              </div>
+            )}
           </form>
 
           {/* Register link */}
           <div className="mt-8 sm:mt-6">
             <span className="text-gray-600">Don't have an account? </span>
-            <Link href="/register" className="text-[#C70039] hover:text-[#FF1659] font-medium">
+            <button 
+              type="button"
+              onClick={() => router.push('/register')}
+              className="text-[#C70039] hover:text-[#FF1659] font-medium bg-transparent border-none cursor-pointer underline"
+            >
               Register
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -112,4 +179,3 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
