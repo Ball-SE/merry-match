@@ -67,7 +67,7 @@ export default function LoginPage() {
 
     setLoading(false)
     if (error) {
-      setErrorMsg(error.message)
+      setErrorMsg("Invalid email or password")
     } else {
       console.log('login ok', data)
     }
