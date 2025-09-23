@@ -1,5 +1,6 @@
-import NavBarNonUser from "@/components/NavBarNonUser";  
-import NavBarUsers from "@/components/NavBarUsers";
+// import NavBarNonUser from "@/components/NavBarNonUser";  
+// import NavBarUsers from "@/components/NavBarUsers";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { Element } from "react-scroll";
@@ -8,9 +9,9 @@ function HomePage(){
     return (
         <div className="flex justify-center items-center bg-[#160404]">
             <div className="m-auto w-full ">
-            <NavBarUsers />
+            <NavBar />
                 {/* Hero Section */}
-                <section className="sm:h-[818px] overflow-hidden pt-85 md:pt-60 sm:pb-20 bg-[#160404]">
+                <section className="sm:h-[818px] overflow-hidden pt-70 md:pt-50 sm:pb-20 bg-[#160404]">
                     <div className="m-auto max-w-[1200px]  relative">
 
                         <div className="absolute w-[67px] h-[67px] top-[-60px] left-[-180px] bg-[#532341] rounded-full"></div>

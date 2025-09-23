@@ -4,8 +4,17 @@ import { RiBox3Fill } from "react-icons/ri";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 function UserProfileNavbar() {
+    const router = useRouter();
+    
+    const handleLogout = async () => {
+        await supabase.auth.signOut(); // ลบ session ออกจาก cookie/localstorage
+        router.push("/"); // redirect ไปหน้าแรก  
+    }
+    
     return (
         <div className="flex flex-col sm:w-[198px] sm:h-[308px] bg-white sm:border-[1px] sm:border-[#E4E6ED] sm:rounded-2xl sm:shadow-md p-3">
             <div className="flex justify-center">
@@ -35,10 +44,10 @@ function UserProfileNavbar() {
             </div>
 
             <div className="mt-auto pt-2 border-t border-[#E4E6ED]">
-                <Link href="/landing-page" className="w-full text-[#646D89] flex flex-row items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50">
+                <button onClick={handleLogout} className="w-full text-[#646D89] flex flex-row items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50">
                     <RiLogoutBoxRLine />
                     <span>Log out</span>
-                </Link>
+                </button>
             </div>
         </div>
     )
