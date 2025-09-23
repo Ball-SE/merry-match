@@ -62,7 +62,7 @@ function MatchingRight() {
             </div>
             
             <div className="mt-auto">
-                <div className="border-t-[2px] border-gray-300 mt-10"></div>
+                <div className="border-t-[1px] border-gray-300 mt-10"></div>
                 <div className="flex flex-row gap-5 items-center mt-10">
                     <button 
                     className="w-1/2 button-ghost text-[#C70039] rounded-md p-2"

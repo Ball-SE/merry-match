@@ -1,0 +1,137 @@
+import { useMemo, useState, useEffect } from "react";
+import { useSwipeable } from "react-swipeable";
+
+export type Card = { id: string; title: string; age: string; img: string[] };
+
+interface SwipeDeckProps {
+  items: Card[];
+  onLike?: (card: Card) => void;
+  onPass?: (card: Card) => void;
+  currentImageIndex?: number; // เพิ่ม prop นี้
+  onCurrentCardChange?: (card: Card | null) => void; // เพิ่ม callback สำหรับส่งข้อมูลการ์ดปัจจุบัน
+}
+
+export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0, onCurrentCardChange }: SwipeDeckProps) {
+  const [stack, setStack] = useState(items);
+  const [dx, setDx] = useState(0);
+  const [dy, setDy] = useState(0);
+  const [dragging, setDragging] = useState(false);
+
+  const top = stack[0];
+  const rest = useMemo(() => stack.slice(1), [stack]);
+
+  // ส่งข้อมูลการ์ดปัจจุบันกลับไปยัง parent component
+  useEffect(() => {
+    if (onCurrentCardChange) {
+      onCurrentCardChange(top || null);
+    }
+  }, [top, onCurrentCardChange]);
+
+  const handlers = useSwipeable({
+    onSwipeStart: () => setDragging(true),
+    onSwiping: (e) => { setDx(e.deltaX); setDy(e.deltaY); },
+    onSwiped: (e) => {
+      setDragging(false);
+      const shouldDismiss =
+        Math.abs(e.deltaX) > 120 || Math.abs(e.velocity) > 0.6;
+      if (shouldDismiss) {
+        if (!top) return;
+        
+        // เรียก callback ตามทิศทางการ swipe
+        if (e.deltaX > 0 && onLike) {
+          onLike(top);
+        } else if (e.deltaX < 0 && onPass) {
+          onPass(top);
+        }
+        
+        setStack((s) => s.slice(1));
+        setDx(0); setDy(0);
+      } else {
+        setDx(0); setDy(0);
+      }
+    },
+    trackMouse: true,
+    preventScrollOnSwipe: true,
+  });
+
+  if (!top) return 
+    <div 
+    style={{textAlign:'center', padding:'4rem'}}
+    >
+    หมดการ์ดแล้ว ✨
+    </div>;
+
+  const rotation = dx / 12;
+  const throwX = Math.sign(dx || 1) * 1200;
+
+  return (
+    <div style={{position:'relative', width:'100%', maxWidth:420, margin:'0 auto', height:'70vh'}}>
+      {rest.slice(0, 3).map((c, i) => (
+        <div
+          key={c.id}
+          style={{
+            position:'absolute', inset:0, borderRadius:16, boxShadow:'0 12px 30px rgba(0,0,0,.25)',
+            background:'#111',
+            transform:`scale(${1 - (i+1)*0.03}) translateY(${(i+1)*10}px)`
+          }}
+        />
+      ))}
+
+      <div
+        {...handlers}
+        style={{
+          position:'absolute', inset:0, borderRadius:16, overflow:'hidden',
+          boxShadow:'0 20px 40px rgba(0,0,0,.35)',
+          cursor: dragging ? 'grabbing' : 'grab',
+          transform: dragging
+            ? `translate(${dx}px, ${dy}px) rotate(${rotation}deg)`
+            : dx === 0 && dy === 0
+              ? undefined
+              : `translate(${throwX}px, ${dy}px) rotate(${rotation*2}deg)`,
+          transition: dragging ? 'none' : 'transform 320ms cubic-bezier(.2,.8,.2,1)',
+          willChange:'transform',
+          background:'#000'
+        }}
+      >
+        {/* แสดงรูปภาพตาม currentImageIndex */}
+        <img 
+          src={top.img[currentImageIndex] || top.img[0]} 
+          alt={top.title + ' ' + top.age} 
+          style={{width:'100%', height:'100%', objectFit:'cover'}} 
+        />
+        
+        {/* แสดงจุดบอกจำนวนรูปภาพ */}
+        {top.img.length > 1 && (
+          <div style={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            display: 'flex',
+            gap: 4
+          }}>
+            {top.img.map((_, index) => (
+              <div
+                key={index}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: index === currentImageIndex ? '#fff' : 'rgba(255,255,255,0.5)',
+                  transition: 'background-color 0.2s'
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div style={{
+          position:'absolute', left:0, right:0, bottom:0, padding:'12px 16px',
+          color:'#fff', background:'linear-gradient( to top, rgba(0,0,0,.55), transparent )'
+        }}>
+          {/* <strong>{top.title}</strong> */}
+        </div>
+      </div>
+
+    </div>
+  );
+}
