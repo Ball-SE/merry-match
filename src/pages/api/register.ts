@@ -40,14 +40,14 @@ export default async function handler(
     if (signUpError) {
       console.error("SignUp Error:", signUpError);
       return res.status(400).json({
-        error: signUpError.message || "การสร้างบัญชีผู้ใช้ล้มเหลว",
+        error: signUpError.message || "register failed",
       });
     }
 
     const userId = signUpData.user?.id;
     if (!userId) {
       return res.status(500).json({
-        error: "ไม่สามารถสร้างบัญชีผู้ใช้ได้",
+        error: "cannot create user",
       });
     }
 
