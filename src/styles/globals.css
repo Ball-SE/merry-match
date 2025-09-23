@@ -238,8 +238,8 @@ body {
 }
 
 .bm-menu-wrap {
-  top: 59px !important; /* เพิ่มระยะห่างจากด้านบนให้มากขึ้นเพื่อไม่ทับ navbar */
-  height: calc(100vh - 60px) !important; /* ปรับความสูงให้เหลือพื้นที่สำหรับ navbar */
+  top: 50px !important; /* เพิ่มระยะห่างจากด้านบนให้มากขึ้นเพื่อไม่ทับ navbar */
+  height: 100vh !important; /* ปรับความสูงให้เหลือพื้นที่สำหรับ navbar */
   width: 100vw !important;
   z-index: 20 !important; /* ลดค่า z-index ให้น้อยกว่า navbar */
 }
@@ -256,7 +256,7 @@ body {
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.5),
+    rgba(0, 0, 0, 0.3),
     rgba(0, 0, 0, 0)
   );
 }
