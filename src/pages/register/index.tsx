@@ -12,12 +12,6 @@ const getDefaultBirthDate = () => {
   return eighteenYearsAgo.toISOString().split('T')[0];
 };
 
-const getDefaultBirthDate = () => {
-  const today = new Date();
-  const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-  return eighteenYearsAgo.toISOString().split('T')[0];
-};
-
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
