@@ -34,20 +34,6 @@ export default function LoginPage() {
     return emailRegex.test(email)
   }
 
-  // Handle email input change with validation
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setEmail(value)
-    
-    // Clear previous email error
-    setEmailError(null)
-    
-    // Validate email if not empty
-    if (value.trim() && !validateEmail(value)) {
-      setEmailError('Please enter a valid email address')
-    }
-  }
-
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -117,8 +103,8 @@ export default function LoginPage() {
                 id="email"
                 name="email"
                 value={email}
-                onChange={handleEmailChange}
-                placeholder="Enter Email"
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter email (e.g. name@example.com)"
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
                   emailError ? 'border-red-500' : 'border-gray-300'
                 }`}
