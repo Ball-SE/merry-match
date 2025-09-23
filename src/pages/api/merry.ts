@@ -1,21 +1,23 @@
+export const runtime = "edge";
+
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/supabaseClient";
 
 type Body = {
-    swiperId: string;
-    swipedId: string;
+    swiper_id: string;
+    swiped_id: string;
     action: "like" | "dislike";
 }
 
-export async function POST(req: Request) {
+export default async function POST(req: Request) {
     try {
         const body: Body = await req.json();
-        const { swiperId, swipedId, action } = body;
+        const { swiper_id, swiped_id, action } = body;
 
-        if (!swiperId || !swipedId || !action) {
+        if (!swiper_id || !swiped_id || !action) {
             return NextResponse.json({ error: "Missing fields" }, { status: 400 });
           }
-        if (swiperId === swipedId) {
+        if (swiper_id === swiped_id) {
             return NextResponse.json({ error: "Cannot swipe yourself" }, { status: 400 });
           }
         
@@ -23,8 +25,8 @@ export async function POST(req: Request) {
     const { error: insertError } = await supabase
       .from("swipes")
       .upsert(
-        { swiper: swiperId, swiped: swipedId, action },
-        { onConflict: "swiper,swiped", ignoreDuplicates: true }
+        { swiper_id: swiper_id, swiped_id: swiped_id, action },
+        { onConflict: "swiper_id,swiped_id", ignoreDuplicates: true }
       );
 
     if (insertError) {
@@ -36,8 +38,8 @@ export async function POST(req: Request) {
       const { data: reciprocal, error: recError } = await supabase
         .from("swipes")
         .select("*")
-        .eq("swiper", swipedId)
-        .eq("swiped", swiperId)
+        .eq("swiper_id", swiper_id)
+        .eq("swiped_id", swiped_id)
         .eq("action", "like")
         .limit(1)
         .maybeSingle();
@@ -46,7 +48,7 @@ export async function POST(req: Request) {
 
       if (reciprocal) {
         // สร้าง match (unique index จะป้องกันซ้ำ)
-        const [a, b] = [swiperId, swipedId].sort();
+        const [a, b] = [swiper_id, swiped_id].sort();
         const { error: matchError } = await supabase
           .from("matches")
           .upsert(
@@ -57,13 +59,14 @@ export async function POST(req: Request) {
         if (matchError) {
           // ถ้า error แต่น่าจะไม่สำคัญ — log แล้วต่อ
           console.error("Match create error:", matchError.message);
-        } else {
-          // สร้าง notification ให้ทั้งสองคน (optional)
-          await supabase.from("notifications").insert([
-            { user_id: swiperId, type: "match", payload: { with: swipedId } },
-            { user_id: swipedId, type: "match", payload: { with: swiperId } },
-          ]);
-        }
+        } 
+        // else {
+        //   // สร้าง notification ให้ทั้งสองคน (optional)
+        //   await supabase.from("notifications").insert([
+        //     { profiles_id: swiperId, type: "match", payload: { with: swipedId } },
+        //     { profiles_id: swipedId, type: "match", payload: { with: swiperId } },
+        //   ]);
+        // }
 
         return NextResponse.json({ message: "Liked — it's a match!", match: true });
       }
