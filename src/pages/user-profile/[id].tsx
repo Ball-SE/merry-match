@@ -18,6 +18,8 @@ interface UserProfile {
 export default function UserProfileView() {
   const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Mock data for Jon Snow
   const profile: UserProfile = {
@@ -34,10 +36,47 @@ export default function UserProfileView() {
     photos: ['/assets/jon-snow-1.jpg', '/assets/jon-snow-2.jpg']
   };
 
-  const handleLike = () => alert('You liked this profile! ❤️');
-  const handlePass = () => alert('You passed this profile! ✕');
+  const handleLike = () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // จำลองการเรียก API
+      setTimeout(() => {
+        alert('You liked this profile! ❤️');
+        setLoading(false);
+      }, 1000);
+    } catch (error) {
+      handleError('Failed to like profile. Please try again.');
+    }
+  };
+  
+  const handlePass = () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // จำลองการเรียก API
+      setTimeout(() => {
+        alert('You passed this profile! ✕');
+        setLoading(false);
+      }, 1000);
+    } catch (error) {
+      handleError('Failed to pass profile. Please try again.');
+    }
+  };
+
   const handleClose = () => {
     router.push('/');
+  };
+
+  const handleError = (errorMessage: string) => {
+    setError(errorMessage);
+    setLoading(false);
+  };
+  
+  const clearError = () => {
+    setError(null);
   };
 
   const nextImage = () => setCurrentImageIndex(prev => 
@@ -58,6 +97,32 @@ export default function UserProfileView() {
       
       {/* Profile Popup Container */}
       <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span>{error}</span>
+              <button 
+                onClick={clearError}
+                className="text-red-500 hover:text-red-700"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C70039] mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        )}
+        
         {/* Close Button */}
         <div className="absolute top-6 right-6 z-50">
           <button 
@@ -134,27 +199,27 @@ export default function UserProfileView() {
             {/* Profile Details */}
             <div className="space-y-2">
               <div className="flex items-center">
-                <span className="text-[#9AA1B9] text-base w-32">Sexual identities:</span>
-                <span className="font-medium text-gray-800 text-base ml-8">{profile.sexualIdentities}</span>
+                <span className="text-gray-900 text-base w-32">Sexual identities:</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile.sexualIdentities}</span>
               </div>
               <div className="flex items-center whitespace-nowrap">
-                <span className="text-[#9AA1B9] text-base w-32">Sexual preferences:</span>
-                <span className="font-medium text-gray-800 text-base ml-8">{profile.sexualPreferences}</span>
+                <span className="text-gray-900 text-base w-32">Sexual preferences:</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile.sexualPreferences}</span>
               </div>
               <div className="flex items-center whitespace-nowrap">
-                <span className="text-[#9AA1B9] text-base w-32">Racial preferences:</span>
-                <span className="font-medium text-gray-800 text-base ml-8">{profile.racialPreferences}</span>
+                <span className="text-gray-900 text-base w-32">Racial preferences:</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile.racialPreferences}</span>
               </div>
               <div className="flex items-center whitespace-nowrap">
-                <span className="text-[#9AA1B9] text-base w-32">Meeting interests:</span>
-                <span className="font-medium text-gray-800 text-base ml-8">{profile.meetingInterests}</span>
+                <span className="text-gray-900 text-base w-32">Meeting interests:</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile.meetingInterests}</span>
               </div>
             </div>
             
             {/* About Me */}
             <div>
               <h3 className="font-semibold text-gray-800 mb-2 text-base">About me</h3>
-              <p className="text-[#9AA1B9] italic text-base leading-relaxed">"{profile.aboutMe}"</p>
+              <p className="text-gray-900 italic text-base leading-relaxed">"{profile.aboutMe}"</p>
             </div>
             
             {/* Hobbies */}
