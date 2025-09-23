@@ -7,7 +7,7 @@ export default function PackagePage() {
             <NavBar />
             
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-40">
+            <div className="container mx-auto px-4 py-10">
                 {/* Header Section */}
                 <div className="mb-12 ml-46">
                     <p className="text-sm text-[#7B4429] uppercase tracking-wider mb-2">MERRY MEMBERSHIP</p>
