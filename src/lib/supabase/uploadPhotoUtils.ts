@@ -8,15 +8,13 @@ export interface UploadResult {
 
 export const uploadProfilePhoto = async (
   file: File, 
-  userId: string, 
+  folderPath: string,   // เปลี่ยนจาก userId -> folderPath
   photoIndex: number
 ): Promise<UploadResult> => {
   try {
-    // สร้างชื่อไฟล์ที่ unique
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}/photo_${photoIndex}_${Date.now()}.${fileExt}`;
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${folderPath}/photo_${photoIndex}_${Date.now()}.${fileExt}`;
 
-    // Upload ไฟล์ไปยัง Supabase Storage
     const { data, error } = await supabase.storage
       .from('profile-photos')
       .upload(fileName, file, {
@@ -29,13 +27,11 @@ export const uploadProfilePhoto = async (
       return { success: false, error: error.message };
     }
 
-    // ได้ URL ของรูปที่ upload แล้ว
     const { data: { publicUrl } } = supabase.storage
       .from('profile-photos')
       .getPublicUrl(fileName);
 
     return { success: true, url: publicUrl };
-
   } catch (error: any) {
     console.error('Upload error:', error);
     return { success: false, error: error.message };

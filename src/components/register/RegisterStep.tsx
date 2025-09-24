@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
+import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
 
 interface FormData {
   name: string;
@@ -35,8 +36,10 @@ export default function RegisterStep({
 }: Props) {
   if (currentStep === 1) return <Step1 formData={formData} handleInputChange={handleInputChange} />;
   if (currentStep === 2) return <Step2 formData={formData} handleInputChange={handleInputChange} setInterests={setInterests} />;
-  return <Step3 photos={formData.photos} setPhotos={setPhotos} />;
+  return <Step3 formData={formData} photos={formData.photos} setPhotos={setPhotos} />;
 }
+
+
 
 /* ------------------------------ Step 1 ------------------------------ */
 function Step1({
@@ -58,7 +61,7 @@ function Step1({
   const getInputClassName = (fieldName: string) => {
     const baseClass = "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const hasError = touched[fieldName] && errors[fieldName];
-    
+
     if (hasError) {
       return `${baseClass} border-red-500 focus:ring-red-500`;
     }
@@ -238,7 +241,7 @@ function Step2({
   const getInputClassName = (fieldName: string) => {
     const baseClass = "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const hasError = touched[fieldName] && errors[fieldName];
-    
+
     if (hasError) {
       return `${baseClass} border-red-500 focus:ring-red-500`;
     }
@@ -378,8 +381,8 @@ function Step2({
               disabled={(formData.interests || []).length >= 10}
               className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039] disabled:bg-gray-100"
             />
-            <button 
-              onClick={addChip} 
+            <button
+              onClick={addChip}
               disabled={(formData.interests || []).length >= 10}
               className="button-primary bg-[#C70039] text-white disabled:opacity-50"
             >
@@ -396,37 +399,100 @@ function Step2({
 }
 
 /* ------------------------------ Step 3 ------------------------------ */
+
 function Step3({
+  formData,
   photos,
   setPhotos,
 }: {
+  formData: FormData;
   photos: string[];
   setPhotos: (next: string[]) => void;
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<boolean[]>(Array(5).fill(false));
+  const folderRef = useRef(
+    formData.email
+      ? `${formData.email.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '_').slice(0, 24)}`
+      : `temp-user-${Date.now()}`
+  );
 
   const validateCurrentPhotos = () => {
     const validation = validatePhotos(photos);
     setErrors(validation.errors);
   };
 
-  const onFiles = (files: FileList | null) => {
-    if (!files) return;
-    const readers = Array.from(files).slice(0, 6 - photos.length).map(file => {
-      return new Promise<string>((resolve) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result));
-        r.readAsDataURL(file);
+  const onFiles = async (files: FileList | null, index: number) => {
+    if (!files || files.length === 0) return;
+
+    let file = files[0];
+
+    // ตรวจสอบขนาดไฟล์ (10MB = 10 * 1024 * 1024 bytes)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('you cannot upload more than 10MB');
+      return;
+    }
+
+    // ตรวจสอบประเภทไฟล์
+    if (!file.type.startsWith('image/')) {
+      alert('please select only image files');
+      return;
+    }
+
+    // บีบอัดถ้าไฟล์ใหญ่กว่า 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      try {
+        const { compressImageToTarget } = await import('@/lib/image/browserImageProcessor');
+        file = await compressImageToTarget(file, 2 * 1024 * 1024);
+      } catch (e) {
+        console.error('Compress failed:', e);
+        alert('Failed to compress image');
+        return;
+      }
+    }
+
+
+
+    setUploading(prev => {
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+
+    try {
+      // สำหรับ demo ใช้ temporary user ID
+      // ในการใช้งานจริงควรได้จาก auth context
+
+      const result = await uploadProfilePhoto(file, folderRef.current, index);
+
+      if (result.success && result.url) {
+        const newPhotos = [...photos];
+        newPhotos[index] = result.url;
+        setPhotos(newPhotos);
+        validateCurrentPhotos();
+      } else {
+        alert(result.error || 'upload photo failed');
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      alert('upload photo failed');
+    } finally {
+      setUploading(prev => {
+        const next = [...prev];
+        next[index] = false;
+        return next;
       });
-    });
-    Promise.all(readers).then(urls => {
-      const newPhotos = [...(photos || []), ...urls];
-      setPhotos(newPhotos);
-      validateCurrentPhotos();
-    });
+    }
   };
 
-  const remove = (idx: number) => {
+  const remove = async (idx: number) => {
+    const photoUrl = photos[idx];
+
+    // ลบรูปจาก Storage ถ้าเป็น URL จริง (ไม่ใช่ data URL)
+    if (photoUrl && photoUrl.startsWith('http')) {
+      await deleteProfilePhoto(photoUrl);
+    }
+
     const next = [...photos];
     next.splice(idx, 1);
     setPhotos(next);
@@ -439,14 +505,20 @@ function Step3({
       <p className="mb-6 text-sm text-gray-600">Upload at least 2 photos</p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-        {[0, 1, 2, 3, 4, 5].map((i) => {
+        {[0, 1, 2, 3, 4].map((i) => {
           const url = photos[i];
+          const isUploading = uploading[i];
+
           return (
             <div key={i} className="relative">
-              <div className={`flex aspect-square items-center justify-center rounded-xl border-2 border-dashed bg-gray-50 ${
-                photos.length < 2 && i < 2 ? 'border-red-300' : 'border-gray-300'
-              }`}>
-                {url ? (
+              <div className={`flex aspect-square items-center justify-center rounded-xl border-2 border-dashed bg-gray-50 ${photos.length < 2 && i < 2 ? 'border-red-300' : 'border-gray-300'
+                }`}>
+                {isUploading ? (
+                  <div className="text-center">
+                    <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#C70039]"></div>
+                    <span className="text-xs text-gray-500">Uploading...</span>
+                  </div>
+                ) : url ? (
                   <img src={url} alt={`photo-${i}`} className="h-full w-full rounded-xl object-cover" />
                 ) : (
                   <div className="text-center">
@@ -458,21 +530,21 @@ function Step3({
                 )}
               </div>
 
-              {!url ? (
+              {!url && !isUploading ? (
                 <input
                   type="file"
                   accept="image/*"
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  onChange={(e) => onFiles(e.target.files)}
+                  onChange={(e) => onFiles(e.target.files, i)}
                 />
-              ) : (
+              ) : url && !isUploading ? (
                 <button
                   onClick={() => remove(i)}
                   className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C70039] text-white hover:bg-[#950028]"
                 >
                   ×
                 </button>
-              )}
+              ) : null}
             </div>
           );
         })}
@@ -483,7 +555,7 @@ function Step3({
       )}
 
       <div className="mt-4 text-sm text-gray-500">
-        {photos.length}/6 photos uploaded
+        {photos.length}/5 photos uploaded
       </div>
     </div>
   );
