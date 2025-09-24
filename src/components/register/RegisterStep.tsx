@@ -440,10 +440,10 @@ function Step3({
     }
 
     // บีบอัดถ้าไฟล์ใหญ่กว่า 2MB
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 1 * 1024 * 1024) {
       try {
         const { compressImageToTarget } = await import('@/lib/image/browserImageProcessor');
-        file = await compressImageToTarget(file, 2 * 1024 * 1024);
+        file = await compressImageToTarget(file, 1 * 1024 * 1024);
       } catch (e) {
         console.error('Compress failed:', e);
         alert('Failed to compress image');
