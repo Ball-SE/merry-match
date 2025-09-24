@@ -1,4 +1,3 @@
-import { Link as ScrollLink } from "react-scroll";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import UserProfileNavbar from "./UserProfileNavbar";
@@ -6,10 +5,12 @@ import { slide as Menu } from "react-burger-menu";
 import { AlertNotification } from "./AlertNotification";
 import MessageNavbar from "./MessageNavbar";
 import Image from "next/image";
+import { useProfile } from "../hooks/useProfile";
 
 function NavBarUsers() {
     const [isOpen, setIsOpen] = useState(false);
     const [isOpenUserProfile, setIsOpenUserProfile] = useState(false);
+    const {profile} = useProfile();
 
     const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -48,15 +49,17 @@ function NavBarUsers() {
                         </div>
                         )}
                         <button onClick={handleOpenUserProfile}>
-                            <Image 
-                            src="/assets/knal.png" 
-                            alt="user"
-                            width={50}
-                            height={40}
-                            objectFit="cover"
-                            objectPosition="center"
-                            className="rounded-full"
-                            />
+                            {profile?.photo_url && (
+                                <Image 
+                                src={profile.photo_url} 
+                                alt="user"
+                                width={50}
+                                height={50}
+                                objectFit="cover"
+                                objectPosition="center"
+                                className="rounded-full w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-cover"
+                                />
+                            )}
                         </button>
                     </div>
                 </div>

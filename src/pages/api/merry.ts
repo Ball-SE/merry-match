@@ -52,8 +52,8 @@ export default async function POST(req: Request) {
         const { error: matchError } = await supabase
           .from("matches")
           .upsert(
-            { user_a: a, user_b: b },
-            { onConflict: "user_a,user_b", ignoreDuplicates: true }
+            { user1_id: a, user2_id: b },
+            { onConflict: "user1_id,user2_id", ignoreDuplicates: true }
           )
 
         if (matchError) {
