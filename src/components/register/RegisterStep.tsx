@@ -2,6 +2,9 @@ import { useState, useRef } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
 
+import { EXTRA_LOCATION_OPTIONS } from "@/data/extraLocations";
+import { DISTRICTS_BY_PROVINCE } from "@/data/districtis";
+
 interface FormData {
   name: string;
   dateOfBirth: string;
@@ -38,6 +41,8 @@ export default function RegisterStep({
   if (currentStep === 2) return <Step2 formData={formData} handleInputChange={handleInputChange} setInterests={setInterests} />;
   return <Step3 formData={formData} photos={formData.photos} setPhotos={setPhotos} />;
 }
+
+
 
 
 
@@ -112,7 +117,12 @@ function Step1({
             <select
               name="location"
               value={formData.location}
-              onChange={handleInputChange}
+              onChange={(e) => {
+                handleInputChange(e);
+                // รีเซ็ต city เมื่อเปลี่ยนจังหวัด
+                const resetCity = { target: { name: "city", value: "" } } as any;
+                handleInputChange(resetCity);
+              }}
               onBlur={() => handleBlur('location')}
               className={getInputClassName('location')}
             >
@@ -120,6 +130,12 @@ function Step1({
               <option value="bangkok">Bangkok</option>
               <option value="chiang-mai">Chiang Mai</option>
               <option value="phuket">Phuket</option>
+
+              {EXTRA_LOCATION_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
             {touched.location && errors.location && (
               <p className="mt-1 text-sm text-red-500">{errors.location}</p>
@@ -133,12 +149,15 @@ function Step1({
               value={formData.city}
               onChange={handleInputChange}
               onBlur={() => handleBlur('city')}
-              className={getInputClassName('city')}
+              disabled={!formData.location}
+              className={`${getInputClassName('city')} ${!formData.location ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
             >
-              <option value="">Select city</option>
-              <option value="chatuchak">Chatuchak</option>
-              <option value="sukhumvit">Sukhumvit</option>
-              <option value="silom">Silom</option>
+              <option value="">{!formData.location ? 'Select location first' : 'Select city'}</option>
+              {(DISTRICTS_BY_PROVINCE[formData.location] || []).map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
             </select>
             {touched.city && errors.city && (
               <p className="mt-1 text-sm text-red-500">{errors.city}</p>
