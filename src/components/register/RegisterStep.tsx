@@ -413,7 +413,7 @@ function Step3({
   const [uploading, setUploading] = useState<boolean[]>(Array(5).fill(false));
   const folderRef = useRef(
     formData.email
-      ? `${formData.email.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '-').slice(0, 24)}`
+      ? `${formData.email.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '_').slice(0, 24)}`
       : `temp-user-${Date.now()}`
   );
 
