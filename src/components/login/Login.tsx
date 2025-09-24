@@ -1,8 +1,8 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { validateEmail } from '@/middleware/validation';
 import Image from 'next/image';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,6 +19,7 @@ export default function LoginPage() {
     }
     checkSession()
 
+    //onAuthStateChange จับได้ว่ามี session ใหม่ → redirect ไป '/'
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) router.push('/')
     })
@@ -27,12 +28,6 @@ export default function LoginPage() {
       authListener?.subscription.unsubscribe()
     }
   }, [router])
-
-  // Email validation function
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
@@ -46,16 +41,35 @@ export default function LoginPage() {
       return
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    setLoading(false)
-    if (error) {
-      setErrorMsg("Invalid email or password")
-    } else {
-      console.log('login ok', data)
+      const result = await response.json()
+
+      setLoading(false)
+      if (!result.success) {
+        setErrorMsg(result.message || "Invalid email or password")
+      } else {
+        console.log('login ok', result)
+        // Set the session in the client
+        if (result.session && result.session.access_token && result.session.refresh_token) {
+          await supabase.auth.setSession({
+            access_token: result.session.access_token,
+            refresh_token: result.session.refresh_token
+          })
+        }
+        // The useEffect will redirect the user when auth state changes
+      }
+    } catch (error) {
+      setLoading(false)
+      setErrorMsg("An error occurred. Please try again.")
+      console.error('Login error:', error)
     }
   }
 
