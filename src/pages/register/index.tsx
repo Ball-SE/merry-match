@@ -19,7 +19,7 @@ export default function Home() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
-    dateOfBirth:  getDefaultBirthDate(), // ตั้งค่าเริ่มต้นเป็น 18 ปีที่แล้ว
+    dateOfBirth: getDefaultBirthDate(), // ตั้งค่าเริ่มต้นเป็น 18 ปีที่แล้ว
     location: "",
     city: "",
     username: "",
@@ -83,10 +83,10 @@ export default function Home() {
 
       // แสดงข้อความสำเร็จ
       // alert(result.message || 'Register Successfully');
-      
+
       // เปลี่ยนเส้นทางไปหน้า login
       router.push("/login");
-      
+
     } catch (error: any) {
       console.error('Registration error:', error);
       setError(error.message);
@@ -112,15 +112,17 @@ export default function Home() {
 
       <div className="mx-auto max-w-6xl px-4 py-10">
         {/* Header row */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <span className="text-[#7B4429] text-lg font-semibold">REGISTER</span>
             <h1 className="mt-2 text-6xl font-extrabold text-[#A62D82]">
               Join us and start<br />matching
             </h1>
+          </div >
+          <div className="items-end mt-10 mr-10">
+            <StepIndicator currentStep={currentStep} titles={titles} />
           </div>
 
-          <StepIndicator currentStep={currentStep} titles={titles} />
         </div>
 
         {/* Middle: Register steps */}
