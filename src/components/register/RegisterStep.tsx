@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
 
@@ -430,11 +430,34 @@ function Step3({
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<boolean[]>(Array(5).fill(false));
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const folderRef = useRef(
     formData.email
       ? `${formData.email.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '_').slice(0, 24)}`
       : `temp-user-${Date.now()}`
   );
+
+  // Drag & Drop handlers
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      onFiles(files, index);
+    }
+  };
+
 
   const validateCurrentPhotos = () => {
     const validation = validatePhotos(photos);
@@ -458,7 +481,7 @@ function Step3({
       return;
     }
 
-    // บีบอัดถ้าไฟล์ใหญ่กว่า 2MB
+    // บีบอัดถ้าไฟล์ใหญ่กว่า 1MB
     if (file.size > 1 * 1024 * 1024) {
       try {
         const { compressImageToTarget } = await import('@/lib/image/browserImageProcessor');
@@ -521,30 +544,44 @@ function Step3({
   return (
     <div>
       <h2 className="mb-2 text-2xl font-semibold text-[#2A0B21]">Profile pictures</h2>
-      <p className="mb-6 text-sm text-gray-600">Upload at least 2 photos</p>
+      <p className="mb-6 text-sm text-gray-600">Upload at least 2 photos (drag & drop supported)</p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => {
           const url = photos[i];
           const isUploading = uploading[i];
+          const isDragOver = dragOverIndex === i;
 
           return (
-            <div key={i} className="relative">
-              <div className={`flex aspect-square items-center justify-center rounded-xl border-2 border-dashed bg-gray-50 ${photos.length < 2 && i < 2 ? 'border-red-300' : 'border-gray-300'
+            <div
+              key={i}
+              className="relative"
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, i)}
+            >
+              <div className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-colors ${isDragOver
+                ? 'border-[#A62D82] bg-[#C70039]/10'
+                : photos.length < 2 && i < 2
+                  ? 'border-red-300'
+                  : 'border-gray-300'
                 }`}>
                 {isUploading ? (
                   <div className="text-center">
-                    <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#C70039]"></div>
+                    <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#A62D82]"></div>
                     <span className="text-xs text-gray-500">Uploading...</span>
                   </div>
                 ) : url ? (
                   <img src={url} alt={`photo-${i}`} className="h-full w-full rounded-xl object-cover" />
                 ) : (
                   <div className="text-center">
-                    <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#C70039] text-white">+</div>
-                    <span className="text-xs text-gray-500">
+                    <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full  text-[#A62D82]">+</div>
+                    <span className="text-sm font-medium text-[#A62D82]">
                       {i === 0 ? "Main photo" : "Upload photo"}
                     </span>
+                    {isDragOver && (
+                      <span className="text-xs text-[#A62D82] font-medium">Drop here!</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -569,13 +606,15 @@ function Step3({
         })}
       </div>
 
-      {errors.photos && (
-        <p className="mt-4 text-sm text-red-500">{errors.photos}</p>
-      )}
+      {
+        errors.photos && (
+          <p className="mt-4 text-sm text-red-500">{errors.photos}</p>
+        )
+      }
 
       <div className="mt-4 text-sm text-gray-500">
         {photos.length}/5 photos uploaded
       </div>
-    </div>
+    </div >
   );
 }

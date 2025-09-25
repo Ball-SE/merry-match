@@ -271,3 +271,16 @@ body {
     rgba(0, 0, 0, 0)
   );
 }
+
+/* Drag & Drop styles */
+.drag-over {
+  border-color: #C70039 !important;
+  background-color: rgba(199, 0, 57, 0.1) !important;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+.drag-active {
+  border-color: #C70039 !important;
+  background-color: rgba(199, 0, 57, 0.05) !important;
+}
