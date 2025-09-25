@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { FaHeart, FaEye, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
-import ProfileModal from "./ProfileModal";
+import UserProfilePopup from "./UserProfilePopup";
 import SwipeDeck, { Card } from "@/components/swipe/SwipeDeck";
 import { useMatchingProfiles } from "@/hooks/useMatchingProfiles";
 import { useMatchingContext } from "@/context/MatchingContext";
