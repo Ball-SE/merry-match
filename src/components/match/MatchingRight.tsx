@@ -8,7 +8,7 @@ function MatchingRight() {
     const [ageRange, setAgeRange] = useState([18, 50])
 
     return (
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col pt-5">
             <h1 className="text-black text-base font-bold">Gender you interest</h1>
             <div className="flex flex-col gap-2 mt-5">
                 <div className="flex items-center gap-2">

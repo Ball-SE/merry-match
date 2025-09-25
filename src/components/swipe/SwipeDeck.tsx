@@ -65,12 +65,22 @@ export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0
   const throwX = Math.sign(dx || 1) * 1200;
 
   return (
-    <div style={{position:'relative', width:'100%', maxWidth:420, margin:'0 auto', height:'70vh'}}>
+    <div style={{
+      position:'relative', 
+      width:'100%', 
+      maxWidth: '100%',
+      margin:'0 auto', 
+      height: 'clamp(400px, 70vh, 700px)', // Responsive height with min/max constraints
+      aspectRatio: '3/4' // Maintain consistent aspect ratio
+    }}>
       {rest.slice(0, 3).map((c, i) => (
         <div
           key={c.id}
           style={{
-            position:'absolute', inset:0, borderRadius:16, boxShadow:'0 12px 30px rgba(0,0,0,.25)',
+            position:'absolute', 
+            inset:0, 
+            borderRadius: 'clamp(12px, 2vw, 20px)', // Responsive border radius
+            boxShadow:'0 12px 30px rgba(0,0,0,.25)',
             background:'#111',
             transform:`scale(${1 - (i+1)*0.03}) translateY(${(i+1)*10}px)`
           }}
@@ -80,7 +90,10 @@ export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0
       <div
         {...handlers}
         style={{
-          position:'absolute', inset:0, borderRadius:16, overflow:'hidden',
+          position:'absolute', 
+          inset:0, 
+          borderRadius: 'clamp(12px, 2vw, 20px)', // Responsive border radius
+          overflow:'hidden',
           boxShadow:'0 20px 40px rgba(0,0,0,.35)',
           cursor: dragging ? 'grabbing' : 'grab',
           transform: dragging
@@ -97,24 +110,34 @@ export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0
         <img 
           src={top.img[currentImageIndex] || top.img[0]} 
           alt={top.title + ' ' + top.age} 
-          style={{width:'100%', height:'100%', objectFit:'cover'}} 
+          style={{
+            width:'100%', 
+            height:'100%', 
+            objectFit:'cover',
+            objectPosition: 'center',
+            display: 'block', // Prevent inline spacing issues
+            userSelect: 'none', // Prevent text selection
+            WebkitUserSelect: 'none', // Safari
+            MozUserSelect: 'none', // Firefox
+            msUserSelect: 'none' // IE
+          }} 
         />
         
         {/* แสดงจุดบอกจำนวนรูปภาพ */}
         {top.img.length > 1 && (
           <div style={{
             position: 'absolute',
-            top: 16,
-            right: 16,
+            top: 'clamp(12px, 3vw, 20px)', // Responsive positioning
+            right: 'clamp(12px, 3vw, 20px)',
             display: 'flex',
-            gap: 4
+            gap: 'clamp(3px, 1vw, 6px)' // Responsive gap
           }}>
             {top.img.map((_, index) => (
               <div
                 key={index}
                 style={{
-                  width: 8,
-                  height: 8,
+                  width: 'clamp(6px, 1.5vw, 10px)', // Responsive dot size
+                  height: 'clamp(6px, 1.5vw, 10px)',
                   borderRadius: '50%',
                   backgroundColor: index === currentImageIndex ? '#fff' : 'rgba(255,255,255,0.5)',
                   transition: 'background-color 0.2s'
@@ -125,10 +148,14 @@ export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0
         )}
 
         <div style={{
-          position:'absolute', left:0, right:0, bottom:0, padding:'12px 16px',
-          color:'#fff', background:'linear-gradient( to top, rgba(0,0,0,.55), transparent )'
+          position:'absolute', 
+          left:0, 
+          right:0, 
+          bottom:0, 
+          padding:'clamp(8px, 2vw, 16px) clamp(12px, 3vw, 20px)', // Responsive padding
+          color:'#fff', 
+          background:'linear-gradient( to top, rgba(0,0,0,.55), transparent )'
         }}>
-          {/* <strong>{top.title}</strong> */}
         </div>
       </div>
 

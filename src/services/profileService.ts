@@ -100,6 +100,7 @@ export async function getMatchingProfiles(): Promise<Profile[]> {
       return [];
     }
 
+    // ดึงข้อมูลทั้งหมดก่อน แล้วค่อยกรองใน JavaScript
     const { data, error } = await supabase
       .from('profiles')
       .select(`
@@ -113,18 +114,63 @@ export async function getMatchingProfiles(): Promise<Profile[]> {
         city
       `)
       .neq('id', user.id)
-      .not('photos', 'is', null)
-      .not('photos', 'eq', '[]')
-      .limit(20);
+      .limit(50); // เพิ่ม limit เพื่อให้มีข้อมูลมากขึ้นหลังจากกรอง
 
     if (error) {
       console.error('Profiles fetch error:', error);
       return [];
     }
 
-    return data || [];
+    // กรองข้อมูลใน JavaScript
+    const filteredProfiles = (data || []).filter(profile => {
+      // ต้องมีรูปภาพ (photos หรือ photo_url)
+      const hasPhotos = (profile.photos && Array.isArray(profile.photos) && profile.photos.length > 0) ||
+                       (profile.photo_url && profile.photo_url.trim() !== '');
+      
+      // ต้องมีชื่อและอายุ
+      const hasBasicInfo = profile.name && profile.name.trim() !== '' && profile.age;
+      
+      return hasPhotos && hasBasicInfo;
+    }).slice(0, 20); // จำกัดผลลัพธ์เป็น 20 records
+
+    console.log(`Found ${filteredProfiles.length} matching profiles`);
+    return filteredProfiles;
   } catch (error) {
     console.error('Error getting matching profiles:', error);
     return [];
+  }
+}
+
+// เพิ่มฟังก์ชันสำหรับบันทึกการ like/pass
+export async function recordSwipeAction(
+  targetUserId: string, 
+  action: 'like' | 'pass'
+): Promise<boolean> {
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('swipes') // สมมติว่ามี table swipes
+      .insert({
+        user_id: user.id,
+        target_user_id: targetUserId,
+        action: action,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Error recording swipe action:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error recording swipe action:', error);
+    return false;
   }
 }
