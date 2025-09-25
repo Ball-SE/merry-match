@@ -321,7 +321,7 @@ export default function ProfilePage() {
               </h1>
               <div className="flex items-center text-gray-600">
                 <span className="text-[#C70039] mr-2 text-base">📍</span>
-                <span className="text-gray-700 text-base">{profile?.city || 'Location not set'}</span>
+                <span className="text-gray-700 text-base">{profile?.city || 'Bangkok, Thailand'}</span>
               </div>
             </div>
             
