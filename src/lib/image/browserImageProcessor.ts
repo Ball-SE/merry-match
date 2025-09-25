@@ -1,6 +1,6 @@
 export async function compressImageToTarget(
     file: File, 
-    targetBytes = 2 * 1024 * 1024
+    targetBytes = 1 * 1024 * 1024
   ): Promise<File> {
     return new Promise((resolve, reject) => {
       const img = new Image();

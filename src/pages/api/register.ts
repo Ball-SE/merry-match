@@ -59,21 +59,19 @@ export default async function handler(
         email: formData.email,
         username: formData.username,
         date_of_birth: formData.dateOfBirth,
-        city: formData.city,
 
         // ใช้ field ที่มีใน database โดยตรง
         gender: formData.sexualIdentities,
         sexual_preferences: formData.sexualPreferences,
         racial_preferences: formData.racialPreferences,
         meeting_interests: formData.meetingInterests,
-        sexual_identities: formData.sexualIdentities,
 
         // สำหรับ array fields
         interests: formData.interests || [],
         photos: formData.photos || [],
 
         // ข้อมูลเพิ่มเติม
-        bio: formData.meetingInterests || "",
+        bio: "",
         photo_url:
           formData.photos && formData.photos.length > 0
             ? formData.photos[0]

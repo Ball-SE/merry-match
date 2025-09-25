@@ -7,6 +7,14 @@
 @theme {
     --font-nunito: "Nunito", sans-serif;
     --font-sans: var(--font-poppins);
+    --breakpoint-2xl: 1920px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-md: 768px;
+    --breakpoint-sm: 640px;
+    --breakpoint-xs: 480px;
+    --breakpoint-2xs: 320px;
+    --breakpoint-xs: 24rem;
 }
 :root {
   --background: oklch(1 0 0);
@@ -94,6 +102,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Nunito";
+  /* width: 1920px;               
+  margin: 0 auto;              
+  overflow-x: auto;           */
 }
 
 .header-1{
@@ -259,4 +270,17 @@ body {
     rgba(0, 0, 0, 0.1),
     rgba(0, 0, 0, 0)
   );
+}
+
+/* Drag & Drop styles */
+.drag-over {
+  border-color: #C70039 !important;
+  background-color: rgba(199, 0, 57, 0.1) !important;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+.drag-active {
+  border-color: #C70039 !important;
+  background-color: rgba(199, 0, 57, 0.05) !important;
 }
