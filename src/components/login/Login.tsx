@@ -65,18 +65,19 @@ export default function LoginPage() {
           })
         }
         // The useEffect will redirect the user when auth state changes
+        // ตรวจสอบ admin role และ redirect
+        if (result.user?.app_metadata?.is_admin === true) {
+          router.push('/admin')
+        } else {
+          router.push('/')
+        }
       }
     } catch (error) {
       setLoading(false)
       setErrorMsg("An error occurred. Please try again.")
       console.error('Login error:', error)
 
-      // ตรวจสอบ admin role และ redirect
-      if (data.user?.app_metadata?.is_admin === true) {
-        router.push('/admin')
-      } else {
-        router.push('/')
-      }
+      
     }
   }
 
