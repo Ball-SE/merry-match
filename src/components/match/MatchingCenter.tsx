@@ -2,7 +2,7 @@ import Image from "next/image";
 import { useState, useRef } from "react";
 import { FaHeart, FaEye, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
-import ProfileModal from "./ProfileModal";
+import UserProfilePopup from "./UserProfilePopup";
 import SwipeDeck, { Card } from "@/components/swipe/SwipeDeck";
 
 const demoItems: Card[] = [
@@ -129,8 +129,13 @@ function MatchingCenter() {
         </div>
       </div>
 
-      {/* Profile Modal */}
-      <ProfileModal isOpen={openProfile} onClose={closeProfile} />
+      {/* User Profile Popup */}
+      <UserProfilePopup 
+        isOpen={openProfile} 
+        onClose={closeProfile}
+        userId="8943808f-9f64-4fda-b659-d22b4649088e"
+        cardData={currentCard || undefined}
+      />
     </div>
   );
 }
