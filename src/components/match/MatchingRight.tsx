@@ -17,11 +17,15 @@ function MatchingRight() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Checkbox />
+                    <label htmlFor="Female">Male</label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Checkbox />
                     <label htmlFor="Female">Female</label>
                 </div>
                 <div className="flex items-center gap-2">
                     <Checkbox />
-                    <label htmlFor="Non-bunary people">Non-bunary people</label>
+                    <label htmlFor="Non-bunary people">Non-binary people</label>
                 </div>
             </div>
 
