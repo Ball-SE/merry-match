@@ -1,79 +1,71 @@
-export const runtime = "edge";
+// pages/api/merry.ts
+import type { NextApiRequest, NextApiResponse } from "next";
+import { createClient } from "@supabase/supabase-js";
 
-import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/supabaseClient";
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-type Body = {
-    swiper_id: string;
-    swiped_id: string;
-    action: "like" | "dislike";
-}
+  try {
+    // 1) รับ Bearer token จาก Postman
+    const auth = req.headers.authorization || "";
+    const token = auth.replace(/^Bearer\s+/i, "");
+    if (!token) return res.status(401).json({ error: "Missing bearer token" });
 
-export default async function POST(req: Request) {
-    try {
-        const body: Body = await req.json();
-        const { swiper_id, swiped_id, action } = body;
+    // 2) สร้าง Supabase client ที่ผูกกับ token นี้
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
 
-        if (!swiper_id || !swiped_id || !action) {
-            return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-          }
-        if (swiper_id === swiped_id) {
-            return NextResponse.json({ error: "Cannot swipe yourself" }, { status: 400 });
-          }
-        
-    // insert swipe (on conflict do nothing so user can't swipe same person twice)
-    const { error: insertError } = await supabase
+    // 3) หา user จาก token (สำคัญต่อ RLS)
+    const { data: { user }, error: getUserErr } = await supabase.auth.getUser();
+    if (getUserErr) return res.status(401).json({ error: getUserErr.message });
+    if (!user) return res.status(401).json({ error: "Invalid token" });
+
+    // 4) รับ body: ไม่รับ swiper_id จาก client เพื่อกันสวมรอย
+    const { swiped_id, action } = (typeof req.body === "string" ? JSON.parse(req.body) : req.body) as {
+      swiped_id?: string; action?: "like" | "dislike";
+    };
+    if (!swiped_id || !["like", "dislike"].includes(action as any))
+      return res.status(400).json({ error: "Missing fields" });
+    if (swiped_id === user.id)
+      return res.status(400).json({ error: "Cannot swipe yourself" });
+
+    // 5) บันทึก swipe
+    const { error: upErr } = await supabase
       .from("swipes")
       .upsert(
-        { swiper_id: swiper_id, swiped_id: swiped_id, action },
+        { swiper_id: user.id, swiped_id, action },
         { onConflict: "swiper_id,swiped_id", ignoreDuplicates: true }
       );
+    if (upErr) return res.status(500).json({ error: upErr.message });
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
-
-    // หากเป็น like — ตรวจว่าฝ่ายตรงข้ามเคย like เราไหม -> ถ้าใช่ สร้าง match
+    // 6) เช็ค like สวนกลับ (สลับข้างให้ถูก)
+    let matched = false;
     if (action === "like") {
-      const { data: reciprocal, error: recError } = await supabase
+      const { data: reciprocal, error: recErr } = await supabase
         .from("swipes")
-        .select("*")
-        .eq("swiper_id", swiper_id)
-        .eq("swiped_id", swiped_id)
+        .select("id")
+        .eq("swiper_id", swiped_id) // เขาเคยปัดเราไหม
+        .eq("swiped_id", user.id)
         .eq("action", "like")
-        .limit(1)
         .maybeSingle();
-
-      if (recError) return NextResponse.json({ error: recError.message }, { status: 500 });
+      if (recErr) return res.status(500).json({ error: recErr.message });
 
       if (reciprocal) {
-        // สร้าง match (unique index จะป้องกันซ้ำ)
-        const [a, b] = [swiper_id, swiped_id].sort();
-        const { error: matchError } = await supabase
+        const [a, b] = [user.id, swiped_id].sort();
+        const { error: matchErr } = await supabase
           .from("matches")
-          .upsert(
-            { user1_id: a, user2_id: b },
-            { onConflict: "user1_id,user2_id", ignoreDuplicates: true }
-          )
-
-        if (matchError) {
-          // ถ้า error แต่น่าจะไม่สำคัญ — log แล้วต่อ
-          console.error("Match create error:", matchError.message);
-        } 
-        // else {
-        //   // สร้าง notification ให้ทั้งสองคน (optional)
-        //   await supabase.from("notifications").insert([
-        //     { profiles_id: swiperId, type: "match", payload: { with: swipedId } },
-        //     { profiles_id: swipedId, type: "match", payload: { with: swiperId } },
-        //   ]);
-        // }
-
-        return NextResponse.json({ message: "Liked — it's a match!", match: true });
+          .upsert({ user1_id: a, user2_id: b }, { onConflict: "user1_id,user2_id", ignoreDuplicates: true });
+        if (matchErr) console.error("match upsert:", matchErr.message);
+        matched = true;
       }
     }
 
-    return NextResponse.json({ message: "Swipe saved", match: false });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return res.status(200).json({ message: matched ? "Liked — it's a match!" : "Swipe saved", match: matched });
+  } catch (e: any) {
+    console.error("merry API error:", e);
+    return res.status(500).json({ error: e?.message ?? "server error" });
   }
 }
