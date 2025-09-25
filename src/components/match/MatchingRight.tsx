@@ -1,64 +1,128 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useMatchingContext } from "@/context/MatchingContext"
 
 function MatchingRight() {
-    // สร้าง state สำหรับเก็บช่วงอายุ [อายุต่ำสุด, อายุสูงสุด]
-    // เริ่มต้นที่ 18-50 ปี
-    const [ageRange, setAgeRange] = useState([18, 50])
+    const { filters, updateFilters, applyFilters } = useMatchingContext();
+    
+    // ใช้ local state เพื่อให้ user ปรับแต่งได้ก่อนกด Search
+    const [localGenders, setLocalGenders] = useState<string[]>(filters.selectedGenders);
+    const [localAgeRange, setLocalAgeRange] = useState<number[]>(filters.ageRange);
+
+    // อัพเดท local state เมื่อ context เปลี่ยน
+    useEffect(() => {
+        setLocalGenders(filters.selectedGenders);
+        setLocalAgeRange(filters.ageRange);
+    }, [filters]);
+
+    // ฟังก์ชันสำหรับจัดการ checkbox
+    const handleGenderChange = (gender: string, checked: boolean) => {
+        if (checked) {
+            setLocalGenders(prev => [...prev, gender]);
+        } else {
+            setLocalGenders(prev => prev.filter(g => g !== gender));
+        }
+    }
+
+    // ฟังก์ชันสำหรับ search - อัพเดท context
+    const handleSearch = () => {
+        console.log("Selected genders:", localGenders);
+        console.log("Age range:", localAgeRange);
+        
+        // ตรวจสอบว่ามีการเลือก gender หรือไม่
+        if (localGenders.length === 0) {
+            alert("กรุณาเลือก gender อย่างน้อย 1 ตัวเลือก");
+            return;
+        }
+
+        // อัพเดท context ด้วยค่าใหม่
+        updateFilters({
+            selectedGenders: localGenders,
+            ageRange: localAgeRange
+        });
+
+        // เรียก applyFilters เพื่อให้ components อื่นๆ รู้ว่าต้องอัพเดท
+        applyFilters();
+    }
+
+    // ฟังก์ชันสำหรับ clear ทั้งหมด
+    const handleClear = () => {
+        setLocalAgeRange([18, 50]);
+        setLocalGenders(['default']);
+        
+        // อัพเดท context ด้วย
+        updateFilters({
+            selectedGenders: ['default'],
+            ageRange: [18, 50]
+        });
+        applyFilters();
+    }
 
     return (
         <div className="w-full h-full flex flex-col pt-5">
             <h1 className="text-black text-base font-bold">Gender you interest</h1>
             <div className="flex flex-col gap-2 mt-5">
                 <div className="flex items-center gap-2">
-                    <Checkbox />
-                    <label htmlFor="Fefault">Default</label>
+                    <Checkbox 
+                        id="default"
+                        checked={localGenders.includes("default")}
+                        onCheckedChange={(checked) => handleGenderChange("default", !!checked)}
+                    />
+                    <label htmlFor="default">Default</label>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Checkbox />
-                    <label htmlFor="Female">Male</label>
+                    <Checkbox 
+                        id="male"
+                        checked={localGenders.includes("male")}
+                        onCheckedChange={(checked) => handleGenderChange("male", !!checked)}
+                    />
+                    <label htmlFor="male">Male</label>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Checkbox />
-                    <label htmlFor="Female">Female</label>
+                    <Checkbox 
+                        id="female"
+                        checked={localGenders.includes("female")}
+                        onCheckedChange={(checked) => handleGenderChange("female", !!checked)}
+                    />
+                    <label htmlFor="female">Female</label>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Checkbox />
-                    <label htmlFor="Non-bunary people">Non-binary people</label>
+                    <Checkbox 
+                        id="non-binary"
+                        checked={localGenders.includes("non-binary")}
+                        onCheckedChange={(checked) => handleGenderChange("non-binary", !!checked)}
+                    />
+                    <label htmlFor="non-binary">Non-binary people</label>
                 </div>
             </div>
 
             <div className="mt-5 ">
                 <h1 className="text-black text-base font-bold">Age range</h1>
-                {/* Range Slider สำหรับเลือกช่วงอายุ */}
                 <Slider 
                     className="mt-5"
-                    min={18}                    // อายุต่ำสุด 18 ปี
-                    max={80}                    // อายุสูงสุด 80 ปี
-                    value={ageRange}            // ค่าปัจจุบันจาก state
-                    onValueChange={setAgeRange} // ฟังก์ชันอัพเดท state เมื่อลาก slider
-                    step={1}                    // เพิ่มทีละ 1 ปี
+                    min={18}
+                    max={80}
+                    value={localAgeRange}
+                    onValueChange={setLocalAgeRange}
+                    step={1}
                 />
             </div>
 
-            {/* Input fields ที่เชื่อมต่อกับ slider */}
             <div className="mt-5 flex flex-row gap-5 items-center">
-                {/* Input สำหรับอายุต่ำสุด */}
                 <input 
                     className="w-1/2 border border-gray-300 rounded-md p-2" 
-                    value={ageRange[0]}  // แสดงค่าอายุต่ำสุดจาก state
-                    onChange={(e) => setAgeRange([parseInt(e.target.value) || 18, ageRange[1]])} // อัพเดทอายุต่ำสุด
+                    value={localAgeRange[0]}
+                    onChange={(e) => setLocalAgeRange([parseInt(e.target.value) || 18, localAgeRange[1]])}
                     type="number"
                     min="18"
                     max="80"
                 />
                 -
-                {/* Input สำหรับอายุสูงสุด */}
                 <input 
                     className="w-1/2 border border-gray-300 rounded-md p-2" 
-                    value={ageRange[1]}  // แสดงค่าอายุสูงสุดจาก state
-                    onChange={(e) => setAgeRange([ageRange[0], parseInt(e.target.value) || 50])} // อัพเดทอายุสูงสุด
+                    value={localAgeRange[1]}
+                    onChange={(e) => setLocalAgeRange([localAgeRange[0], parseInt(e.target.value) || 50])}
                     type="number"
                     min="18"
                     max="80"
@@ -69,16 +133,17 @@ function MatchingRight() {
                 <div className="border-t-[1px] border-gray-300 mt-10"></div>
                 <div className="flex flex-row gap-5 items-center mt-10">
                     <button 
-                    className="w-1/2 button-ghost text-[#C70039] rounded-md p-2"
-                    onClick={() => setAgeRange([18, 50])}
+                        className="w-1/2 button-ghost text-[#C70039] rounded-md p-2"
+                        onClick={handleClear}
                     >
                         Clear
                     </button>
                     <button 
-                    className="w-1/2 button-primary bg-[#C70039] text-white rounded-md p-2"
+                        className="w-1/2 button-primary bg-[#C70039] text-white rounded-md p-2"
+                        onClick={handleSearch}
                     >
                         Search
-                        </button>
+                    </button>
                 </div>
             </div>
         </div>

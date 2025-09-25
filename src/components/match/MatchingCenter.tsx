@@ -1,23 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FaHeart, FaEye, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import ProfileModal from "./ProfileModal";
 import SwipeDeck, { Card } from "@/components/swipe/SwipeDeck";
 import { useMatchingProfiles } from "@/hooks/useMatchingProfiles";
+import { useMatchingContext } from "@/context/MatchingContext";
 
 function MatchingCenter() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [openProfile, setOpenProfile] = useState(false);
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
 
-  // ใช้ custom hook เพื่อดึงข้อมูล matching profiles
-  const {cards, loading, error, removeCard} = useMatchingProfiles();
+  // ใช้ context เพื่อดึง filters และ searchTrigger
+  const { filters, searchTrigger } = useMatchingContext();
+  
+  // ใช้ custom hook
+  const { cards, loading, error, removeCard, updateWithFilters } = useMatchingProfiles();
+
+  // แปลง filters เป็น format ที่ service ต้องการ
+  const profileFilters = useMemo(() => ({
+    genders: filters.selectedGenders,
+    minAge: filters.ageRange[0],
+    maxAge: filters.ageRange[1]
+  }), [filters.selectedGenders, filters.ageRange]);
+
+  // อัพเดทข้อมูลเมื่อ searchTrigger เปลี่ยน (เมื่อกด Search)
+  useEffect(() => {
+    if (searchTrigger > 0) {
+      updateWithFilters(profileFilters);
+    }
+  }, [searchTrigger, profileFilters, updateWithFilters]);
 
   // ฟังก์ชันสำหรับรับ preview cards (การ์ดซ้ายและขวา)
   const getPreviewCards = () => {
     if (cards.length < 2) return { left: null, right: null };
     
-    const currentIndex = 0; // การ์ดหลักคือตัวแรกเสมอ
     const leftCard = cards.length > 1 ? cards[1] : null;
     const rightCard = cards.length > 2 ? cards[2] : null;
     
@@ -29,35 +46,40 @@ function MatchingCenter() {
   const handleLike = (card?: Card) => {
     if (card) {
       alert(`You liked ${card.title} ${card.age}! ❤️`);
-      removeCard(card.id); // ลบ card ที่ swiped แล้ว
-      setCurrentImageIndex(0); // ตั้งค่า card ปัจจุบันเป็น card ตัวแรก
-    } else {
-      alert("You liked this profile! ❤️");
+      removeCard(card.id);
+      setCurrentImageIndex(0);
+    } else if (currentCard) {
+      alert(`You liked ${currentCard.title} ${currentCard.age}! ❤️`);
+      removeCard(currentCard.id);
+      setCurrentImageIndex(0);
     }
   };
 
   const handlePass = (card?: Card) => {
     if (card) {
       alert(`You passed ${card.title} ${card.age}! ✕`);
-      removeCard(card.id); // ลบ card ที่ swiped แล้ว
-      setCurrentImageIndex(0); // ตั้งค่า card ปัจจุบันเป็น card ตัวแรก
-    } else {
-      alert("You passed this profile! ✕");
+      removeCard(card.id);
+      setCurrentImageIndex(0);
+    } else if (currentCard) {
+      alert(`You passed ${currentCard.title} ${currentCard.age}! ✕`);
+      removeCard(currentCard.id);
+      setCurrentImageIndex(0);
     }
   };
 
   const handleProfile = () => setOpenProfile(true);
   const closeProfile = () => setOpenProfile(false);
 
-  // ฟังก์ชันสำหรับรับข้อมูลการ์ดปัจจุบันจาก SwipeDeck
   const handleCurrentCardChange = (card: Card | null) => {
+    // เช็คว่าเป็นการ์ดใหม่หรือไม่ ถ้าใช่ค่อยรีเซ็ต
+    if (card && currentCard && card.id !== currentCard.id) {
+      setCurrentImageIndex(0);
+    }
     setCurrentCard(card);
   };
 
-  // ฟังก์ชันสำหรับเลื่อนรูปภาพ
   const handlePreviousImage = () => {
     setCurrentImageIndex((prevIndex) => {
-      // หาจำนวนรูปภาพของโปรไฟล์ปัจจุบัน
       const maxIndex = (currentCard?.img?.length || 1) - 1;
       return prevIndex > 0 ? prevIndex - 1 : maxIndex;
     });
@@ -65,14 +87,12 @@ function MatchingCenter() {
 
   const handleNextImage = () => {
     setCurrentImageIndex((prevIndex) => {
-      // หาจำนวนรูปภาพของโปรไฟล์ปัจจุบัน
       const maxIndex = (currentCard?.img?.length || 1) - 1;
       return prevIndex < maxIndex ? prevIndex + 1 : 0;
     });
   };
 
-   // แสดง loading state
-   if (loading) {
+  if (loading) {
     return (
       <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center">
         <div className="text-white text-xl">Loading matching profiles...</div>
@@ -80,11 +100,22 @@ function MatchingCenter() {
     )
   }
 
-  // แสดง error state
   if (error) {
     return (
       <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center">
         <div className="text-white text-xl">Error loading matching profiles: {error}</div>
+      </div>
+    )
+  }
+
+  // แสดงข้อความเมื่อไม่มีโปรไฟล์ที่ตรงกับ filter
+  if (cards.length === 0) {
+    return (
+      <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center">
+        <div className="text-white text-xl text-center">
+          <p>No profiles match your criteria</p>
+          <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
+        </div>
       </div>
     )
   }
@@ -104,6 +135,7 @@ function MatchingCenter() {
                   src={leftCard.img[0]} 
                   alt={`${leftCard.title} ${leftCard.age}`}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute -bottom-60 inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               </div>
@@ -118,6 +150,7 @@ function MatchingCenter() {
                   src={rightCard.img[0]} 
                   alt={`${rightCard.title} ${rightCard.age}`}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute -bottom-60 inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               </div>
@@ -200,11 +233,11 @@ function MatchingCenter() {
 
       {/* Profile Modal */}
       <ProfileModal 
-      isOpen={openProfile} 
-      onClose={closeProfile} 
-      currentCard={currentCard} 
-      onLike={handleLike} 
-      onPass={handlePass} 
+        isOpen={openProfile} 
+        onClose={closeProfile} 
+        currentCard={currentCard} 
+        onLike={handleLike} 
+        onPass={handlePass} 
       />
     </div>
   );
