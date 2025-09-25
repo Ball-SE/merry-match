@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
 
 interface UserProfile {
@@ -18,9 +17,19 @@ interface UserProfile {
   photos: string[];
 }
 
-export default function UserProfileView() {
-  const router = useRouter();
-  const { id } = router.query;
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string;
+  cardData?: {
+    id: string;
+    title: string;
+    age: string;
+    img: string[];
+  };
+}
+
+export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: Props) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,46 +48,53 @@ export default function UserProfileView() {
 
   // ดึงข้อมูล profile
   useEffect(() => {
+    if (!isOpen || !userId) return;
+
     const fetchProfile = async () => {
-      if (!id) return;
-      
       try {
         setLoading(true);
         setError(null);
 
-        // เรียก API เพื่อดึงข้อมูล profile ของคนอื่น
-        const response = await fetch(`/api/profile/${id}`);
+        // สร้าง mock data ตามข้อมูลการ์ดที่ส่งมา
+        const mockProfile: UserProfile = {
+          id: userId,
+          name: cardData?.title || "Unknown User",
+          age: parseInt(cardData?.age || "25"),
+          email: `${cardData?.title?.toLowerCase() || "user"}@example.com`,
+          username: cardData?.title?.toLowerCase() || "user",
+          city: cardData?.title === "Daeny" ? "Bangkok, Thailand" : 
+                cardData?.title === "Knal" ? "Chiang Mai, Thailand" : 
+                cardData?.title === "Ygritte" ? "Phuket, Thailand" : "Bangkok, Thailand",
+          gender: "female",
+          sexual_preferences: "male",
+          racial_preferences: cardData?.title === "Daeny" ? "indefinite" : "asian",
+          meeting_interests: cardData?.title === "Daeny" ? "long-term commitment" : "friends",
+          bio: cardData?.title === "Daeny" ? "I know nothing...but you" : 
+               cardData?.title === "Knal" ? "Adventure seeker and nature lover" :
+               cardData?.title === "Ygritte" ? "Free spirit who loves the wild" : "Hello there!",
+          interests: cardData?.title === "Daeny" ? ["dragon", "romantic relationship", "political", "black hair", "friendly", "fire"] :
+                    cardData?.title === "Knal" ? ["hiking", "photography", "traveling", "cooking"] :
+                    cardData?.title === "Ygritte" ? ["archery", "nature", "adventure", "freedom"] :
+                    ["reading", "music", "movies", "coffee"],
+          photos: cardData?.img || ["/assets/daeny.png", "/assets/ygritte.png", "/assets/knal.png"]
+        };
+        
+        // จำลองการโหลด
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        setProfile(mockProfile);
+
+        // TODO: เมื่อต้องการใช้ API จริง ให้ uncomment โค้ดด้านล่าง
+        /*
+        const response = await fetch(`/api/profile/${userId}`);
         const result = await response.json();
 
         if (!response.ok) {
-          if (response.status === 401) {
-            router.push('/login');
-            return;
-          }
-          // ถ้าไม่พบ profile ให้ใช้ mock data สำหรับทดสอบ
-          if (response.status === 404) {
-            const mockProfile: UserProfile = {
-              id: id as string,
-              name: "piyawat malee",
-              age: 31,
-              email: "piyawat@example.com",
-              username: "piyawat",
-              city: "Bangkok, Thailand",
-              gender: "male",
-              sexual_preferences: "female",
-              racial_preferences: "asian",
-              meeting_interests: "friends",
-              bio: "friends",
-              interests: ["Reading", "Traveling", "Cooking", "Music"],
-              photos: ["/assets/daeny.png", "/assets/ygritte.png", "/assets/knal.png"]
-            };
-            setProfile(mockProfile);
-            return;
-          }
           throw new Error(result.message || 'Failed to fetch profile');
         }
 
         setProfile(result.data);
+        */
       } catch (error: any) {
         setError(error.message || 'Failed to fetch profile');
       } finally {
@@ -87,7 +103,7 @@ export default function UserProfileView() {
     };
 
     fetchProfile();
-  }, [id]);
+  }, [isOpen, userId]);
 
   // Handle Like/Pass actions
   const handleAction = async (actionType: 'like' | 'pass') => {
@@ -120,7 +136,7 @@ export default function UserProfileView() {
       });
       
       setTimeout(() => {
-        router.push('/');
+        onClose();
       }, 2000);
       
     } catch (error: any) {
@@ -135,12 +151,6 @@ export default function UserProfileView() {
 
   const handleLike = () => handleAction('like');
   const handlePass = () => handleAction('pass');
-  
-  const handleClose = () => {
-    if (!actionState.loading) {
-      router.push('/');
-    }
-  };
   
   const clearError = () => {
     setActionState(prev => ({ ...prev, error: null }));
@@ -161,6 +171,8 @@ export default function UserProfileView() {
       );
     }
   };
+
+  if (!isOpen) return null;
 
   // Loading state
   if (loading) {
@@ -183,7 +195,7 @@ export default function UserProfileView() {
           <h2 className="text-xl font-bold text-gray-800 mb-2">Error</h2>
           <p className="text-gray-600 mb-4">{error || 'Profile not found'}</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={onClose}
             className="bg-[#C70039] text-white px-6 py-2 rounded-lg hover:bg-[#950028] transition-colors"
           >
             Go Back
@@ -198,7 +210,7 @@ export default function UserProfileView() {
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black bg-opacity-50"
-        onClick={handleClose}
+        onClick={onClose}
       ></div>
       
       {/* Profile Popup Container */}
@@ -252,7 +264,7 @@ export default function UserProfileView() {
         {/* Close Button */}
         <div className="absolute top-6 right-6 z-50">
           <button 
-            onClick={handleClose}
+            onClick={onClose}
             disabled={actionState.loading}
             className={`w-8 h-8 flex items-center justify-center rounded-full shadow-lg transition-colors ${
               actionState.loading 

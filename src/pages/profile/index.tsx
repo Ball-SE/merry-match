@@ -256,7 +256,7 @@ export default function ProfilePage() {
               <button 
                 onClick={handlePass}
                 disabled={actionState.loading}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all ${
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 transition-all ${
                   actionState.loading
                     ? 'bg-gray-200 cursor-not-allowed'
                     : 'bg-white hover:shadow-xl hover:scale-105'
@@ -265,14 +265,14 @@ export default function ProfilePage() {
                 {actionState.loading && actionState.type === 'pass' ? (
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
-                  <X className="w-5 h-5 text-[#9AA1B9]" />
+                  <X className="w-5 h-5 text-gray-600" />
                 )}
               </button>
               
               <button 
                 onClick={handleLike}
                 disabled={actionState.loading}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all ${
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 transition-all ${
                   actionState.loading
                     ? 'bg-gray-200 cursor-not-allowed'
                     : 'bg-white hover:shadow-xl hover:scale-105'
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                 {actionState.loading && actionState.type === 'like' ? (
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
-                  <Heart className="w-5 h-5 text-[#C70039]" />
+                  <Heart className="w-5 h-5 text-red-500 fill-red-500" />
                 )}
               </button>
             </div>
@@ -321,7 +321,7 @@ export default function ProfilePage() {
               </h1>
               <div className="flex items-center text-gray-600">
                 <span className="text-[#C70039] mr-2 text-base">📍</span>
-                <span className="text-gray-700 text-base">{profile?.city || 'Location not set'}</span>
+                <span className="text-gray-700 text-base">{profile?.city || 'Bangkok, Thailand'}</span>
               </div>
             </div>
             
@@ -367,13 +367,6 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Edit Profile Button */}
-            <div className="pt-4">
-              <button className="flex items-center gap-2 bg-[#C70039] text-white px-4 py-2 rounded-lg hover:bg-[#950028] transition-colors">
-                <Edit className="w-4 h-4" />
-                Edit Profile
-              </button>
-            </div>
           </div>
         </div>
       </div>
