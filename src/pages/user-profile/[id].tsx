@@ -55,6 +55,26 @@ export default function UserProfileView() {
             router.push('/login');
             return;
           }
+          // ถ้าไม่พบ profile ให้ใช้ mock data สำหรับทดสอบ
+          if (response.status === 404) {
+            const mockProfile: UserProfile = {
+              id: id as string,
+              name: "piyawat malee",
+              age: 31,
+              email: "piyawat@example.com",
+              username: "piyawat",
+              city: "chatuchak",
+              gender: "male",
+              sexual_preferences: "female",
+              racial_preferences: "asian",
+              meeting_interests: "friends",
+              bio: "friends",
+              interests: ["Reading", "Traveling", "Cooking", "Music"],
+              photos: ["/assets/daeny.png", "/assets/ygritte.png", "/assets/knal.png"]
+            };
+            setProfile(mockProfile);
+            return;
+          }
           throw new Error(result.message || 'Failed to fetch profile');
         }
 
@@ -67,7 +87,7 @@ export default function UserProfileView() {
     };
 
     fetchProfile();
-  }, [id, router]);
+  }, [id]);
 
   // Handle Like/Pass actions
   const handleAction = async (actionType: 'like' | 'pass') => {
@@ -275,7 +295,7 @@ export default function UserProfileView() {
               <button 
                 onClick={handlePass}
                 disabled={actionState.loading}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all ${
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 transition-all ${
                   actionState.loading
                     ? 'bg-gray-200 cursor-not-allowed'
                     : 'bg-white hover:shadow-xl hover:scale-105'
@@ -284,14 +304,14 @@ export default function UserProfileView() {
                 {actionState.loading && actionState.type === 'pass' ? (
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
-                  <X className="w-5 h-5 text-[#9AA1B9]" />
+                  <X className="w-5 h-5 text-gray-600" />
                 )}
               </button>
               
               <button 
                 onClick={handleLike}
                 disabled={actionState.loading}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all ${
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 transition-all ${
                   actionState.loading
                     ? 'bg-gray-200 cursor-not-allowed'
                     : 'bg-white hover:shadow-xl hover:scale-105'
@@ -300,7 +320,7 @@ export default function UserProfileView() {
                 {actionState.loading && actionState.type === 'like' ? (
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
-                  <Heart className="w-5 h-5 text-[#C70039]" />
+                  <Heart className="w-5 h-5 text-red-500 fill-red-500" />
                 )}
               </button>
             </div>
