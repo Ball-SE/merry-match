@@ -9,7 +9,7 @@ function NavBarNonUser() {
 
     return (
             <nav className="w-full navbar-shadow bg-white shadow-2xl sticky top-0 left-0 right-0 z-[1300]">
-            <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-row justify-between items-center">
+            <div className="w-full mx-auto px-36 py-4 flex flex-row justify-between items-center">
             <Link href="/" className="w-auto flex flex-row">
                 <h1 className="sm:text-4xl text-xl">Merry</h1>
                 <h1 className="sm:text-4xl text-xl text-[#C70039] font-bold">Match</h1>

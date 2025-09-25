@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import UserProfileNavbar from "./UserProfileNavbar";
 import { slide as Menu } from "react-burger-menu";
 import { AlertNotification } from "./AlertNotification";
@@ -20,7 +20,7 @@ function NavBarUsers() {
 
     return (
         <nav className="w-full navbar-shadow bg-white shadow-2xl sticky top-0  z-[1300]">
-            <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-row justify-between items-center">
+            <div className="w-full mx-auto px-36 py-4 flex flex-row justify-between items-center">
                 <Link href="/" className="w-auto flex flex-row">
                     <h1 className="sm:text-4xl text-xl">Merry</h1>
                     <h1 className="sm:text-4xl text-xl text-[#C70039] font-bold">Match</h1>

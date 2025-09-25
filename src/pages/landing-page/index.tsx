@@ -1,11 +1,60 @@
-// import NavBarNonUser from "@/components/NavBarNonUser";  
-// import NavBarUsers from "@/components/NavBarUsers";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { Element } from "react-scroll";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { supabase } from "@/lib/supabase/supabaseClient";
+import { useAdmin } from '@/hooks/useAdmin';
 
 function HomePage(){
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+    const { isAdmin } = useAdmin();
+    const router = useRouter();
+
+    useEffect(() => {
+        let mounted = true;
+
+        let init = async () => {
+            const { data } = await supabase.auth.getSession();
+            if (mounted) {
+                setIsLoggedIn(!!data?.session);
+
+                // ถ้า login แล้วและเป็น admin ให้ redirect ไป admin dashboard
+                if (data?.session && data.session.user.app_metadata?.is_admin === true) {
+                    router.push('/admin');
+                }
+            }
+        };
+        init();
+
+        const {data: authListener} = supabase.auth.onAuthStateChange(
+            (_event, session) => {
+                if (mounted) {
+                    setIsLoggedIn(!!session);
+                    // ถ้า login แล้วและเป็น admin ให้ redirect ไป admin dashboard
+                    if (session && session.user.app_metadata?.is_admin === true) {
+                        router.push('/admin');
+                    }
+                }
+            });
+
+        return () => {
+            mounted = false;
+            authListener?.subscription.unsubscribe();
+        };
+    }, [router]);
+
+    const handleStartMatching = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+        if (isLoggedIn) {
+            router.push("/matching");
+        } else {
+            router.push("/login");
+        }
+
+    };
+
     return (
         <div className="flex justify-center items-center bg-[#160404]">
             <div className="m-auto w-full ">
@@ -31,7 +80,9 @@ function HomePage(){
                                 </p>
                                 {/* authen ตรงนี้ */}
                                 <Link
-                                    href="/matching" className="bg-[#C70039] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-[#950028] transition-colors">
+                                    href="/matching"
+                                    onClick={handleStartMatching}
+                                    className="bg-[#C70039] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-[#950028] transition-colors">
                                 Start matching!
                                 </Link>
                             </div>
@@ -201,7 +252,9 @@ function HomePage(){
                                 and matching someone new
                                 </h2>
                                 {/* authen ตรงนี้ */}
-                                <Link href="/matching" className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors relative z-10">
+                                <Link href="/matching" 
+                                onClick={handleStartMatching}
+                                className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors relative z-10">
                                 Start Matching!
                                 </Link>
                             </div>
