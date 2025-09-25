@@ -63,7 +63,7 @@ export default function UserProfileView() {
               age: 31,
               email: "piyawat@example.com",
               username: "piyawat",
-              city: "chatuchak",
+              city: "Bangkok, Thailand",
               gender: "male",
               sexual_preferences: "female",
               racial_preferences: "asian",
