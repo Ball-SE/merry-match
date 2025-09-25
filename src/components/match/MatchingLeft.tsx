@@ -2,14 +2,14 @@ import Image from "next/image";
 
 function MatchingLeft() {
     return (
-        <div className="w-full h-full flex flex-col">
-            <button className="w-full h-full flex flex-col items-center justify-center mb-7 border-1 border-[#A62D82] rounded-lg p-4">
+        <div className="w-full h-full flex flex-col pt-5">
+            <button className="w-[282px] h-[187px] flex flex-col items-center justify-center mb-7 border-1 bg-[#E4E6ED] border-[#A62D82] rounded-lg p-4">
                 <Image src="/assets/hearchsearch.png" alt="discover" width={50} height={50} />
                 <h4 className="text-2xl font-bold text-[#95002B]">Discover New Match</h4>
                 <p className="text-sm text-[#646D89]">Start find and Merry to get know and connect with new friend!</p>
             </button>
             <div className="border-t-[1px] border-[#E4E6ED] mb-5"></div>
-            <div className="w-full h-full">
+            <div className="w-full">
                 <h4 className="text-2xl font-bold text-[#2A2E3F]">Merry Match!</h4>
                 <div className="flex flex-row gap-2 mt-2">
                     <Image 
