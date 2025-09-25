@@ -70,6 +70,13 @@ export default function LoginPage() {
       setLoading(false)
       setErrorMsg("An error occurred. Please try again.")
       console.error('Login error:', error)
+
+      // ตรวจสอบ admin role และ redirect
+      if (data.user?.app_metadata?.is_admin === true) {
+        router.push('/admin')
+      } else {
+        router.push('/')
+      }
     }
   }
 

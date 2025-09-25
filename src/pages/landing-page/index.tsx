@@ -5,9 +5,11 @@ import { Element } from "react-scroll";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabase/supabaseClient";
+import { useAdmin } from '@/hooks/useAdmin';
 
 function HomePage(){
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+    const { isAdmin } = useAdmin();
     const router = useRouter();
 
     useEffect(() => {
@@ -15,20 +17,33 @@ function HomePage(){
 
         let init = async () => {
             const { data } = await supabase.auth.getSession();
-            if (mounted) setIsLoggedIn(!!data?.session);
+            if (mounted) {
+                setIsLoggedIn(!!data?.session);
+
+                // ถ้า login แล้วและเป็น admin ให้ redirect ไป admin dashboard
+                if (data?.session && data.session.user.app_metadata?.is_admin === true) {
+                    router.push('/admin');
+                }
+            }
         };
         init();
 
         const {data: authListener} = supabase.auth.onAuthStateChange(
             (_event, session) => {
-                if (mounted) setIsLoggedIn(!!session);
+                if (mounted) {
+                    setIsLoggedIn(!!session);
+                    // ถ้า login แล้วและเป็น admin ให้ redirect ไป admin dashboard
+                    if (session && session.user.app_metadata?.is_admin === true) {
+                        router.push('/admin');
+                    }
+                }
             });
 
         return () => {
             mounted = false;
             authListener?.subscription.unsubscribe();
         };
-    }, []);
+    }, [router]);
 
     const handleStartMatching = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();

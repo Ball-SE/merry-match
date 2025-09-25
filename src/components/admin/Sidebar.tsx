@@ -3,8 +3,10 @@
 import React from 'react';
 import { Package, AlertTriangle, LogOut } from 'lucide-react';
 import { SidebarProps, SidebarItem } from '../../types/admin';
+import { useAuth } from '@/hooks/useAuth';
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+  const { logout } = useAuth();
   const sidebarItems: SidebarItem[] = [
     {
       id: 'merry-package',
@@ -65,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
       {/* Logout */}
       <div className="p-4 border-t border-gray-100">
-        <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors">
+        <button onClick={() => logout('/')} className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors">
           <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
             <LogOut className="w-4 h-4 text-gray-500" />
           </div>
