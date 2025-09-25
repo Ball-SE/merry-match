@@ -56,6 +56,13 @@ export default function LoginPage() {
       setErrorMsg("Invalid email or password")
     } else {
       console.log('login ok', data)
+
+      // ตรวจสอบ admin role และ redirect
+      if (data.user?.app_metadata?.is_admin === true) {
+        router.push('/admin')
+      } else {
+        router.push('/')
+      }
     }
   }
 
