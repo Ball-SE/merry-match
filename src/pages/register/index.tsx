@@ -6,11 +6,6 @@ import { useState } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 import { useRouter } from "next/router";
 
-const getDefaultBirthDate = () => {
-  const today = new Date();
-  const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-  return eighteenYearsAgo.toISOString().split('T')[0];
-};
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -19,7 +14,7 @@ export default function Home() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
-    dateOfBirth: getDefaultBirthDate(), // ตั้งค่าเริ่มต้นเป็น 18 ปีที่แล้ว
+    dateOfBirth: "", // ตั้งค่าเริ่มต้นเป็น 18 ปีที่แล้ว
     location: "",
     city: "",
     username: "",
@@ -112,14 +107,14 @@ export default function Home() {
 
       <div className="mx-auto max-w-6xl px-4 py-10">
         {/* Header row */}
-        <div className="flex items-center justify-between">
+        <div className="flex max-xs:flex-col items-center justify-between max-xs:my-4 max-xs:gap-4 max-xs:items-start">
           <div>
             <span className="text-[#7B4429] text-lg font-semibold">REGISTER</span>
-            <h1 className="mt-2 text-6xl font-extrabold text-[#A62D82]">
+            <h1 className="mt-2 text-6xl max-xs:text-4xl font-extrabold text-[#A62D82]">
               Join us and start<br />matching
             </h1>
           </div >
-          <div className="items-end mt-10 mr-10">
+          <div className="items-end max-xs:items-center max-xs:scale-95 mt-16 max-xs:mt-4 mr-10 max-xs:mr-0">
             <StepIndicator currentStep={currentStep} titles={titles} />
           </div>
 
@@ -155,7 +150,7 @@ export default function Home() {
         {/* แสดง loading state */}
         {loading && (
           <div className="mt-4 text-center">
-            <p className="text-gray-600">กำลังดำเนินการสมัครสมาชิก...</p>
+            <p className="text-gray-600">Registering...</p>
           </div>
         )}
       </div>

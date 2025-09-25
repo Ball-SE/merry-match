@@ -2,9 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
 
-import { EXTRA_LOCATION_OPTIONS } from "@/data/extraLocations";
-import { DISTRICTS_BY_PROVINCE } from "@/data/districtis";
-
+import { SEA_COUNTRY_OPTIONS } from "@/data/sea-countries";
+import { SEA_CITIES_BY_COUNTRY } from "@/data/sea-cities";
 interface FormData {
   name: string;
   dateOfBirth: string;
@@ -73,9 +72,27 @@ function Step1({
     return `${baseClass} border-gray-300 focus:ring-[#C70039]`;
   };
 
+  const getDefaultBirthDate = () => {
+    const today = new Date();
+    const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return eighteenYearsAgo.toISOString().split('T')[0];
+  };
+  // เพิ่มฟังก์ชันสำหรับคำนวณ min/max
+  const getMinBirthDate = () => {
+    const today = new Date();
+    const hundredYearsAgo = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+    return hundredYearsAgo.toISOString().split('T')[0];
+  };
+
+  const getMaxBirthDate = () => {
+    const today = new Date();
+    const thirteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return thirteenYearsAgo.toISOString().split('T')[0];
+  };
+
   return (
     <div>
-      <h2 className="mb-6 text-4xl font-bold text-[#A62D82]">Basic Information</h2>
+      <h2 className="mb-6 text-2xl font-bold text-[#A62D82]">Basic Information</h2>
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -87,7 +104,7 @@ function Step1({
               value={formData.name}
               onChange={handleInputChange}
               onBlur={() => handleBlur('name')}
-              placeholder="At least 2 characters"
+              placeholder="Jon Snow"
               className={getInputClassName('name')}
             />
             {touched.name && errors.name && (
@@ -104,6 +121,8 @@ function Step1({
               onChange={handleInputChange}
               onBlur={() => handleBlur('dateOfBirth')}
               className={getInputClassName('dateOfBirth')}
+              min={getMinBirthDate()}
+              max={getMaxBirthDate()}
             />
             {touched.dateOfBirth && errors.dateOfBirth && (
               <p className="mt-1 text-sm text-red-500">{errors.dateOfBirth}</p>
@@ -119,19 +138,16 @@ function Step1({
               value={formData.location}
               onChange={(e) => {
                 handleInputChange(e);
-                // รีเซ็ต city เมื่อเปลี่ยนจังหวัด
+                // รีเซ็ต city เมื่อเปลี่ยนประเทศ
                 const resetCity = { target: { name: "city", value: "" } } as any;
                 handleInputChange(resetCity);
               }}
               onBlur={() => handleBlur('location')}
-              className={getInputClassName('location')}
+              className={`${getInputClassName('location')} ${!formData.location ? 'text-gray-400' : ''}`}
             >
-              <option value="">Select location</option>
-              <option value="bangkok">Bangkok</option>
-              <option value="chiang-mai">Chiang Mai</option>
-              <option value="phuket">Phuket</option>
+              <option value="">{!formData.location ? 'Thailand' : 'Select location'}</option>
 
-              {EXTRA_LOCATION_OPTIONS.map(opt => (
+              {SEA_COUNTRY_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -152,8 +168,8 @@ function Step1({
               disabled={!formData.location}
               className={`${getInputClassName('city')} ${!formData.location ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
             >
-              <option value="">{!formData.location ? 'Select location first' : 'Select city'}</option>
-              {(DISTRICTS_BY_PROVINCE[formData.location] || []).map((d) => (
+              <option value="">{!formData.location ? 'Bangkok' : 'Select city'}</option>
+              {(SEA_CITIES_BY_COUNTRY[formData.location] || []).map((d) => (
                 <option key={d.value} value={d.value}>
                   {d.label}
                 </option>
