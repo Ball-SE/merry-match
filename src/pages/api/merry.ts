@@ -40,10 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         { swiper_id: user.id, swiped_id, action },
         { onConflict: "swiper_id,swiped_id", ignoreDuplicates: true }
       );
-      if (upErr) {
-        console.error('💥 Database upsert error:', upErr);
-        return res.status(500).json({ error: upErr.message });
-      }
+    if (upErr) return res.status(500).json({ error: upErr.message });
 
     // 6) เช็ค like สวนกลับ (สลับข้างให้ถูก)
     let matched = false;
@@ -55,19 +52,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq("swiped_id", user.id)
         .eq("action", "like")
         .maybeSingle();
-        if (recErr) {
-          console.error('💥 Reciprocal check error:', recErr);
-          return res.status(500).json({ error: recErr.message });
-        }
+      if (recErr) return res.status(500).json({ error: recErr.message });
 
       if (reciprocal) {
         const [a, b] = [user.id, swiped_id].sort();
         const { error: matchErr } = await supabase
           .from("matches")
           .upsert({ user1_id: a, user2_id: b }, { onConflict: "user1_id,user2_id", ignoreDuplicates: true });
-          if (matchErr) {
-            console.error("💥 Match creation error:", matchErr.message);
-          }
+        if (matchErr) console.error("match upsert:", matchErr.message);
         matched = true;
       }
     }
