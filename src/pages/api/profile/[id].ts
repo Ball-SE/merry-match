@@ -22,9 +22,27 @@ export default async function handler(
 
   try {
     // ตรวจสอบ authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const authHeader = req.headers.authorization;
+    let user = null;
     
-    if (authError || !user) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const { data: { user: tokenUser }, error: tokenError } = await supabase.auth.getUser(token);
+      
+      if (!tokenError && tokenUser) {
+        user = tokenUser;
+      }
+    }
+    
+    // ถ้าไม่มี token หรือ token ไม่ valid ให้ลองใช้ session
+    if (!user) {
+      const { data: { user: sessionUser }, error: sessionError } = await supabase.auth.getUser();
+      if (!sessionError && sessionUser) {
+        user = sessionUser;
+      }
+    }
+    
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized. Please login first."

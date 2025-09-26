@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
-import { FaHeart } from 'react-icons/fa';
-import { IoClose } from 'react-icons/io5';
-import { Card } from '@/components/swipe/SwipeDeck';
+import { supabase } from '@/lib/supabase/supabaseClient';
 
 interface UserProfile {
   id: string;
@@ -20,42 +19,15 @@ interface UserProfile {
   photos: string[];
 }
 
-interface Profile {
-  id: string;
-  name: string;
-  email: string;
-  photo_url: string | null;
-  age: number | null;
-  bio: string | null;
-  location: string | null;
-  photos: string[] | null;
-  gender?: string | null;
-  sexual_preferences?: string | null;
-  racial_preferences?: string | null;
-  meeting_interests?: string | null;
-  interests?: string[] | null;
+interface ProfileViewProps {
+  className?: string;
 }
 
-interface ProfileModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  currentCard: Card | null;
-  profiles: Profile[];
-  onLike?: (card: Card) => void;
-  onPass?: (card: Card) => void;
-}
-
-export default function ProfileModal({ 
-  isOpen, 
-  onClose, 
-  currentCard, 
-  profiles,
-  onLike, 
-  onPass 
-}: ProfileModalProps) {
+export default function ProfileView({ className = '' }: ProfileViewProps) {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [actionState, setActionState] = useState<{
     type: 'like' | 'pass' | null;
@@ -69,117 +41,51 @@ export default function ProfileModal({
     error: null
   });
 
-  // ดึงข้อมูล profile จาก profiles array เมื่อเปิด modal
+  // ดึงข้อมูล profile
   useEffect(() => {
-    if (!isOpen || !currentCard?.id) return;
-    
-    try {
-      setProfileLoading(true);
-      setProfileError(null);
-      setCurrentImageIndex(0);
-      setActionState({
-        type: null,
-        loading: false,
-        success: false,
-        error: null
-      });
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      console.log('🔍 Finding profile for user ID:', currentCard.id);
-      console.log('📋 Available profiles:', profiles.map(p => ({ id: p.id, name: p.name })));
-      console.log('📊 Profiles data types:', profiles.map(p => ({ 
-        id: typeof p.id, 
-        interests: typeof p.interests, 
-        photos: typeof p.photos,
-        interestsValue: p.interests,
-        photosValue: p.photos
-      })));
+        // เรียก API เพื่อดึงข้อมูล profile
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/login');
+          return;
+        }
 
-      // หา profile ที่ตรงกับ currentCard.id
-      const foundProfile = profiles.find(p => p.id === currentCard.id);
-      
-      if (foundProfile) {
-        console.log('✅ Found profile data:', foundProfile);
-        console.log('🔍 Location data:', foundProfile.location, typeof foundProfile.location);
-        console.log('🔍 All profile fields:', Object.keys(foundProfile));
-        console.log('🏠 Processing location:', foundProfile.location);
-        
-        // แปลงข้อมูลจาก Profile format เป็น UserProfile format
-        const profileData: UserProfile = {
-          id: String(foundProfile.id || ''),
-          name: String(foundProfile.name || currentCard.title || 'Unknown'),
-          age: Number(foundProfile.age) || parseInt(currentCard.age) || 0,
-          email: String(foundProfile.email || `${currentCard.title.toLowerCase().replace(/\s+/g, '.')}@example.com`),
-          username: String(foundProfile.email?.split('@')[0] || currentCard.title.toLowerCase().replace(/\s+/g, '') || 'user'),
-          city: (() => {
-            // แปลงชื่อพื้นที่ให้เป็นชื่อที่เข้าใจได้
-            const locationMap: { [key: string]: string } = {
-              'kathu': 'Phuket, Thailand',
-              'patong': 'Phuket, Thailand',
-              'phuket_town': 'Phuket, Thailand',
-              'chalong': 'Phuket, Thailand',
-              'rawai': 'Phuket, Thailand',
-              'karon': 'Phuket, Thailand',
-              'kamala': 'Phuket, Thailand',
-              'bang_tao': 'Phuket, Thailand',
-              'bangkok': 'Bangkok, Thailand',
-              'chiang_mai': 'Chiang Mai, Thailand',
-              'chiang_rai': 'Chiang Rai, Thailand',
-              'pattaya': 'Pattaya, Thailand',
-              'phuket': 'Phuket, Thailand',
-              'krabi': 'Krabi, Thailand',
-              'koh_samui': 'Koh Samui, Thailand',
-              'koh_phangan': 'Koh Phangan, Thailand',
-              'koh_tao': 'Koh Tao, Thailand',
-              'hua_hin': 'Hua Hin, Thailand',
-              'kanchanaburi': 'Kanchanaburi, Thailand',
-              'ayutthaya': 'Ayutthaya, Thailand'
-            };
+        const response = await fetch('/api/profile/me', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+        const result = await response.json();
 
-            let locationValue = '';
-            
-            // ถ้า location เป็น string
-            if (typeof foundProfile.location === 'string') {
-              locationValue = foundProfile.location;
-            }
-            // ถ้า location เป็น object
-            else if (typeof foundProfile.location === 'object' && foundProfile.location && 'city' in foundProfile.location) {
-              locationValue = (foundProfile.location as any).city;
-            }
-            else {
-              locationValue = 'bangkok'; // default
-            }
+        if (!response.ok) {
+          if (response.status === 401) {
+            // ไม่ได้ login ให้ redirect ไปหน้า login
+            router.push('/login');
+            return;
+          }
+          throw new Error(result.message || 'Failed to fetch profile');
+        }
 
-            const mappedLocation = locationMap[locationValue.toLowerCase()];
-            console.log('🗺️ Location mapping:', locationValue.toLowerCase(), '->', mappedLocation);
-            
-            return mappedLocation || 
-                   locationValue.charAt(0).toUpperCase() + locationValue.slice(1) + ', Thailand';
-          })(),
-          gender: String(foundProfile.gender || "Not specified"),
-          sexual_preferences: String(foundProfile.sexual_preferences || "Not specified"),
-          racial_preferences: String(foundProfile.racial_preferences || "Not specified"), 
-          meeting_interests: String(foundProfile.meeting_interests || "Not specified"),
-          bio: String(foundProfile.bio || ""),
-          interests: Array.isArray(foundProfile.interests) ? foundProfile.interests.filter(i => typeof i === 'string') : [],
-          photos: Array.isArray(foundProfile.photos) ? foundProfile.photos.filter(p => typeof p === 'string') : (foundProfile.photo_url ? [foundProfile.photo_url] : currentCard.img || [])
-        };
-        
-        setProfile(profileData);
-      } else {
-        console.log('❌ Profile not found in profiles array');
-        throw new Error('Profile not found');
+        setProfile(result.data);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch profile';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
       }
-    } catch (error: any) {
-      setProfileError(error.message || 'Failed to load profile');
-      console.error('Error loading profile:', error);
-    } finally {
-      setProfileLoading(false);
-    }
-  }, [isOpen, currentCard?.id, profiles]);
+    };
+
+    fetchProfile();
+  }, [router]);
 
   // Handle Like/Pass actions
   const handleAction = async (actionType: 'like' | 'pass') => {
-    if (actionState.loading || !currentCard) return;
+    if (actionState.loading || !profile) return;
     
     setActionState({
       type: actionType,
@@ -189,12 +95,16 @@ export default function ProfileModal({
     });
     
     try {
-      // เรียก callback function ที่ส่งมาจาก parent
-      if (actionType === 'like' && onLike) {
-        await onLike(currentCard);
-      } else if (actionType === 'pass' && onPass) {
-        await onPass(currentCard);
-      }
+      // TODO: Implement actual like/pass logic
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (Math.random() < 0.1) {
+            reject(new Error('Network error occurred'));
+          } else {
+            resolve(true);
+          }
+        }, 1500);
+      });
       
       setActionState({
         type: actionType,
@@ -203,17 +113,17 @@ export default function ProfileModal({
         error: null
       });
       
-      // ปิด modal หลังจาก action สำเร็จ
       setTimeout(() => {
-        onClose();
-      }, 1500);
+        router.push('/');
+      }, 2000);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to ${actionType} profile. Please try again.`;
       setActionState({
         type: actionType,
         loading: false,
         success: false,
-        error: error.message || `Failed to ${actionType} profile. Please try again.`
+        error: errorMessage
       });
     }
   };
@@ -223,7 +133,7 @@ export default function ProfileModal({
   
   const handleClose = () => {
     if (!actionState.loading) {
-      onClose();
+      router.push('/');
     }
   };
   
@@ -231,36 +141,31 @@ export default function ProfileModal({
     setActionState(prev => ({ ...prev, error: null }));
   };
 
-  // ถ้า modal ไม่เปิดหรือไม่มี currentCard ให้ return null
-  if (!isOpen || !currentCard) {
-    return null;
-  }
-
-  // Loading state สำหรับดึงข้อมูล profile
-  if (profileLoading) {
+  // Loading state
+  if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
           <Loader2 className="w-12 h-12 animate-spin text-[#C70039] mx-auto mb-4" />
-          <p className="text-gray-600">Loading profile details...</p>
+          <p className="text-gray-600">Loading profile...</p>
         </div>
       </div>
     );
   }
 
-  // Error state สำหรับดึงข้อมูล profile
-  if (profileError || !profile) {
+  // Error state
+  if (error || !profile) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{profileError || 'Profile not found'}</p>
+          <p className="text-gray-600 mb-4">{error || 'Profile not found'}</p>
           <button
-            onClick={onClose}
+            onClick={() => router.push('/')}
             className="bg-[#C70039] text-white px-6 py-2 rounded-lg hover:bg-[#950028] transition-colors"
           >
-            Close
+            Go Back
           </button>
         </div>
       </div>
@@ -268,7 +173,7 @@ export default function ProfileModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 ${className}`}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black bg-opacity-50"
@@ -345,10 +250,10 @@ export default function ProfileModal({
             
             {/* กล่องรูป */}
             <div className="h-full w-full relative rounded-3xl overflow-hidden m-8 transform -translate-y-20 -translate-x-6 scale-75">
-              {profile.photos && profile.photos.length > 0 ? (
+              {profile?.photos && profile.photos.length > 0 ? (
                 <img 
                   src={profile.photos[currentImageIndex]} 
-                  alt={`${profile.name}'s profile`} 
+                  alt="Profile" 
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -359,7 +264,7 @@ export default function ProfileModal({
             </div>
             
             {/* กล่องตัวนับรูป */}
-            {profile.photos && profile.photos.length > 0 && (
+            {profile?.photos && profile.photos.length > 0 && (
               <div className="absolute bottom-20 left-[80px] text-gray-500 text-sm font-medium">
                 {currentImageIndex + 1}/{profile.photos.length}
               </div>
@@ -370,34 +275,38 @@ export default function ProfileModal({
               <button 
                 onClick={handlePass}
                 disabled={actionState.loading}
-                className={`w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105 ${
-                  actionState.loading ? 'cursor-not-allowed opacity-50' : ''
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 transition-all ${
+                  actionState.loading
+                    ? 'bg-gray-200 cursor-not-allowed'
+                    : 'bg-white hover:shadow-xl hover:scale-105'
                 }`}
               >
                 {actionState.loading && actionState.type === 'pass' ? (
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
-                  <IoClose className="text-gray-500 w-6 h-6 sm:w-7 sm:h-7" />
+                  <X className="w-5 h-5 text-gray-600" />
                 )}
               </button>
               
               <button 
                 onClick={handleLike}
                 disabled={actionState.loading}
-                className={`w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105 ${
-                  actionState.loading ? 'cursor-not-allowed opacity-50' : ''
+                className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 transition-all ${
+                  actionState.loading
+                    ? 'bg-gray-200 cursor-not-allowed'
+                    : 'bg-white hover:shadow-xl hover:scale-105'
                 }`}
               >
                 {actionState.loading && actionState.type === 'like' ? (
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
-                  <FaHeart className="text-red-500 w-6 h-6 sm:w-7 sm:h-7" />
+                  <Heart className="w-5 h-5 text-red-500 fill-red-500" />
                 )}
               </button>
             </div>
             
             {/* กล่องลูกศรซ้ายขวา */}
-            {profile.photos && profile.photos.length > 1 && (
+            {profile?.photos && profile.photos.length > 1 && (
               <div className="absolute bottom-18 left-1/2 transform translate-x-28 flex items-center">
                 <button 
                   onClick={() => setCurrentImageIndex(prev => prev > 0 ? prev - 1 : profile.photos.length - 1)}
@@ -427,11 +336,11 @@ export default function ProfileModal({
             {/* Name and Location Container */}
             <div className="flex flex-col gap-2">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-                {profile.name} {profile.age}
+                {profile?.name || 'User'} {profile?.age || ''}
               </h1>
               <div className="flex items-center text-gray-600">
                 <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
-                <span className="text-gray-700 text-base">{profile.city}</span>
+                <span className="text-gray-700 text-base">{profile?.city || 'Bangkok, Thailand'}</span>
               </div>
             </div>
             
@@ -439,43 +348,44 @@ export default function ProfileModal({
             <div className="space-y-2">
               <div className="flex items-center">
                 <span className="text-gray-900 text-base w-32">Gender:</span>
-                <span className="font-medium text-gray-700 text-base ml-8">{profile.gender}</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile?.gender || 'Not specified'}</span>
               </div>
               <div className="flex items-center whitespace-nowrap">
                 <span className="text-gray-900 text-base w-32">Sexual preferences:</span>
-                <span className="font-medium text-gray-700 text-base ml-8">{profile.sexual_preferences}</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile?.sexual_preferences || 'Not specified'}</span>
               </div>
               <div className="flex items-center whitespace-nowrap">
                 <span className="text-gray-900 text-base w-32">Racial preferences:</span>
-                <span className="font-medium text-gray-700 text-base ml-8">{profile.racial_preferences}</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile?.racial_preferences || 'Not specified'}</span>
               </div>
               <div className="flex items-center whitespace-nowrap">
                 <span className="text-gray-900 text-base w-32">Meeting interests:</span>
-                <span className="font-medium text-gray-700 text-base ml-8">{profile.meeting_interests}</span>
+                <span className="font-medium text-gray-700 text-base ml-8">{profile?.meeting_interests || 'Not specified'}</span>
               </div>
             </div>
             
             {/* About Me */}
-            {profile.bio && (
+            {profile?.bio && (
               <div>
                 <h3 className="font-semibold text-gray-800 mb-2 text-base">About me</h3>
-                <p className="text-gray-900 italic text-base leading-relaxed">"{profile.bio}"</p>
+                <p className="text-gray-900 italic text-base leading-relaxed">&quot;{profile.bio}&quot;</p>
               </div>
             )}
             
             {/* Hobbies and Interests */}
-            {profile.interests && Array.isArray(profile.interests) && profile.interests.length > 0 && (
+            {profile?.interests && profile.interests.length > 0 && (
               <div>
                 <h3 className="font-semibold text-gray-800 mb-3 text-base">Hobbies and Interests</h3>
                 <div className="flex flex-wrap gap-2">
-                  {profile.interests.filter(interest => typeof interest === 'string').map((interest: string, index: number) => (
+                  {profile.interests.map((interest: string, index: number) => (
                     <span key={index} className="bg-white border border-[#DF89C6] text-[#7D2262] px-3 py-1 rounded-full text-sm font-medium hover:bg-pink-50 transition-colors">
-                      {String(interest)}
+                      {interest}
                     </span>
                   ))}
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </div>
