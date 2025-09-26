@@ -53,9 +53,9 @@ export function CustomDatePicker({
         onBlur={onBlur}
         placeholderText={placeholder}
         className={cn(
-          "w-full rounded-lg border border-gray-300 px-3 py-3 pr-10 text-sm transition-colors focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20",
+          "w-full rounded-lg border border-gray-300 px-3 py-3 pr-10 text-sm transition-colors focus:border-[#A62D82] focus:outline-none focus:ring-2 focus:ring-purple-500/20",
           disabled && "cursor-not-allowed bg-gray-50 text-gray-500",
-          error && touched && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
+          error && touched && "border-[#C70039] focus:border-[#C70039] focus:ring-red-500/20",
           className
         )}
         dateFormat={dateFormat}

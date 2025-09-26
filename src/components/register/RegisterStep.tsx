@@ -435,6 +435,17 @@ function Step2({
               onChange={handleInputChange}
               onBlur={() => handleBlur("sexualIdentities")}
               className={getInputClassName("sexualIdentities")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
             >
               <option value="">Select identity</option>
               <option value="male">Male</option>
@@ -458,6 +469,17 @@ function Step2({
               onChange={handleInputChange}
               onBlur={() => handleBlur("sexualPreferences")}
               className={getInputClassName("sexualPreferences")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
             >
               <option value="">Select preference</option>
               <option value="male">Male</option>
@@ -483,6 +505,17 @@ function Step2({
               onChange={handleInputChange}
               onBlur={() => handleBlur("racialPreferences")}
               className={getInputClassName("racialPreferences")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
             >
               <option value="">Select preference</option>
               <option value="asian">Asian</option>
@@ -508,6 +541,17 @@ function Step2({
               onChange={handleInputChange}
               onBlur={() => handleBlur("meetingInterests")}
               className={getInputClassName("meetingInterests")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
             >
               <option value="">Select interest</option>
               <option value="friends">Friends</option>
@@ -531,12 +575,12 @@ function Step2({
             {(formData.interests || []).map((chip, i) => (
               <span
                 key={`${chip}-${i}`}
-                className="flex items-center gap-2 rounded-full bg-[#F6F7FC] px-3 py-1 text-sm text-[#2A0B21]"
+                className="flex items-center gap-2 rounded-sm bg-[#F4EBF2] px-3 py-1 text-md font-bold text-[#7D2262]"
               >
                 {chip}
                 <button
                   onClick={() => removeChip(i)}
-                  className="rounded-full bg-[#C70039] px-2 text-white hover:bg-[#950028]"
+                  className="rounded-full bg-[#F4EBF2] px-0 text-[#7D2262] text-xl font-bold hover:bg-[#950028]"
                 >
                   ×
                 </button>
@@ -555,7 +599,7 @@ function Step2({
               }}
               placeholder="Type and press Enter to add"
               disabled={(formData.interests || []).length >= 10}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#C70039] disabled:bg-gray-100"
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#A62D82] disabled:bg-gray-100"
             />
             <button
               onClick={addChip}
@@ -710,7 +754,7 @@ function Step3({
         Profile pictures
       </h2>
       <p className="mb-6 text-sm text-gray-600">
-        Upload at least 2 photos (drag & drop supported)
+        Upload at least 2 photos
       </p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
@@ -748,7 +792,7 @@ function Step3({
                     className="h-full w-full rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="text-center">
+                  <div className="text-center flex flex-col">
                     <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full  text-[#A62D82]">
                       +
                     </div>
@@ -756,7 +800,7 @@ function Step3({
                       {i === 0 ? "Main photo" : "Upload photo"}
                     </span>
                     {isDragOver && (
-                      <span className="text-xs text-[#A62D82] font-medium">
+                      <span className="text-md font-bold text-[#C70039]">
                         Drop here!
                       </span>
                     )}
