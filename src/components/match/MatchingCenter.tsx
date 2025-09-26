@@ -5,11 +5,16 @@ import ProfileModal from "./ProfileModal";
 import SwipeDeck, { Card } from "@/components/swipe/SwipeDeck";
 import { useMatchingProfiles } from "@/hooks/useMatchingProfiles";
 import { useMatchingContext } from "@/context/MatchingContext";
+import { supabase } from "@/lib/supabase/supabaseClient";
+import axios from "axios";
+import MerryMatch from "./MerryMatch";
 
 function MatchingCenter() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [openProfile, setOpenProfile] = useState(false);
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
+  const [showMatch, setShowMatch] = useState(false);
+  const [matchedCardId, setMatchedCardId] = useState<string | null>(null); 
 
   // ใช้ context เพื่อดึง filters และ searchTrigger
   const { filters, searchTrigger } = useMatchingContext();
@@ -43,27 +48,81 @@ function MatchingCenter() {
 
   const { left: leftCard, right: rightCard } = getPreviewCards();
 
-  const handleLike = (card?: Card) => {
-    if (card) {
-      alert(`You liked ${card.title} ${card.age}! ❤️`);
-      removeCard(card.id);
-      setCurrentImageIndex(0);
-    } else if (currentCard) {
-      alert(`You liked ${currentCard.title} ${currentCard.age}! ❤️`);
-      removeCard(currentCard.id);
+  // เพิ่มฟังก์ชันสำหรับเรียก merry API
+  const callMerryAPI = async (swiped_id: string, action: "like" | "pass") => {
+    try {
+      // ดึง token จาก Supabase session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        console.error('No valid session found');
+        return { success: false, match: false };
+      }
+
+      const response = await axios.post('/api/merry', {
+        swiped_id,
+        action
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      const result = response.data;
+      
+      // return ผลลัพธ์แทนการ set state
+      return { success: true, match: result.match || false };
+    } catch (error: any) {
+      return { success: false, match: false };
+    }
+  };
+
+   // เพิ่มฟังก์ชันปิด match modal
+   const handleCloseMatch = () => {
+    setShowMatch(false);
+    // ลบการ์ดหลังจากปิด match modal
+    if (matchedCardId) {
+      removeCard(matchedCardId);
+      setMatchedCardId(null);
       setCurrentImageIndex(0);
     }
   };
 
-  const handlePass = (card?: Card) => {
-    if (card) {
-      alert(`You passed ${card.title} ${card.age}! ✕`);
-      removeCard(card.id);
+  const handleLike = async (card?: Card) => {
+    const targetCard = card || currentCard;
+    if (!targetCard) return;
+
+    // เรียก API ก่อน
+    const result = await callMerryAPI(targetCard.id, 'like');
+    
+    if (result.success) {
+      if (result.match) {
+        // ถ้า match ให้แสดง match modal และเก็บ ID การ์ดไว้
+        setShowMatch(true);
+        setMatchedCardId(targetCard.id);
+      } else {
+        // ถ้าไม่ match ให้ลบการ์ดเลย
+        removeCard(targetCard.id);
+        setCurrentImageIndex(0);
+      }
+    } else {
+      alert('Error occurred while liking. Please try again.');
+    }
+  };
+
+  const handlePass = async (card?: Card) => {
+    const targetCard = card || currentCard;
+    if (!targetCard) return;
+  
+    // เรียก API ก่อน - เปลี่ยนจาก 'dislike' เป็น 'pass'
+    const result = await callMerryAPI(targetCard.id, 'pass');
+    
+    if (result.success) {
+      // pass ไม่มี match เลยลบการ์ดเลย
+      removeCard(targetCard.id);
       setCurrentImageIndex(0);
-    } else if (currentCard) {
-      alert(`You passed ${currentCard.title} ${currentCard.age}! ✕`);
-      removeCard(currentCard.id);
-      setCurrentImageIndex(0);
+    } else {
+      alert('Error occurred while passing. Please try again.');
     }
   };
 
@@ -169,6 +228,7 @@ function MatchingCenter() {
             onPass={handlePass}
             currentImageIndex={currentImageIndex}
             onCurrentCardChange={handleCurrentCardChange}
+            disabled={showMatch}
           />
           
           {/* Gradient Overlay at Bottom */}
@@ -176,59 +236,75 @@ function MatchingCenter() {
         </div>
 
         {/* Controls */}
-        <div className="absolute -bottom-6 sm:-bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:gap-4 z-30">
-          <div className="flex flex-row w-[550px] max-w-[650px] px-4 justify-between">
-            <div className="flex flex-row gap-2 items-center">
-              <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.title || ''}</h3>
-              <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.age || ''}</h3>
+        {!showMatch && ( // เพิ่มเงื่อนไขเพื่อซ่อนเมื่อ match
+          <div className="absolute -bottom-6 sm:-bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:gap-4 z-30">
+            <div className="flex flex-row w-[550px] max-w-[650px] px-4 justify-between">
+              <div className="flex flex-row gap-2 items-center">
+                <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.title || ''}</h3>
+                <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.age || ''}</h3>
 
-              <button
-                onClick={handleProfile}
-                className="rounded-full w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] backdrop-blur-xl grid place-items-center shadow-xl bg-white/30"
-                aria-label="Open profile"
-              >
-                <FaEye className="w-[10px] h-[10px] sm:w-[12px] sm:h-[12px] text-white" />
-              </button>
+                <button
+                  onClick={handleProfile}
+                  className="rounded-full w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] backdrop-blur-xl grid place-items-center shadow-xl bg-white/30"
+                  aria-label="Open profile"
+                >
+                  <FaEye className="w-[10px] h-[10px] sm:w-[12px] sm:h-[12px] text-white" />
+                </button>
+              </div>
+
+              <div className="flex">
+                <button
+                  onClick={handlePreviousImage}
+                  className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
+                >
+                  <FaArrowLeft className="text-white drop-shadow-2xl text-sm sm:text-base" />
+                </button>
+                <button
+                  onClick={handleNextImage}
+                  className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
+                >
+                  <FaArrowRight className="text-white drop-shadow-2xl text-sm sm:text-base" />
+                </button>
+              </div>
             </div>
 
-            <div className="flex">
+            <div className="flex gap-4 sm:gap-6">
               <button
-                onClick={handlePreviousImage}
-                className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
+                onClick={() => handlePass()}
+                className="w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
               >
-                <FaArrowLeft className="text-white drop-shadow-2xl text-sm sm:text-base" />
+                <IoClose className="text-gray-400 w-7 h-7 sm:w-9 sm:h-9" />
               </button>
               <button
-                onClick={handleNextImage}
-                className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
+                onClick={() => handleLike()}
+                className="w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
               >
-                <FaArrowRight className="text-white drop-shadow-2xl text-sm sm:text-base" />
+                <FaHeart className="text-red-500 w-6 h-6 sm:w-7 sm:h-7" />
               </button>
             </div>
           </div>
+        )}
 
-          <div className="flex gap-4 sm:gap-6">
-            <button
-              onClick={() => handlePass()}
-              className="w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
-            >
-              <IoClose className="text-gray-400 w-7 h-7 sm:w-9 sm:h-9" />
-            </button>
-            <button
-              onClick={() => handleLike()}
-              className="w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
-            >
-              <FaHeart className="text-red-500 w-6 h-6 sm:w-7 sm:h-7" />
-            </button>
+        {/* MerryMatch - แสดงเฉพาะเมื่อ match */}
+        {showMatch && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center z-50 cursor-pointer"
+            onClick={handleCloseMatch}
+          >
+            <div className="pointer-events-auto">
+              <MerryMatch />
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="absolute bottom-0 left-0 right-0">
-        <p className="text-[#646D89] text-center text-sm">
-          Merry limit Today
-          <span className="text-[#FF1659] ml-2">20/20</span>
-        </p>
+        {!showMatch && ( // เพิ่มเงื่อนไขเพื่อซ่อน Merry limit เมื่อ match
+          <div className="absolute mt-15 left-0 right-0">
+            <p className="text-[#646D89] text-center text-sm">
+              Merry limit Today
+              <span className="text-[#FF1659] ml-2">20/20</span>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Profile Modal */}

@@ -100,7 +100,6 @@ export async function updatePhotoUrl(photoUrl: string): Promise<boolean> {
 // ดึง profiles สำหรับ matching (ไม่รวมตัวเอง)
 export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Profile[]> {
   try {
-    console.log('🔍 Getting matching profiles with filters:', filters);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -108,9 +107,7 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
       return [];
     }
 
-    console.log('👤 Current user ID:', user.id);
-
-    // สร้าง query พื้นฐาน
+    // ใช้ LEFT JOIN เพื่อ exclude คนที่เคย swipe แล้ว
     let query = supabase
       .from('profiles')
       .select(`
@@ -124,7 +121,7 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
         location,
         gender
       `)
-      .neq('id', user.id);
+      .neq('id', user.id); // ไม่รวมตัวเอง
 
     // เพิ่ม age filter
     if (filters?.minAge && filters.minAge > 18) {
@@ -134,58 +131,52 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
       query = query.lte('age', filters.maxAge);
     }
 
-    const { data, error } = await query.limit(100);
+    // ดึงข้อมูลทั้งหมด
+    const { data, error } = await query.limit(200);
 
     if (error) {
       console.error('❌ Profiles fetch error:', error);
       return [];
     }
 
-    console.log(`📊 Raw profiles from database: ${data?.length || 0}`);
-    console.log('📋 Sample profile:', data?.[0]);
+    // ดึง list ของคนที่เคย swipe แล้ว
+    const { data: swipedUsers, error: swipeError } = await supabase
+      .from('swipes')
+      .select('swiped_id')
+      .eq('swiper_id', user.id);
 
-    if (!data || data.length === 0) {
-      console.log('⚠️ No profiles found in database');
-      return [];
+    if (swipeError) {
+      console.error('❌ Swipes fetch error:', swipeError);
+      // ถ้า error ให้ทำต่อไปได้ แต่ไม่ filter
     }
 
-    // กรองข้อมูลใน JavaScript - ผ่อนคลายเงื่อนไข
-    let filteredProfiles = data.filter(profile => {
-      // ต้องมีชื่อ
+    const swipedUserIds = new Set(swipedUsers?.map(s => s.swiped_id) || []);
+    console.log(`🚫 Already swiped users: ${swipedUserIds.size}`);
+
+    // กรองคนที่เคย swipe แล้วออก
+    const unswipedProfiles = data?.filter(profile => !swipedUserIds.has(profile.id)) || [];
+    
+    console.log(`📊 Profiles before filtering: ${data?.length || 0}`);
+    console.log(`📊 Profiles after removing swiped: ${unswipedProfiles.length}`);
+
+    // กรองข้อมูลอื่นๆ ใน JavaScript
+    let filteredProfiles = unswipedProfiles.filter(profile => {
       const hasName = profile.name && profile.name.trim() !== '';
-      console.log(`Profile ${profile.name}: hasName=${hasName}`);
-      
-      // ตรวจสอบรูปภาพ - ให้ผ่านได้ง่ายขึ้น
       const hasPhotos = (profile.photos && Array.isArray(profile.photos) && profile.photos.length > 0) ||
                        (profile.photo_url && profile.photo_url.trim() !== '') ||
-                       true; // อนุญาตให้ผ่านชั่วคราวเพื่อ debug
-      console.log(`Profile ${profile.name}: hasPhotos=${hasPhotos}, photos=${profile.photos}, photo_url=${profile.photo_url}`);
-      
-      // ตรวจสอบอายุ - ให้ผ่านได้ง่ายขึ้น
-      const hasAge = profile.age !== null && profile.age !== undefined;
-      console.log(`Profile ${profile.name}: hasAge=${hasAge}, age=${profile.age}`);
+                       true;
       
       // Filter by gender ถ้ามี
       let genderMatch = true;
-      if (filters?.genders && filters.genders.length > 0) {
-        if (filters.genders.includes('default')) {
-          genderMatch = true;
-        } else {
-          const profileGender = profile.gender?.toLowerCase() || '';
-          genderMatch = filters.genders.some(g => g.toLowerCase() === profileGender);
-          console.log(`Profile ${profile.name}: genderMatch=${genderMatch}, profileGender=${profileGender}, filterGenders=${filters.genders}`);
-        }
+      if (filters?.genders && filters.genders.length > 0 && !filters.genders.includes('default')) {
+        const profileGender = profile.gender?.toLowerCase() || '';
+        genderMatch = filters.genders.some(g => g.toLowerCase() === profileGender);
       }
       
-      const passed = hasName && hasPhotos && genderMatch;
-      console.log(`Profile ${profile.name}: FINAL RESULT=${passed}`);
-      
-      return passed;
+      return hasName && hasPhotos && genderMatch;
     }).slice(0, 20);
 
-    console.log(`✅ Found ${filteredProfiles.length} matching profiles after filtering`);
-    console.log('📝 Filtered profiles:', filteredProfiles.map(p => ({ name: p.name, age: p.age, gender: p.gender, location: p.location })));
-    
+    console.log(`✅ Found ${filteredProfiles.length} new matching profiles`);
     return filteredProfiles;
   } catch (error) {
     console.error('💥 Error getting matching profiles:', error);
