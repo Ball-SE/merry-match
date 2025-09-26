@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
 import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 import { SEA_COUNTRY_OPTIONS } from "@/data/sea-countries";
 import { SEA_CITIES_BY_COUNTRY } from "@/data/sea-cities";
@@ -114,15 +116,24 @@ function Step1({
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">Date of birth</label>
-            <input
-              type="date"
-              name="dateOfBirth"
-              value={formData.dateOfBirth}
-              onChange={handleInputChange}
+            <DatePicker
+              selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+              onChange={(date: Date | null) => {
+                const dateString = date ? date.toISOString().split('T')[0] : '';
+                handleInputChange({
+                  target: { name: 'dateOfBirth', value: dateString }
+                } as any);
+              }}
               onBlur={() => handleBlur('dateOfBirth')}
+              placeholderText="01/01/2022"
               className={getInputClassName('dateOfBirth')}
-              min={getMinBirthDate()}
-              max={getMaxBirthDate()}
+              dateFormat="dd/MM/yyyy"
+              showYearDropdown
+              showMonthDropdown
+              dropdownMode="select"
+              yearDropdownItemNumber={100}
+              minDate={new Date(1944, 0, 1)} // 80 ปีที่แล้ว
+              maxDate={new Date(2011, 11, 31)} // 13 ปีที่แล้ว
             />
             {touched.dateOfBirth && errors.dateOfBirth && (
               <p className="mt-1 text-sm text-red-500">{errors.dateOfBirth}</p>
