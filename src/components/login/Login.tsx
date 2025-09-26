@@ -67,9 +67,9 @@ export default function LoginPage() {
         // The useEffect will redirect the user when auth state changes
         // ตรวจสอบ admin role และ redirect
         if (result.user?.app_metadata?.is_admin === true) {
-          router.push('/admin')
+          router.replace('/admin')
         } else {
-          router.push('/')
+          router.replace('/')
         }
       }
     } catch (error) {

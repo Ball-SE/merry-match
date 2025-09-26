@@ -7,7 +7,7 @@ export default function PackagePage() {
             <NavBar />
             
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-10">
+            <div className=" mx-auto px-4 py-10">
                 {/* Header Section */}
                 <div className="mb-12 ml-46">
                     <p className="text-sm text-[#7B4429] uppercase tracking-wider mb-2">MERRY MEMBERSHIP</p>
@@ -20,7 +20,7 @@ export default function PackagePage() {
                 </div>
 
                 {/* Pricing Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
                     {/* Basic Package */}
                     <div className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative">
                         <div className="text-left mb-6">
