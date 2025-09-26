@@ -93,14 +93,14 @@ function MerryList () {
                 <div className="flex justify-between mx-8 items-center lg:justify-start lg:gap-20">
                     <div>
                         <div className="flex ">
-                        <p className="text-[#C70039] font-extrabold text-xl">16</p>
+                        <p className="text-[#C70039] font-extrabold text-xl">{swipeList.length}</p>
                         <Heart color = "#ff1659" fill="#ff1659" className="ml-2"/>
                         </div>
                         <p className="text-[#646D89]">Merry to you</p>
                     </div>
                     <div>
                         <div className="flex">
-                            <p className="text-[#C70039] font-extrabold text-xl">3</p>
+                            <p className="text-[#C70039] font-extrabold text-xl">{matchList.length}</p>
                             <div className="ml-2">
                                 <Heart color = "#ff1659" fill="#ff1659" 
                                 className="absolute" />
