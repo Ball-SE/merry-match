@@ -29,7 +29,7 @@ export default function FooterSummitStep({
           className={`flex gap-2 button-ghost ${
             isFirst
               ? "cursor-not-allowed text-gray-300"
-              : "text-gray-500 hover:text-gray-700"
+              : "text-[#C70039] hover:text-gray-700"
           }`}
         >
           <Image
