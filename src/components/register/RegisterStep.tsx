@@ -74,24 +74,6 @@ function Step1({
     return `${baseClass} border-gray-300 focus:ring-[#C70039]`;
   };
 
-  const getDefaultBirthDate = () => {
-    const today = new Date();
-    const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-    return eighteenYearsAgo.toISOString().split('T')[0];
-  };
-  // เพิ่มฟังก์ชันสำหรับคำนวณ min/max
-  const getMinBirthDate = () => {
-    const today = new Date();
-    const hundredYearsAgo = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-    return hundredYearsAgo.toISOString().split('T')[0];
-  };
-
-  const getMaxBirthDate = () => {
-    const today = new Date();
-    const thirteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-    return thirteenYearsAgo.toISOString().split('T')[0];
-  };
-
   return (
     <div>
       <h2 className="mb-6 text-2xl font-bold text-[#A62D82]">Basic Information</h2>
@@ -155,6 +137,16 @@ function Step1({
               }}
               onBlur={() => handleBlur('location')}
               className={`${getInputClassName('location')} ${!formData.location ? 'text-gray-400' : ''}`}
+              style={{
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                backgroundImage: "url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23666\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"%3e%3cpolyline points=\"6,9 12,15 18,9\"%3e%3c/polyline%3e%3c/svg%3e')",
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+                backgroundSize: '16px',
+                paddingRight: '48px'
+              }}
             >
               <option value="">{!formData.location ? 'Thailand' : 'Select location'}</option>
 
@@ -178,6 +170,16 @@ function Step1({
               onBlur={() => handleBlur('city')}
               disabled={!formData.location}
               className={`${getInputClassName('city')} ${!formData.location ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+              style={{
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                backgroundImage: "url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23666\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"%3e%3cpolyline points=\"6,9 12,15 18,9\"%3e%3c/polyline%3e%3c/svg%3e')",
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+                backgroundSize: '16px',
+                paddingRight: '48px'
+              }}
             >
               <option value="">{!formData.location ? 'Bangkok' : 'Select city'}</option>
               {(SEA_CITIES_BY_COUNTRY[formData.location] || []).map((d) => (
