@@ -9,9 +9,17 @@ interface SwipeDeckProps {
   onPass?: (card: Card) => void;
   currentImageIndex?: number; // เพิ่ม prop นี้
   onCurrentCardChange?: (card: Card | null) => void; // เพิ่ม callback สำหรับส่งข้อมูลการ์ดปัจจุบัน
+  disabled?: boolean;
 }
 
-export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0, onCurrentCardChange }: SwipeDeckProps) {
+export default function SwipeDeck({ 
+  items, 
+  onLike, 
+  onPass, 
+  currentImageIndex = 0, 
+  onCurrentCardChange,
+  disabled = false
+}: SwipeDeckProps) {
   const [stack, setStack] = useState(items);
   const [dx, setDx] = useState(0);
   const [dy, setDy] = useState(0);
@@ -19,6 +27,11 @@ export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0
 
   const top = stack[0];
   const rest = useMemo(() => stack.slice(1), [stack]);
+
+  // ✅ อัพเดท stack เมื่อ items prop เปลี่ยน
+  useEffect(() => {
+    setStack(items);
+  }, [items]);
 
   // ส่งข้อมูลการ์ดปัจจุบันกลับไปยัง parent component
   useEffect(() => {
@@ -28,9 +41,16 @@ export default function SwipeDeck({ items, onLike, onPass, currentImageIndex = 0
   }, [top, onCurrentCardChange]);
 
   const handlers = useSwipeable({
-    onSwipeStart: () => setDragging(true),
-    onSwiping: (e) => { setDx(e.deltaX); setDy(e.deltaY); },
+    onSwipeStart: () => !disabled && setDragging(true),
+    onSwiping: (e) => { 
+      if (!disabled) { // เพิ่มเงื่อนไข disabled
+        setDx(e.deltaX); 
+        setDy(e.deltaY); 
+      }
+    },
     onSwiped: (e) => {
+      if (disabled) return; // หยุดการทำงานเมื่อ disabled
+      
       setDragging(false);
       const shouldDismiss =
         Math.abs(e.deltaX) > 120 || Math.abs(e.velocity) > 0.6;
