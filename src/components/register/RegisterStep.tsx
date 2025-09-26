@@ -1,8 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { validateBasicInfo, validateIdentitiesAndInterests, validatePhotos } from "@/middleware/register-validation";
-import { uploadProfilePhoto, deleteProfilePhoto } from "@/lib/supabase/uploadPhotoUtils";
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import {
+  validateBasicInfo,
+  validateIdentitiesAndInterests,
+  validatePhotos,
+} from "@/middleware/register-validation";
+import {
+  uploadProfilePhoto,
+  deleteProfilePhoto,
+} from "@/lib/supabase/uploadPhotoUtils";
+import { CustomDatePicker } from "@/components/register/date-picker";
+import { useEmailValidation } from "@/hooks/useEmailValidation";
 
 import { SEA_COUNTRY_OPTIONS } from "@/data/sea-countries";
 import { SEA_CITIES_BY_COUNTRY } from "@/data/sea-cities";
@@ -26,7 +33,9 @@ interface FormData {
 interface Props {
   currentStep: number;
   formData: FormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   setPhotos: (next: string[]) => void;
   setInterests: (chips: string[]) => void;
 }
@@ -38,14 +47,20 @@ export default function RegisterStep({
   setPhotos,
   setInterests,
 }: Props) {
-  if (currentStep === 1) return <Step1 formData={formData} handleInputChange={handleInputChange} />;
-  if (currentStep === 2) return <Step2 formData={formData} handleInputChange={handleInputChange} setInterests={setInterests} />;
-  return <Step3 formData={formData} photos={formData.photos} setPhotos={setPhotos} />;
+  if (currentStep === 1)
+    return <Step1 formData={formData} handleInputChange={handleInputChange} />;
+  if (currentStep === 2)
+    return (
+      <Step2
+        formData={formData}
+        handleInputChange={handleInputChange}
+        setInterests={setInterests}
+      />
+    );
+  return (
+    <Step3 formData={formData} photos={formData.photos} setPhotos={setPhotos} />
+  );
 }
-
-
-
-
 
 /* ------------------------------ Step 1 ------------------------------ */
 function Step1({
@@ -53,19 +68,25 @@ function Step1({
   handleInputChange,
 }: {
   formData: FormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
 }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // เพิ่ม email validation hook
+  const emailValidation = useEmailValidation(formData.email,1000);
+
   const handleBlur = (fieldName: string) => {
-    setTouched(prev => ({ ...prev, [fieldName]: true }));
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
     const validation = validateBasicInfo(formData);
     setErrors(validation.errors);
   };
 
   const getInputClassName = (fieldName: string) => {
-    const baseClass = "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
+    const baseClass =
+      "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const hasError = touched[fieldName] && errors[fieldName];
 
     if (hasError) {
@@ -76,112 +97,135 @@ function Step1({
 
   return (
     <div>
-      <h2 className="mb-6 text-2xl font-bold text-[#A62D82]">Basic Information</h2>
+      <h2 className="mb-6 text-2xl font-bold text-[#A62D82]">
+        Basic Information
+      </h2>
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Name</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Name
+            </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('name')}
+              onBlur={() => handleBlur("name")}
               placeholder="Jon Snow"
-              className={getInputClassName('name')}
+              className={getInputClassName("name")}
             />
             {touched.name && errors.name && (
-              <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              <p className="mt-1 text-sm text-[#C70039]">{errors.name}</p>
             )}
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Date of birth</label>
-            <DatePicker
-              selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Date Picker
+            </label>
+            <CustomDatePicker
+              selected={
+                formData.dateOfBirth ? new Date(formData.dateOfBirth) : null
+              }
               onChange={(date: Date | null) => {
-                const dateString = date ? date.toISOString().split('T')[0] : '';
+                const dateString = date ? date.toISOString().split("T")[0] : "";
                 handleInputChange({
-                  target: { name: 'dateOfBirth', value: dateString }
+                  target: { name: "dateOfBirth", value: dateString },
                 } as any);
               }}
-              onBlur={() => handleBlur('dateOfBirth')}
-              placeholderText="01/01/2022"
-              className={getInputClassName('dateOfBirth')}
+              onBlur={() => handleBlur("dateOfBirth")}
+              placeholder="Place Holder"
+              className={getInputClassName("dateOfBirth")}
               dateFormat="dd/MM/yyyy"
-              showYearDropdown
-              showMonthDropdown
-              dropdownMode="select"
-              yearDropdownItemNumber={100}
               minDate={new Date(1944, 0, 1)} // 80 ปีที่แล้ว
               maxDate={new Date(2011, 11, 31)} // 13 ปีที่แล้ว
+              name="dateOfBirth"
+              id="dateOfBirth"
+              error={errors.dateOfBirth}
+              touched={touched.dateOfBirth}
             />
-            {touched.dateOfBirth && errors.dateOfBirth && (
-              <p className="mt-1 text-sm text-red-500">{errors.dateOfBirth}</p>
-            )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Location</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Location
+            </label>
             <select
               name="location"
               value={formData.location}
               onChange={(e) => {
                 handleInputChange(e);
                 // รีเซ็ต city เมื่อเปลี่ยนประเทศ
-                const resetCity = { target: { name: "city", value: "" } } as any;
+                const resetCity = {
+                  target: { name: "city", value: "" },
+                } as any;
                 handleInputChange(resetCity);
               }}
-              onBlur={() => handleBlur('location')}
-              className={`${getInputClassName('location')} ${!formData.location ? 'text-gray-400' : ''}`}
+              onBlur={() => handleBlur("location")}
+              className={`${getInputClassName("location")} ${
+                !formData.location ? "text-gray-400" : ""
+              }`}
               style={{
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-                backgroundImage: "url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23666\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"%3e%3cpolyline points=\"6,9 12,15 18,9\"%3e%3c/polyline%3e%3c/svg%3e')",
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 12px center',
-                backgroundSize: '16px',
-                paddingRight: '48px'
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
               }}
             >
-              <option value="">{!formData.location ? 'Thailand' : 'Select location'}</option>
+              <option value="">
+                {!formData.location ? "Thailand" : "Select location"}
+              </option>
 
-              {SEA_COUNTRY_OPTIONS.map(opt => (
+              {SEA_COUNTRY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
               ))}
             </select>
             {touched.location && errors.location && (
-              <p className="mt-1 text-sm text-red-500">{errors.location}</p>
+              <p className="mt-1 text-sm text-[#C70039]">{errors.location}</p>
             )}
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">City</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              City
+            </label>
             <select
               name="city"
               value={formData.city}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('city')}
+              onBlur={() => handleBlur("city")}
               disabled={!formData.location}
-              className={`${getInputClassName('city')} ${!formData.location ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+              className={`${getInputClassName("city")} ${
+                !formData.location
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : ""
+              }`}
               style={{
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-                backgroundImage: "url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23666\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"%3e%3cpolyline points=\"6,9 12,15 18,9\"%3e%3c/polyline%3e%3c/svg%3e')",
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 12px center',
-                backgroundSize: '16px',
-                paddingRight: '48px'
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
               }}
             >
-              <option value="">{!formData.location ? 'Bangkok' : 'Select city'}</option>
+              <option value="">
+                {!formData.location ? "Bangkok" : "Select city"}
+              </option>
               {(SEA_CITIES_BY_COUNTRY[formData.location] || []).map((d) => (
                 <option key={d.value} value={d.value}>
                   {d.label}
@@ -196,68 +240,128 @@ function Step1({
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Username</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Username
+            </label>
             <input
               type="text"
               name="username"
               value={formData.username}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('username')}
+              onBlur={() => handleBlur("username")}
               placeholder="At least 6 characters"
-              className={getInputClassName('username')}
+              className={getInputClassName("username")}
             />
             {touched.username && errors.username && (
-              <p className="mt-1 text-sm text-red-500">{errors.username}</p>
+              <p className="mt-1 text-sm text-[#C70039]">{errors.username}</p>
             )}
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Email</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Email
+            </label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('email')}
+              onBlur={() => handleBlur("email")}
               placeholder="name@website.com"
-              className={getInputClassName('email')}
+              className={getInputClassName("email")}
             />
-            {touched.email && errors.email && (
-              <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+            {/* แสดงสถานะการตรวจสอบ email ด้านล่าง input */}
+            {touched.email && (
+              <div className="mt-2 flex items-center gap-2">
+                {emailValidation.isChecking && (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent"></div>
+                    <span className="text-sm text-yellow-600">checking...</span>
+                  </>
+                )}
+                {!emailValidation.isChecking && emailValidation.isValid && (
+                  <>
+                    <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                      <svg
+                        className="h-2 w-2 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-green-600">
+                      Email is available
+                    </span>
+                  </>
+                )}
+                {!emailValidation.isChecking &&
+                  !emailValidation.isValid &&
+                  touched.email && (
+                    <>
+                      <div className="h-4 w-4 rounded-full bg-[#C70039] flex items-center justify-center">
+                        <svg
+                          className="h-2 w-2 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-[#C70039]">
+                        Email is already exists or invalid
+                      </span>
+                    </>
+                  )}
+              </div>
             )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Password</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('password')}
+              onBlur={() => handleBlur("password")}
               placeholder="At least 8 characters"
-              className={getInputClassName('password')}
+              className={getInputClassName("password")}
             />
             {touched.password && errors.password && (
-              <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+              <p className="mt-1 text-sm text-[#C70039]">{errors.password}</p>
             )}
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Confirm password</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Confirm password
+            </label>
             <input
               type="password"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('confirmPassword')}
+              onBlur={() => handleBlur("confirmPassword")}
               placeholder="At least 8 characters"
-              className={getInputClassName('confirmPassword')}
+              className={getInputClassName("confirmPassword")}
             />
             {touched.confirmPassword && errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
+              <p className="mt-1 text-sm text-[#C70039]">
+                {errors.confirmPassword}
+              </p>
             )}
           </div>
         </div>
@@ -273,7 +377,9 @@ function Step2({
   setInterests,
 }: {
   formData: FormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   setInterests: (chips: string[]) => void;
 }) {
   const [chipInput, setChipInput] = useState("");
@@ -281,13 +387,14 @@ function Step2({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleBlur = (fieldName: string) => {
-    setTouched(prev => ({ ...prev, [fieldName]: true }));
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
     const validation = validateIdentitiesAndInterests(formData);
     setErrors(validation.errors);
   };
 
   const getInputClassName = (fieldName: string) => {
-    const baseClass = "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
+    const baseClass =
+      "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const hasError = touched[fieldName] && errors[fieldName];
 
     if (hasError) {
@@ -312,18 +419,22 @@ function Step2({
 
   return (
     <div>
-      <h2 className="mb-6 text-2xl font-semibold text-[#2A0B21]">Identities and Interests</h2>
+      <h2 className="mb-6 text-2xl font-semibold text-[#2A0B21]">
+        Identities and Interests
+      </h2>
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Sexual identities</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Sexual identities
+            </label>
             <select
               name="sexualIdentities"
               value={formData.sexualIdentities}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('sexualIdentities')}
-              className={getInputClassName('sexualIdentities')}
+              onBlur={() => handleBlur("sexualIdentities")}
+              className={getInputClassName("sexualIdentities")}
             >
               <option value="">Select identity</option>
               <option value="male">Male</option>
@@ -331,18 +442,22 @@ function Step2({
               <option value="lgbtq+">LGBTQ+</option>
             </select>
             {touched.sexualIdentities && errors.sexualIdentities && (
-              <p className="mt-1 text-sm text-red-500">{errors.sexualIdentities}</p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.sexualIdentities}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Sexual preferences</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Sexual preferences
+            </label>
             <select
               name="sexualPreferences"
               value={formData.sexualPreferences}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('sexualPreferences')}
-              className={getInputClassName('sexualPreferences')}
+              onBlur={() => handleBlur("sexualPreferences")}
+              className={getInputClassName("sexualPreferences")}
             >
               <option value="">Select preference</option>
               <option value="male">Male</option>
@@ -350,20 +465,24 @@ function Step2({
               <option value="lgbtq+">LGBTQ+</option>
             </select>
             {touched.sexualPreferences && errors.sexualPreferences && (
-              <p className="mt-1 text-sm text-red-500">{errors.sexualPreferences}</p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.sexualPreferences}
+              </p>
             )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Racial preferences</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Racial preferences
+            </label>
             <select
               name="racialPreferences"
               value={formData.racialPreferences}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('racialPreferences')}
-              className={getInputClassName('racialPreferences')}
+              onBlur={() => handleBlur("racialPreferences")}
+              className={getInputClassName("racialPreferences")}
             >
               <option value="">Select preference</option>
               <option value="asian">Asian</option>
@@ -373,18 +492,22 @@ function Step2({
               <option value="mixed">Mixed</option>
             </select>
             {touched.racialPreferences && errors.racialPreferences && (
-              <p className="mt-1 text-sm text-red-500">{errors.racialPreferences}</p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.racialPreferences}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Meeting interests</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Meeting interests
+            </label>
             <select
               name="meetingInterests"
               value={formData.meetingInterests}
               onChange={handleInputChange}
-              onBlur={() => handleBlur('meetingInterests')}
-              className={getInputClassName('meetingInterests')}
+              onBlur={() => handleBlur("meetingInterests")}
+              className={getInputClassName("meetingInterests")}
             >
               <option value="">Select interest</option>
               <option value="friends">Friends</option>
@@ -393,7 +516,9 @@ function Step2({
               <option value="casual">Casual meeting</option>
             </select>
             {touched.meetingInterests && errors.meetingInterests && (
-              <p className="mt-1 text-sm text-red-500">{errors.meetingInterests}</p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.meetingInterests}
+              </p>
             )}
           </div>
         </div>
@@ -404,7 +529,10 @@ function Step2({
           </label>
           <div className="flex flex-wrap gap-2 mb-3">
             {(formData.interests || []).map((chip, i) => (
-              <span key={`${chip}-${i}`} className="flex items-center gap-2 rounded-full bg-[#F6F7FC] px-3 py-1 text-sm text-[#2A0B21]">
+              <span
+                key={`${chip}-${i}`}
+                className="flex items-center gap-2 rounded-full bg-[#F6F7FC] px-3 py-1 text-sm text-[#2A0B21]"
+              >
                 {chip}
                 <button
                   onClick={() => removeChip(i)}
@@ -438,7 +566,9 @@ function Step2({
             </button>
           </div>
           {(formData.interests || []).length >= 10 && (
-            <p className="mt-1 text-sm text-yellow-600">Maximum 10 interests reached</p>
+            <p className="mt-1 text-sm text-yellow-600">
+              Maximum 10 interests reached
+            </p>
           )}
         </div>
       </div>
@@ -462,7 +592,12 @@ function Step3({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const folderRef = useRef(
     formData.email
-      ? `${formData.email.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '_').slice(0, 24)}`
+      ? `${formData.email
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-_]/g, "_")
+          .slice(0, 24)}`
       : `temp-user-${Date.now()}`
   );
 
@@ -487,7 +622,6 @@ function Step3({
     }
   };
 
-
   const validateCurrentPhotos = () => {
     const validation = validatePhotos(photos);
     setErrors(validation.errors);
@@ -500,31 +634,31 @@ function Step3({
 
     // ตรวจสอบขนาดไฟล์ (10MB = 10 * 1024 * 1024 bytes)
     if (file.size > 10 * 1024 * 1024) {
-      alert('you cannot upload more than 10MB');
+      alert("you cannot upload more than 10MB");
       return;
     }
 
     // ตรวจสอบประเภทไฟล์
-    if (!file.type.startsWith('image/')) {
-      alert('please select only image files');
+    if (!file.type.startsWith("image/")) {
+      alert("please select only image files");
       return;
     }
 
     // บีบอัดถ้าไฟล์ใหญ่กว่า 1MB
     if (file.size > 1 * 1024 * 1024) {
       try {
-        const { compressImageToTarget } = await import('@/lib/image/browserImageProcessor');
+        const { compressImageToTarget } = await import(
+          "@/lib/image/browserImageProcessor"
+        );
         file = await compressImageToTarget(file, 1 * 1024 * 1024);
       } catch (e) {
-        console.error('Compress failed:', e);
-        alert('Failed to compress image');
+        console.error("Compress failed:", e);
+        alert("Failed to compress image");
         return;
       }
     }
 
-
-
-    setUploading(prev => {
+    setUploading((prev) => {
       const next = [...prev];
       next[index] = true;
       return next;
@@ -542,13 +676,13 @@ function Step3({
         setPhotos(newPhotos);
         validateCurrentPhotos();
       } else {
-        alert(result.error || 'upload photo failed');
+        alert(result.error || "upload photo failed");
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
-      alert('upload photo failed');
+      console.error("Upload error:", error);
+      alert("upload photo failed");
     } finally {
-      setUploading(prev => {
+      setUploading((prev) => {
         const next = [...prev];
         next[index] = false;
         return next;
@@ -560,7 +694,7 @@ function Step3({
     const photoUrl = photos[idx];
 
     // ลบรูปจาก Storage ถ้าเป็น URL จริง (ไม่ใช่ data URL)
-    if (photoUrl && photoUrl.startsWith('http')) {
+    if (photoUrl && photoUrl.startsWith("http")) {
       await deleteProfilePhoto(photoUrl);
     }
 
@@ -572,8 +706,12 @@ function Step3({
 
   return (
     <div>
-      <h2 className="mb-2 text-2xl font-semibold text-[#2A0B21]">Profile pictures</h2>
-      <p className="mb-6 text-sm text-gray-600">Upload at least 2 photos (drag & drop supported)</p>
+      <h2 className="mb-2 text-2xl font-semibold text-[#2A0B21]">
+        Profile pictures
+      </h2>
+      <p className="mb-6 text-sm text-gray-600">
+        Upload at least 2 photos (drag & drop supported)
+      </p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => {
@@ -589,27 +727,38 @@ function Step3({
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, i)}
             >
-              <div className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-colors ${isDragOver
-                ? 'border-[#A62D82] bg-[#C70039]/10'
-                : photos.length < 2 && i < 2
-                  ? 'border-red-300'
-                  : 'border-gray-300'
-                }`}>
+              <div
+                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-colors ${
+                  isDragOver
+                    ? "border-[#A62D82] bg-[#C70039]/10"
+                    : photos.length < 2 && i < 2
+                    ? "border-red-300"
+                    : "border-gray-300"
+                }`}
+              >
                 {isUploading ? (
                   <div className="text-center">
                     <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#A62D82]"></div>
                     <span className="text-xs text-gray-500">Uploading...</span>
                   </div>
                 ) : url ? (
-                  <img src={url} alt={`photo-${i}`} className="h-full w-full rounded-xl object-cover" />
+                  <img
+                    src={url}
+                    alt={`photo-${i}`}
+                    className="h-full w-full rounded-xl object-cover"
+                  />
                 ) : (
                   <div className="text-center">
-                    <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full  text-[#A62D82]">+</div>
+                    <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full  text-[#A62D82]">
+                      +
+                    </div>
                     <span className="text-sm font-medium text-[#A62D82]">
                       {i === 0 ? "Main photo" : "Upload photo"}
                     </span>
                     {isDragOver && (
-                      <span className="text-xs text-[#A62D82] font-medium">Drop here!</span>
+                      <span className="text-xs text-[#A62D82] font-medium">
+                        Drop here!
+                      </span>
                     )}
                   </div>
                 )}
@@ -635,15 +784,13 @@ function Step3({
         })}
       </div>
 
-      {
-        errors.photos && (
-          <p className="mt-4 text-sm text-red-500">{errors.photos}</p>
-        )
-      }
+      {errors.photos && (
+        <p className="mt-4 text-sm text-red-500">{errors.photos}</p>
+      )}
 
       <div className="mt-4 text-sm text-gray-500">
         {photos.length}/5 photos uploaded
       </div>
-    </div >
+    </div>
   );
 }
