@@ -1,3 +1,4 @@
+// pages/api/merry.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
@@ -39,13 +40,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         { swiper_id: user.id, swiped_id, action },
         { onConflict: "swiper_id,swiped_id", ignoreDuplicates: true }
       );
-      if (upErr) {
-        console.error('💥 Database upsert error:', upErr);
-        return res.status(500).json({ error: upErr.message });
-      }
+    if (upErr) return res.status(500).json({ error: upErr.message });
+
+    // 5.1) ดึงข้อมูล user ที่ถูก swipe (swiped_id)
+    const { data: swipedUser, error: swipedErr } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", swiped_id)
+    .maybeSingle();
+    if (swipedErr) console.error("Error fetching swiped user:", swipedErr?.message);
 
     // 6) เช็ค like สวนกลับ (สลับข้างให้ถูก)
     let matched = false;
+    let matchUser: any = null;
     if (action === "like") {
       const { data: reciprocal, error: recErr } = await supabase
         .from("swipes")
@@ -54,24 +61,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .eq("swiped_id", user.id)
         .eq("action", "like")
         .maybeSingle();
-        if (recErr) {
-          console.error('💥 Reciprocal check error:', recErr);
-          return res.status(500).json({ error: recErr.message });
-        }
+      if (recErr) return res.status(500).json({ error: recErr.message });
 
       if (reciprocal) {
         const [a, b] = [user.id, swiped_id].sort();
         const { error: matchErr } = await supabase
           .from("matches")
           .upsert({ user1_id: a, user2_id: b }, { onConflict: "user1_id,user2_id", ignoreDuplicates: true });
-          if (matchErr) {
-            console.error("💥 Match creation error:", matchErr.message);
-          }
+        if (matchErr) console.error("match upsert:", matchErr.message);
         matched = true;
+
+        // ถ้า match ให้เก็บข้อมูลอีกฝั่งด้วย
+      matchUser = swipedUser;
       }
     }
 
-    return res.status(200).json({ message: matched ? "Liked — it's a match!" : "Swipe saved", match: matched });
+    return res.status(200).json({
+      message: matched ? "Liked — it's a match!" : "Swipe saved",
+      match: matched,
+      swipedUser,  // ใครที่เราเพิ่ง swipe
+      matchUser,   // ถ้า match เก็บข้อมูลอีกฝ่าย
+    });
   } catch (e: any) {
     console.error("merry API error:", e);
     return res.status(500).json({ error: e?.message ?? "server error" });
