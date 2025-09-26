@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
-    return res.status(405).json({ success: false, message: "Method not allowed" });
+    return res.status(405).json({ success: false, message: "Method not allowed. Use GET method." });
   }
 
   try {
@@ -21,18 +21,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (getUserErr) return res.status(401).json({ error: getUserErr.message });
     if (!user) return res.status(401).json({ error: "Invalid token" });
 
+    // ✅ แก้ filter: เอาเฉพาะ swiper_id = user.id
     const { data, error } = await supabase
-      .from("matches")
+      .from("swipes")
       .select(`
         id,
-        matched_at,
-        user1_id,
-        user2_id,
-        user1:profiles!matches_user1_id_fkey (*),
-        user2:profiles!matches_user2_id_fkey (*)
+        created_at,
+        user1:profiles!swipes_swiper_id_fkey (*),
+        user2:profiles!swipes_swiped_id_fkey (*)
       `)
-      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-      .order("matched_at", { ascending: false });
+      .eq("swiper_id", user.id)
+      .order("created_at", { ascending: false });
 
     if (error) {
       return res.status(400).json({
@@ -42,34 +41,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // ✅ แปลง data ให้ return เฉพาะ “อีกฝั่ง”
-    const transformed = data?.map((match: any) => {
-      if (match.user1_id === user.id) return match.user2;
-      if (match.user2_id === user.id) return match.user1;
-      return null;
-    }).filter(Boolean); // ลบ null ออก
-
-    // 🔹 ลบ swipe ของคู่ที่ match แล้ว (ถ้ามี)
-    const matchedIds = data?.map((match: any) => {
-      if (match.user1_id === user.id) return match.user2_id;
-      if (match.user2_id === user.id) return match.user1_id;
-      return null;
-    }).filter(Boolean);
-
-    if (matchedIds && matchedIds.length > 0) {
-      const { error: delErr } = await supabase
-        .from("swipes")
-        .delete()
-        .eq("swiper_id", user.id)
-        .in("swiped_id", matchedIds);
-      if (delErr) console.error("Failed to delete swipes for matched users:", delErr.message);
-    }
+    // ✅ map ให้ return เฉพาะ user2 (คนที่เรา swipe) และกรอง null/undefined ออก
+    const swipedUsers = (data?.map((item: any) => item.user2).filter(Boolean)) ?? [];
 
     res.status(200).json({
       success: true,
       message: "Users fetched successfully",
-      data: transformed,
-      count: transformed?.length || 0,
+      data: swipedUsers,
+      count: swipedUsers.length,
     });
   } catch (error: any) {
     console.error("merry API error:", error);
