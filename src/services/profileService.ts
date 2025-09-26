@@ -119,7 +119,11 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
         photo_url,
         bio,
         location,
-        gender
+        gender,
+        sexual_preferences,
+        racial_preferences,
+        meeting_interests,
+        interests
       `)
       .neq('id', user.id); // ไม่รวมตัวเอง
 

@@ -20,7 +20,7 @@ function MatchingCenter() {
   const { filters, searchTrigger } = useMatchingContext();
   
   // ใช้ custom hook
-  const { cards, loading, error, removeCard, updateWithFilters } = useMatchingProfiles();
+  const { profiles, cards, loading, error, removeCard, updateWithFilters } = useMatchingProfiles();
 
   // แปลง filters เป็น format ที่ service ต้องการ
   const profileFilters = useMemo(() => ({
@@ -312,6 +312,7 @@ function MatchingCenter() {
         isOpen={openProfile} 
         onClose={closeProfile} 
         currentCard={currentCard} 
+        profiles={profiles}
         onLike={handleLike} 
         onPass={handlePass} 
       />

@@ -371,7 +371,7 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
                 {profile.name} {profile.age}
               </h1>
               <div className="flex items-center text-gray-600">
-                <span className="text-[#C70039] mr-2 text-base">📍</span>
+                <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
                 <span className="text-base">{profile.city}</span>
               </div>
             </div>
