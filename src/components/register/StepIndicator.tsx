@@ -20,7 +20,7 @@ export default function StepIndicator({ currentStep, titles }: Props) {
                   <span className="text-xl font-bold text-[#A62D82]">{s}</span>
                 </div>
                 <div className="text-left">
-                  <div className="text-xs text-gray-500 font-medium">Step {s}/3</div>
+                  <div className="mb-1 text-xs text-gray-500 font-medium">Step {s}/3</div>
                   <div className="text-xl font-bold max-xs:extrabold text-[#A62D82] max-xs:text-xs">{titles[s - 1]}</div>
                 </div>
               </div>
