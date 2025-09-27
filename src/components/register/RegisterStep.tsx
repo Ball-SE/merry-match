@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   validateBasicInfo,
   validateIdentitiesAndInterests,
@@ -38,6 +38,7 @@ interface Props {
   ) => void;
   setPhotos: (next: string[]) => void;
   setInterests: (chips: string[]) => void;
+  step3Ref: React.RefObject<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>;
 }
 
 export default function RegisterStep({
@@ -46,10 +47,11 @@ export default function RegisterStep({
   handleInputChange,
   setPhotos,
   setInterests,
+  step3Ref,
 }: Props) {
   if (currentStep === 1)
     return <Step1 formData={formData} handleInputChange={handleInputChange} />;
-  if (currentStep === 2)
+  if (currentStep === 2) {
     return (
       <Step2
         formData={formData}
@@ -57,10 +59,27 @@ export default function RegisterStep({
         setInterests={setInterests}
       />
     );
+  }
+
   return (
-    <Step3 formData={formData} photos={formData.photos} setPhotos={setPhotos} />
+    <Step3
+      ref={step3Ref}
+      formData={formData}
+      photos={formData.photos}
+      setPhotos={setPhotos}
+    />
   );
 }
+
+// เพิ่มฟังก์ชันสำหรับ upload รูปเมื่อกด confirm
+export const uploadPhotosOnConfirm = async (
+  step3Ref: React.RefObject<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>
+): Promise<string[]> => {
+  if (step3Ref.current) {
+    return await step3Ref.current.uploadPhotosToSupabase();
+  }
+  return [];
+};
 
 /* ------------------------------ Step 1 ------------------------------ */
 function Step1({
@@ -76,7 +95,7 @@ function Step1({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // เพิ่ม email validation hook
-  const emailValidation = useEmailValidation(formData.email,1000);
+  const emailValidation = useEmailValidation(formData.email, 1000);
 
   const handleBlur = (fieldName: string) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
@@ -622,18 +641,27 @@ function Step2({
 
 /* ------------------------------ Step 3 ------------------------------ */
 
-function Step3({
-  formData,
-  photos,
-  setPhotos,
-}: {
-  formData: FormData;
-  photos: string[];
-  setPhotos: (next: string[]) => void;
-}) {
+const Step3 = React.forwardRef<
+  { uploadPhotosToSupabase: () => Promise<string[]> },
+  {
+    formData: FormData;
+    photos: string[];
+    setPhotos: (next: string[]) => void;
+  }
+>(({ formData, photos, setPhotos }, ref) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<boolean[]>(Array(5).fill(false));
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // เก็บรูปเป็น File objects แทน URL
+  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(
+    Array(5).fill(null)
+  );
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>(
+    Array(5).fill("")
+  );
+
   const folderRef = useRef(
     formData.email
       ? `${formData.email
@@ -667,7 +695,9 @@ function Step3({
   };
 
   const validateCurrentPhotos = () => {
-    const validation = validatePhotos(photos);
+    // นับจำนวนรูปที่มี
+    const photoCount = photoFiles.filter((file) => file !== null).length;
+    const validation = validatePhotos(Array(photoCount).fill("temp"));
     setErrors(validation.errors);
   };
 
@@ -709,22 +739,28 @@ function Step3({
     });
 
     try {
-      // สำหรับ demo ใช้ temporary user ID
-      // ในการใช้งานจริงควรได้จาก auth context
+      // สร้าง preview URL
+      const previewUrl = URL.createObjectURL(file);
 
-      const result = await uploadProfilePhoto(file, folderRef.current, index);
+      // เก็บไฟล์และ preview
+      const newPhotoFiles = [...photoFiles];
+      const newPhotoPreviews = [...photoPreviews];
 
-      if (result.success && result.url) {
-        const newPhotos = [...photos];
-        newPhotos[index] = result.url;
-        setPhotos(newPhotos);
-        validateCurrentPhotos();
-      } else {
-        alert(result.error || "upload photo failed");
-      }
+      newPhotoFiles[index] = file;
+      newPhotoPreviews[index] = previewUrl;
+
+      setPhotoFiles(newPhotoFiles);
+      setPhotoPreviews(newPhotoPreviews);
+
+      // อัปเดต photos array สำหรับ validation
+      const newPhotos = [...photos];
+      newPhotos[index] = previewUrl; // ใช้ preview URL ชั่วคราว
+      setPhotos(newPhotos);
+
+      validateCurrentPhotos();
     } catch (error: any) {
-      console.error("Upload error:", error);
-      alert("upload photo failed");
+      console.error("File processing error:", error);
+      alert("Failed to process image");
     } finally {
       setUploading((prev) => {
         const next = [...prev];
@@ -735,47 +771,166 @@ function Step3({
   };
 
   const remove = async (idx: number) => {
-    const photoUrl = photos[idx];
-
-    // ลบรูปจาก Storage ถ้าเป็น URL จริง (ไม่ใช่ data URL)
-    if (photoUrl && photoUrl.startsWith("http")) {
-      await deleteProfilePhoto(photoUrl);
+    // ลบ preview URL
+    if (photoPreviews[idx]) {
+      URL.revokeObjectURL(photoPreviews[idx]);
     }
 
-    const next = [...photos];
-    next.splice(idx, 1);
-    setPhotos(next);
+    const newPhotoFiles = [...photoFiles];
+    const newPhotoPreviews = [...photoPreviews];
+    const newPhotos = [...photos];
+
+    newPhotoFiles[idx] = null;
+    newPhotoPreviews[idx] = "";
+    newPhotos[idx] = "";
+
+    setPhotoFiles(newPhotoFiles);
+    setPhotoPreviews(newPhotoPreviews);
+    setPhotos(newPhotos);
+
     validateCurrentPhotos();
   };
 
+  const handleImageDragStart = (e: React.DragEvent, index: number) => {
+    if (!photoFiles[index]) return; // ไม่ให้ลากถ้าไม่มีรูป
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", index.toString());
+  };
+
+  const handleImageDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  };
+
+  const handleImageDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleImageDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const dragIndex = parseInt(e.dataTransfer.getData("text/html"));
+
+    if (dragIndex === dropIndex || !photoFiles[dragIndex]) return;
+
+    // สลับตำแหน่งรูปภาพในทุก array
+    const newPhotoFiles = [...photoFiles];
+    const newPhotoPreviews = [...photoPreviews];
+    const newPhotos = [...photos];
+
+    const draggedFile = newPhotoFiles[dragIndex];
+    const draggedPreview = newPhotoPreviews[dragIndex];
+    const draggedPhoto = newPhotos[dragIndex];
+
+    const droppedFile = newPhotoFiles[dropIndex];
+    const droppedPreview = newPhotoPreviews[dropIndex];
+    const droppedPhoto = newPhotos[dropIndex];
+
+    // สลับข้อมูล
+    newPhotoFiles[dragIndex] = droppedFile;
+    newPhotoFiles[dropIndex] = draggedFile;
+
+    newPhotoPreviews[dragIndex] = droppedPreview;
+    newPhotoPreviews[dropIndex] = draggedPreview;
+
+    newPhotos[dragIndex] = droppedPhoto;
+    newPhotos[dropIndex] = draggedPhoto;
+
+    setPhotoFiles(newPhotoFiles);
+    setPhotoPreviews(newPhotoPreviews);
+    setPhotos(newPhotos);
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    validateCurrentPhotos();
+  };
+
+  const handleImageDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // ฟังก์ชันสำหรับ upload รูปไป Supabase (เรียกเมื่อกด confirm)
+  const uploadPhotosToSupabase = async (): Promise<string[]> => {
+    console.log("uploadPhotosToSupabase called"); // เพิ่ม debug log
+    const uploadedUrls: string[] = [];
+  
+    for (let i = 0; i < photoFiles.length; i++) {
+      const file = photoFiles[i];
+      if (file) {
+        try {
+          const { uploadProfilePhoto } = await import(
+            "@/lib/supabase/uploadPhotoUtils"
+          );
+          const result = await uploadProfilePhoto(file, folderRef.current, i);
+  
+          if (result.success && result.url) {
+            uploadedUrls[i] = result.url;
+          } else {
+            throw new Error(result.error || "Upload failed");
+          }
+        } catch (error) {
+          console.error(`Upload error for photo ${i}:`, error);
+          throw new Error(`Failed to upload photo ${i + 1}`);
+        }
+      }
+    }
+  
+    return uploadedUrls;
+  };
+
+  // Expose upload function to parent component
+  React.useImperativeHandle(ref, () => ({
+    uploadPhotosToSupabase,
+  }));
   return (
     <div>
       <h2 className="mb-2 text-2xl font-semibold text-[#2A0B21]">
         Profile pictures
       </h2>
       <p className="mb-6 text-sm text-gray-600">
-        Upload at least 2 photos
+        Upload at least 2 photos. Drag to reorder. Main photo will be the first
+        one.
       </p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => {
-          const url = photos[i];
+          const file = photoFiles[i];
+          const previewUrl = photoPreviews[i];
           const isUploading = uploading[i];
           const isDragOver = dragOverIndex === i;
+          const isDragging = draggedIndex === i;
 
           return (
             <div
               key={i}
               className="relative"
-              onDragOver={(e) => handleDragOver(e, i)}
+              onDragOver={(e) => {
+                // Handle both file drag and image drag
+                if (e.dataTransfer.types.includes("text/html")) {
+                  handleImageDragOver(e, i);
+                } else {
+                  handleDragOver(e, i);
+                }
+              }}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, i)}
+              onDrop={(e) => {
+                // Handle both file drop and image drop
+                if (e.dataTransfer.types.includes("text/html")) {
+                  handleImageDrop(e, i);
+                } else {
+                  handleDrop(e, i);
+                }
+              }}
             >
               <div
-                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-colors ${
+                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${
                   isDragOver
-                    ? "border-[#A62D82] bg-[#C70039]/10"
-                    : photos.length < 2 && i < 2
+                    ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
+                    : isDragging
+                    ? "opacity-50 scale-95"
+                    : photoFiles.filter((f) => f !== null).length < 2 && i < 2
                     ? "border-red-300"
                     : "border-gray-300"
                 }`}
@@ -783,17 +938,29 @@ function Step3({
                 {isUploading ? (
                   <div className="text-center">
                     <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#A62D82]"></div>
-                    <span className="text-xs text-gray-500">Uploading...</span>
+                    <span className="text-xs text-gray-500">Processing...</span>
                   </div>
-                ) : url ? (
-                  <img
-                    src={url}
-                    alt={`photo-${i}`}
-                    className="h-full w-full rounded-xl object-cover"
-                  />
+                ) : previewUrl ? (
+                  <div className="relative h-full w-full">
+                    <img
+                      src={previewUrl}
+                      alt={`photo-${i}`}
+                      className="h-full w-full rounded-xl object-cover cursor-move"
+                      draggable={true}
+                      onDragStart={(e) => handleImageDragStart(e, i)}
+                      onDragEnd={handleImageDragEnd}
+                    />
+
+                    {/* Main photo indicator */}
+                    {i === 0 && (
+                      <div className="absolute top-2 left-2 bg-[#A62D82] text-white text-xs px-2 py-1 rounded">
+                        Main
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="text-center flex flex-col">
-                    <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full  text-[#A62D82]">
+                    <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full text-[#A62D82]">
                       +
                     </div>
                     <span className="text-sm font-medium text-[#A62D82]">
@@ -808,14 +975,14 @@ function Step3({
                 )}
               </div>
 
-              {!url && !isUploading ? (
+              {!file && !isUploading ? (
                 <input
                   type="file"
                   accept="image/*"
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   onChange={(e) => onFiles(e.target.files, i)}
                 />
-              ) : url && !isUploading ? (
+              ) : file && !isUploading ? (
                 <button
                   onClick={() => remove(i)}
                   className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C70039] text-white hover:bg-[#950028]"
@@ -833,8 +1000,10 @@ function Step3({
       )}
 
       <div className="mt-4 text-sm text-gray-500">
-        {photos.length}/5 photos uploaded
+        {photoFiles.filter((f) => f !== null).length}/5 photos ready
       </div>
     </div>
   );
-}
+});
+
+Step3.displayName = "Step3";
