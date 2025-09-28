@@ -78,10 +78,10 @@ export default function Home() {
     try {
       // 1. Upload รูปไป Supabase ก่อน
       let uploadedPhotoUrls: string[] = [];
-      
+
       // รอ 100ms ให้ Step3 component render เสร็จก่อน
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       if (step3Ref.current) {
         console.log("step3Ref.current exists, uploading photos...");
         uploadedPhotoUrls = await uploadPhotosOnConfirm(step3Ref);
@@ -141,14 +141,18 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       <NavBarNonUser />
 
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-6xl px-4 py-10 z-[1]">
+        <div className="relative z-[0] max-xs:hidden">
+          <div className="block absolute top-10 left-[-190px] w-20 h-20 bg-[#FAF1ED] rounded-full"></div>
+          <div className="block absolute top-33 left-[-110px] w-2 h-2 bg-[#7B4429] rounded-full"></div>
+        </div>
         {/* Header row */}
         <div className="flex max-xs:flex-col items-center justify-between max-xs:my-4 max-xs:gap-4 max-xs:items-start">
           <div>
             <span className="text-[#7B4429] text-lg font-semibold">
               REGISTER
             </span>
-            <h1 className="mt-2 text-6xl max-xs:text-4xl font-extrabold text-[#A62D82]">
+            <h1 className="mt-2 text-5xl max-xs:text-4xl font-extrabold text-[#A62D82]">
               Join us and start
               <br />
               matching
@@ -160,7 +164,7 @@ export default function Home() {
         </div>
 
         {/* Middle: Register steps */}
-        <div className="mt-10">
+        <div className="mt-10 z-[1]">
           <RegisterStep
             currentStep={currentStep}
             formData={formData}

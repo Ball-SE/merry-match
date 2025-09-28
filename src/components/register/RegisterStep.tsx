@@ -155,7 +155,7 @@ function Step1({
                 } as any);
               }}
               onBlur={() => handleBlur("dateOfBirth")}
-              placeholder="Place Holder"
+              placeholder="01/01/2022"
               className={getInputClassName("dateOfBirth")}
               dateFormat="dd/MM/yyyy"
               minDate={new Date(1944, 0, 1)} // 80 ปีที่แล้ว
