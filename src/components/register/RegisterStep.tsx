@@ -4,10 +4,10 @@ import {
   validateIdentitiesAndInterests,
   validatePhotos,
 } from "@/middleware/register-validation";
-import {
-  uploadProfilePhoto,
-  deleteProfilePhoto,
-} from "@/lib/supabase/uploadPhotoUtils";
+// import {
+//   uploadProfilePhoto,
+//   deleteProfilePhoto,
+// } from "@/lib/supabase/uploadPhotoUtils";
 import { CustomDatePicker } from "@/components/register/date-picker";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
 
@@ -95,7 +95,7 @@ function Step1({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // เพิ่ม email validation hook
-  const emailValidation = useEmailValidation(formData.email, 1000);
+  const emailValidation = useEmailValidation(formData.email, 5000);
 
   const handleBlur = (fieldName: string) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));

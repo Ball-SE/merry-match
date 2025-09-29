@@ -6,7 +6,7 @@ interface EmailValidationResult {
   isChecking: boolean;
 }
 
-export const useEmailValidation = (email: string, debounceMs: number = 500) => {
+export const useEmailValidation = (email: string, debounceMs: number = 5000) => {
   const [result, setResult] = useState<EmailValidationResult>({
     isValid: false,
     isChecking: false

@@ -62,6 +62,8 @@ export const validateBasicInfo = (data: {
   // Name validation
   if (!data.name || data.name.length < 2) {
     errors.name = "Name must be at least 2 characters";
+  } else if (!/^[a-zA-Z\s]+$/.test(data.name)) {
+    errors.name = "Name can only contain letters and spaces";
   }
 
   // Email validation
@@ -161,8 +163,8 @@ export const validatePhotos = (photos: string[]) => {
   const errors: Record<string, string> = {};
 
   // Comment ไว้ก่อน - ยังไม่ต้องบังคับใส่รูป
-  if (!photos || photos.length < 1) {
-    errors.photos = "Please upload at least 1 photos";
+  if (!photos || photos.length < 2) {
+    errors.photos = "Please upload at least 2 photos";
   }
 
   if (photos.length > 6) {
@@ -170,7 +172,7 @@ export const validatePhotos = (photos: string[]) => {
   }
 
   return {
-    isValid: true, // เปลี่ยนเป็น true ไปก่อน
+    isValid: Object.keys(errors).length === 0, // เปลี่ยนเป็น true ไปก่อน
     errors
   };
 };
