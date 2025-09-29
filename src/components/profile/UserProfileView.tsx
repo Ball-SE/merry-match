@@ -67,7 +67,7 @@ export default function UserProfileView({ userId, className = '' }: UserProfileV
               age: 31,
               email: "piyawat@example.com",
               username: "piyawat",
-              city: "Bangkok, Thailand",
+              city: "Bangkok, Thailand", // ใช้ข้อมูลจริงแทน hardcode
               gender: "male",
               sexual_preferences: "female",
               racial_preferences: "asian",

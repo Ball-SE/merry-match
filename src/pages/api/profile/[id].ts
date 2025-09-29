@@ -66,6 +66,14 @@ export default async function handler(
       .eq('id', id)
       .single();
 
+    // Debug: ดูข้อมูลที่ได้จาก database
+    console.log('📊 Profile data from DB:', {
+      id: profile?.id,
+      name: profile?.name,
+      location: profile?.location,
+      city: profile?.city
+    });
+
     if (profileError) {
       return res.status(404).json({
         success: false,
