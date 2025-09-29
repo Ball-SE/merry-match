@@ -19,15 +19,24 @@ function Footer() {
                     </span>
 
                 <div className="flex flex-row w-[176px] space-x-4 mt-3">
-                    <div className="w-[48px] h-[48px] rounded-full bg-[#A62D82] flex justify-center items-center">
+                    <button 
+                    className="w-[48px] h-[48px] rounded-full bg-[#A62D82] flex justify-center items-center cursor-pointer hover:bg-[#ffa9c1] transition-colors"
+                    onClick={() => window.open("https://www.facebook.com/", "_blank")}
+                    >
                         <FaFacebook className="w-[20px] h-[20px]" color="white"/>
-                    </div>
-                    <div className="w-[48px] h-[48px] rounded-full bg-[#A62D82] flex justify-center items-center">
+                    </button>
+                    <button 
+                    className="w-[48px] h-[48px] rounded-full bg-[#A62D82] flex justify-center items-center cursor-pointer hover:bg-[#ffa9c1] transition-colors"
+                    onClick={() => window.open("https://www.instagram.com/", "_blank")}
+                    >
                         <RiInstagramFill className="w-[20px] h-[20px]" color="white"/>
-                    </div>
-                    <div className="w-[48px] h-[48px] rounded-full bg-[#A62D82] flex justify-center items-center">
+                    </button>
+                    <button 
+                    className="w-[48px] h-[48px] rounded-full bg-[#A62D82] flex justify-center items-center cursor-pointer hover:bg-[#ffa9c1] transition-colors"
+                    onClick={() => window.open("https://www.twitter.com/", "_blank")}
+                    >
                         <FaTwitter className="w-[20px] h-[20px]" color="white"/>
-                    </div>
+                    </button>
                 </div>
             </div>
         </footer>

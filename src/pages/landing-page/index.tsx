@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabase/supabaseClient";
 import { useAdmin } from '@/hooks/useAdmin';
+import Img from "next/image";
 
 function HomePage(){
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -57,15 +58,21 @@ function HomePage(){
 
     return (
         <div className="flex justify-center items-center bg-[#160404]">
-            <div className="m-auto w-full ">
+            <div className="landing-page-container m-auto w-full ">
             <NavBar />
                 {/* Hero Section */}
                 <section className="sm:h-[818px] overflow-hidden pt-70 md:pt-50 sm:pb-20 bg-[#160404]">
                     <div className="m-auto max-w-[1200px]  relative">
 
-                        <div className="absolute w-[67px] h-[67px] top-[-60px] left-[-180px] bg-[#532341] rounded-full"></div>
-                        <div className="absolute w-2 h-2 top-[360px] right-[70px] bg-[#7B4429] rounded-full"></div>
-                        <div className="absolute w-[7px] h-[7px] top-[-70px] left-[30px] bg-[#FFB1C8] rounded-full"></div>
+                        <div className="hidden sm:block absolute w-[67px] h-[67px] top-[-60px] left-[-180px] bg-[#532341] rounded-full"></div>
+                        <div className="hidden sm:block absolute w-2 h-2 top-[360px] right-[70px] bg-[#7B4429] rounded-full"></div>
+                        <div className="hidden sm:block absolute w-[7px] h-[7px] top-[-70px] left-[30px] bg-[#FFB1C8] rounded-full"></div>
+                        <Img 
+                        src="/assets/heart_purple.png" 
+                        alt="heart" className="hidden sm:block absolute top-[-50px] left-189 right-0 bg-cover opacity-100 " 
+                        width={26}
+                        height={24}
+                        />
 
                         <div className="flex flex-col  items-center justify-center text-center ">
                             <div className="max-w-xl w-[358px] relative z-10">
@@ -246,7 +253,7 @@ function HomePage(){
                     <div className="m-auto sm:max-w-[1200px] sm:px-6 ">
                         <div className="md:rounded-[32px] overflow-hidden bg-gradient-to-r from-[#820025] to-[#A95BCD] h-[564px] md:h-[369px]  ">
                             <div className="py-20 px-12 text-center relative">
-                            <div className="absolute top-[50px] left-[-20px] inset-0 bg-[url('/assets/heart.png')] bg-cover opacity-20"></div>
+                            <div className="absolute top-[40px] left-[-10px] right-0 bottom-[-30px] bg-[url('/assets/heart_land.png')] bg-cover opacity-50"></div>
                                 <h2 className="text-5xl font-extrabold text-white mb-12 relative z-10">
                                 Let's start finding <br />
                                 and matching someone new
