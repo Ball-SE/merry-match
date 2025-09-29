@@ -24,7 +24,23 @@ export const useMatchingProfiles = () => {
     try {
       setLoading(true);
       setError(null);
-      const profilesData = await getMatchingProfiles(filters);
+      
+      // ประมวลผล "default" filter ก่อนส่งไปยัง service
+      let processedFilters = filters;
+      if (filters?.genders?.includes('default')) {
+        const { getCurrentUserProfile } = await import('../services/profileService');
+        const currentUser = await getCurrentUserProfile();
+        if (currentUser?.sexual_preferences) {
+          processedFilters = {
+            ...filters,
+            genders: filters.genders
+              .filter(g => g !== 'default')
+              .concat(currentUser.sexual_preferences)
+          };
+        }
+      }
+      
+      const profilesData = await getMatchingProfiles(processedFilters);
       setProfiles(profilesData);
       
       // แปลงเป็น Card objects สำหรับ SwipeDeck

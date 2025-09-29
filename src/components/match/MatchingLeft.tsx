@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { supabase } from "@/lib/supabase/supabaseClient";
 import { useMatchingContext } from "@/context/MatchingContext";
+import { useRouter } from "next/router";
 
 type Match = {
     id: string | number;
@@ -14,8 +15,10 @@ function MatchingLeft() {
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const router = useRouter();
+
     // ใช้ context เพื่อดึง matchRefreshTrigger
-    const { matchRefreshTrigger } = useMatchingContext();
+    const { matchRefreshTrigger, applyFilters } = useMatchingContext();
 
     // ฟังก์ชันสำหรับดึงข้อมูล matches
     const fetchMatches = async () => {
@@ -78,9 +81,17 @@ function MatchingLeft() {
         container.scrollTop += e.deltaY > 0 ? scrollAmount : -scrollAmount;
     };
 
+    // ฟังก์ชันสำหรับเริ่ม matching process
+    const handleDiscoverMatch = () => {
+        applyFilters(); // เรียกใช้ applyFilters เพื่อเริ่มค้นหาโปรไฟล์ใหม่
+    };
+
     return (
         <div className="w-full h-full flex flex-col pt-5">
-            <button className="w-[282px] h-[187px] flex flex-col items-center cursor-pointer justify-center mb-7 border-1 bg-[#E4E6ED] border-[#A62D82] rounded-lg p-4">
+            <button 
+            className="w-[282px] h-[187px] flex flex-col items-center cursor-pointer justify-center mb-7 border-1 bg-[#E4E6ED] border-[#A62D82] rounded-lg p-4"
+            onClick={handleDiscoverMatch}
+            >
                 <Image src="/assets/hearchsearch.png" alt="discover" width={50} height={50} />
                 <h4 className="text-2xl font-bold text-[#95002B]">Discover New Match</h4>
                 <p className="text-sm text-[#646D89]">Start find and Merry to get know and connect with new friend!</p>
@@ -183,7 +194,9 @@ function MatchingLeft() {
                         <div className="space-y-2">
                             {matches.map((match) => (
                                 <div key={match.id} 
-                                     className="flex flex-row gap-2 sm:gap-3 items-center cursor-pointer hover:bg-[#f9f9f9] p-2 sm:p-3 rounded-lg transition-colors mx-1">
+                                     className="flex flex-row gap-2 sm:gap-3 items-center cursor-pointer hover:bg-[#f9f9f9] p-2 sm:p-3 rounded-lg transition-colors mx-1 hover:border-1 hover:border-[#A62D82]"
+                                     onClick={() => router.push(`/matching/${match.id}`)}
+                                     >
                                     <div className="w-[40px] h-[40px] sm:w-[50px] sm:h-[50px] relative overflow-hidden rounded-full flex-shrink-0">
                                         <Image 
                                             src={getPhotoUrl(match.photo_url)} 
