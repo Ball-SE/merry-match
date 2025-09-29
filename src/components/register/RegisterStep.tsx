@@ -253,8 +253,9 @@ function Step1({
                 handleInputChange(resetCity);
               }}
               onBlur={() => handleBlur("location")}
-              className={`${getInputClassName("location")} ${!formData.location ? "text-gray-400" : ""
-                }`}
+              className={`${getInputClassName("location")} ${
+                !formData.location ? "text-gray-400" : ""
+              }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -301,10 +302,11 @@ function Step1({
               onBlur={() => handleBlur("city")}
               onBlur={() => handleBlur("city")}
               disabled={!formData.location}
-              className={`${getInputClassName("city")} ${!formData.location
+              className={`${getInputClassName("city")} ${
+                !formData.location
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : ""
-                }`}
+              }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -910,7 +912,6 @@ const Step3 = React.forwardRef<
   const [uploading, setUploading] = useState<boolean[]>(Array(5).fill(false));
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // เก็บรูปเป็น File objects แทน URL
   const [photoFiles, setPhotoFiles] = useState<(File | null)[]>(
@@ -923,11 +924,11 @@ const Step3 = React.forwardRef<
   const folderRef = useRef(
     formData.email
       ? `${formData.email
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-_]/g, "_")
-        .slice(0, 24)}`
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-_]/g, "_")
+          .slice(0, 24)}`
       : `temp-user-${Date.now()}`
   );
 
@@ -969,15 +970,13 @@ const Step3 = React.forwardRef<
 
     // ตรวจสอบขนาดไฟล์ (10MB = 10 * 1024 * 1024 bytes)
     if (file.size > 10 * 1024 * 1024) {
-      // alert("you cannot upload more than 10MB");
-      setUploadError("File size cannot exceed 10MB");
+      alert("you cannot upload more than 10MB");
       return;
     }
 
     // ตรวจสอบประเภทไฟล์
     if (!file.type.startsWith("image/")) {
-      // alert("please select only image files");
-      setUploadError("Please select only image files");
+      alert("please select only image files");
       return;
     }
 
@@ -993,8 +992,7 @@ const Step3 = React.forwardRef<
         file = await compressImageToTarget(file, 1 * 1024 * 1024);
       } catch (e) {
         console.error("Compress failed:", e);
-        // alert("Failed to compress image");
-        setUploadError("Failed to compress image");
+        alert("Failed to compress image");
         return;
       }
     }
@@ -1047,8 +1045,7 @@ const Step3 = React.forwardRef<
       validateCurrentPhotos();
     } catch (error: any) {
       console.error("File processing error:", error);
-      // alert("Failed to process image");
-      setUploadError("Failed to process image");
+      alert("Failed to process image");
     } finally {
       setUploading((prev) => {
       setUploading((prev) => {
@@ -1216,7 +1213,7 @@ const Step3 = React.forwardRef<
   const uploadPhotosToSupabase = async (): Promise<string[]> => {
     console.log("uploadPhotosToSupabase called"); // เพิ่ม debug log
     const uploadedUrls: string[] = [];
-
+  
     for (let i = 0; i < photoFiles.length; i++) {
       const file = photoFiles[i];
       if (file) {
@@ -1225,7 +1222,7 @@ const Step3 = React.forwardRef<
             "@/lib/supabase/uploadPhotoUtils"
           );
           const result = await uploadProfilePhoto(file, folderRef.current, i);
-
+  
           if (result.success && result.url) {
             uploadedUrls[i] = result.url;
           } else {
@@ -1237,7 +1234,7 @@ const Step3 = React.forwardRef<
         }
       }
     }
-
+  
     return uploadedUrls;
   };
 
@@ -1251,7 +1248,8 @@ const Step3 = React.forwardRef<
         Profile pictures
       </h2>
       <p className="mb-6 text-sm text-gray-600">
-        Upload at least 2 photos.
+        Upload at least 2 photos. Drag to reorder. Main photo will be the first
+        one.
       </p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
@@ -1304,14 +1302,15 @@ const Step3 = React.forwardRef<
               }}
             >
               <div
-                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${isDragOver
+                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${
+                  isDragOver
                     ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
                     : isDragging
-                      ? "opacity-50 scale-95"
-                      : photoFiles.filter((f) => f !== null).length < 2 && i < 2
-                        ? "border-red-300"
-                        : "border-gray-300"
-                  }`}
+                    ? "opacity-50 scale-95"
+                    : photoFiles.filter((f) => f !== null).length < 2 && i < 2
+                    ? "border-red-300"
+                    : "border-gray-300"
+                }`}
               >
                 {isUploading ? (
                   <div className="text-center">
@@ -1401,12 +1400,6 @@ const Step3 = React.forwardRef<
           );
         })}
       </div>
-
-      {uploadError && (
-        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-          {uploadError}
-        </div>
-      )}
 
       {errors.photos && (
         <p className="mt-4 text-sm text-red-500">{errors.photos}</p>
