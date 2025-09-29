@@ -33,20 +33,23 @@ export function validateProfileData(
     throw new Error('Invalid profile data structure');
   }
 
+  // Cast to any to access properties safely
+  const data = profileData as any;
+
   return {
-    id: validateString(profileData.id, ''),
-    name: validateString(profileData.name, fallbackData.name),
-    age: validateAge(profileData.age, fallbackData.age),
-    email: validateEmail(profileData.email, fallbackData.name),
-    username: validateUsername(profileData.username || profileData.email, fallbackData.name),
-    city: validateString(profileData.location || profileData.city, 'Bangkok, Thailand'),
-    gender: validateString(profileData.gender, 'Not specified'),
-    sexual_preferences: validateString(profileData.sexual_preferences, 'Not specified'),
-    racial_preferences: validateString(profileData.racial_preferences, 'Not specified'),
-    meeting_interests: validateString(profileData.meeting_interests, 'Not specified'),
-    bio: validateString(profileData.bio, ''),
-    interests: validateStringArray(profileData.interests),
-    photos: validateStringArray(profileData.photos, fallbackData.photos)
+    id: validateString(data.id, ''),
+    name: validateString(data.name, fallbackData.name),
+    age: validateAge(data.age, fallbackData.age),
+    email: validateEmail(data.email, fallbackData.name),
+    username: validateUsername(data.username || data.email, fallbackData.name),
+    city: validateString(data.location || data.city, 'Bangkok, Thailand'),
+    gender: validateString(data.gender, 'Not specified'),
+    sexual_preferences: validateString(data.sexual_preferences, 'Not specified'),
+    racial_preferences: validateString(data.racial_preferences, 'Not specified'),
+    meeting_interests: validateString(data.meeting_interests, 'Not specified'),
+    bio: validateString(data.bio, ''),
+    interests: validateStringArray(data.interests),
+    photos: validateStringArray(data.photos, fallbackData.photos)
   };
 }
 

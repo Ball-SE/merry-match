@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
+import { mapLocationToString } from '@/lib/locationUtils';
 import { FaHeart } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { Card } from '@/components/swipe/SwipeDeck';
@@ -110,50 +111,30 @@ export default function ProfileModal({
           age: Number(foundProfile.age) || parseInt(currentCard.age) || 0,
           email: String(foundProfile.email || `${currentCard.title.toLowerCase().replace(/\s+/g, '.')}@example.com`),
           username: String(foundProfile.email?.split('@')[0] || currentCard.title.toLowerCase().replace(/\s+/g, '') || 'user'),
-          city: (() => {
-            // แปลงชื่อพื้นที่ให้เป็นชื่อที่เข้าใจได้
-            const locationMap: { [key: string]: string } = {
-              'kathu': 'Phuket, Thailand',
-              'patong': 'Phuket, Thailand',
-              'phuket_town': 'Phuket, Thailand',
-              'chalong': 'Phuket, Thailand',
-              'rawai': 'Phuket, Thailand',
-              'karon': 'Phuket, Thailand',
-              'kamala': 'Phuket, Thailand',
-              'bang_tao': 'Phuket, Thailand',
-              'bangkok': 'Bangkok, Thailand',
-              'chiang_mai': 'Chiang Mai, Thailand',
-              'chiang_rai': 'Chiang Rai, Thailand',
-              'pattaya': 'Pattaya, Thailand',
-              'phuket': 'Phuket, Thailand',
-              'krabi': 'Krabi, Thailand',
-              'koh_samui': 'Koh Samui, Thailand',
-              'koh_phangan': 'Koh Phangan, Thailand',
-              'koh_tao': 'Koh Tao, Thailand',
-              'hua_hin': 'Hua Hin, Thailand',
-              'kanchanaburi': 'Kanchanaburi, Thailand',
-              'ayutthaya': 'Ayutthaya, Thailand'
-            };
-
-            let locationValue = '';
+city: (() => {
+            // ข้อมูล location ในฐานข้อมูลเป็น object ที่มี city และ location
+            let locationData = '';
             
-            // ถ้า location เป็น string
-            if (typeof foundProfile.location === 'string') {
-              locationValue = foundProfile.location;
+            if (foundProfile.location && typeof foundProfile.location === 'object') {
+              // ใช้ city จาก location object
+              locationData = (foundProfile.location as any).city || '';
+            } else if (typeof foundProfile.location === 'string') {
+              // ถ้าเป็น string ให้ใช้เลย
+              locationData = foundProfile.location;
+            } else {
+              locationData = 'bangkok'; // default
             }
-            // ถ้า location เป็น object
-            else if (typeof foundProfile.location === 'object' && foundProfile.location && 'city' in foundProfile.location) {
-              locationValue = (foundProfile.location as any).city;
-            }
-            else {
-              locationValue = 'bangkok'; // default
-            }
-
-            const mappedLocation = locationMap[locationValue.toLowerCase()];
-            console.log('🗺️ Location mapping:', locationValue.toLowerCase(), '->', mappedLocation);
             
-            return mappedLocation || 
-                   locationValue.charAt(0).toUpperCase() + locationValue.slice(1) + ', Thailand';
+            // ใช้ mapLocationToString จาก locationUtils
+            const mappedLocation = mapLocationToString(locationData);
+            
+            console.log('🗺️ Location mapping:', {
+              raw_location: foundProfile.location,
+              extracted_city: locationData,
+              mapped_result: mappedLocation
+            });
+            
+            return mappedLocation;
           })(),
           gender: String(foundProfile.gender || "Not specified"),
           sexual_preferences: String(foundProfile.sexual_preferences || "Not specified"),
