@@ -36,6 +36,14 @@ function MatchingCenter() {
     }
   }, [searchTrigger, profileFilters, updateWithFilters]);
 
+  useEffect(() => {
+    updateWithFilters({
+      genders: ['default'],
+      minAge: 18,
+      maxAge: 50
+    })
+  }, []);
+
   // ฟังก์ชันสำหรับรับ preview cards (การ์ดซ้ายและขวา)
   const getPreviewCards = () => {
     // เพิ่มเงื่อนไขตรวจสอบเมื่อไม่มีการ์ดเลย
@@ -185,12 +193,12 @@ function MatchingCenter() {
       
       {/* Preview Cards Container */}
       <div className="absolute inset-0 hidden sm:flex items-center justify-center z-10">
-        <div className="relative w-full max-w-6xl px-4 flex items-center justify-center">
+        <div className="relative w-full flex items-center justify-center">
           
           {/* Left Preview Card */}
           {leftCard && (
-            <div className="absolute -left-16 lg:-left-30 -translate-y-1/2 w-32 h-44 lg:w-40 lg:h-56 ">
-              <div className="w-full h-[450px] rounded-xl overflow-hidden shadow-2xl bg-gray-800">
+            <div className="absolute left-0 -translate-y-1/2 w-32 h-44 sm:w-60 sm:h-56 ">
+              <div className="w-full h-[450px] rounded-r-xl overflow-hidden shadow-2xl bg-gray-800 ">
                 <img 
                   src={leftCard.img[0]} 
                   alt={`${leftCard.title} ${leftCard.age}`}
@@ -204,8 +212,8 @@ function MatchingCenter() {
           
           {/* Right Preview Card */}
           {rightCard && (
-            <div className="absolute -right-16 lg:-right-30 -translate-y-1/2 w-32 h-44 lg:w-40 lg:h-56 ">
-              <div className="w-full h-[450px] rounded-xl overflow-hidden shadow-2xl bg-gray-800">
+            <div className="absolute right-0 -translate-y-1/2 w-32 h-44 sm:w-60 sm:h-56 ">
+              <div className="w-full h-[450px] rounded-l-xl overflow-hidden shadow-2xl bg-gray-800">
                 <img 
                   src={rightCard.img[0]} 
                   alt={`${rightCard.title} ${rightCard.age}`}

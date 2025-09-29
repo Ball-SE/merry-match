@@ -20,11 +20,11 @@ function Matching() {
         <MatchingProvider>
             <div className="h-screen flex flex-col">
                 <NavBar />
-                <div className="flex flex-1 w-full h-full">
+                <div className="flex flex-1 w-full h-full ">
                     <div className="hidden sm:block basis-1/4 p-4 overflow-auto bg-[#F6F7FC]">
                         <MatchingLeft />
                     </div>
-                    <div className="flex-1 sm:basis-4/4 p-0 sm:p-4 flex sm:min-h-0 bg-black">
+                    <div className="flex-1 sm:basis-4/4 flex sm:min-h-0 bg-black">
                         <MatchingCenter />
                     </div>
                     <div className="hidden sm:block basis-1/4 p-4 overflow-auto bg-[#F6F7FC]">

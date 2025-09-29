@@ -10,6 +10,7 @@ export interface Profile {
   location: string | null; // เปลี่ยนจาก city เป็น location
   photos: string[] | null;
   gender?: string | null; // เพิ่ม gender field
+  sexual_preferences?: string | null;
   // เพิ่ม fields อื่นๆ ตามต้องการ
 }
 
@@ -107,6 +108,9 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
       return [];
     }
 
+    // ดึงข้อมูล profile ของ user ปัจจุบันเพื่อใช้ในการกรอง
+    const currentUserProfile = await getCurrentUserProfile();
+
     // ใช้ LEFT JOIN เพื่อ exclude คนที่เคย swipe แล้ว
     let query = supabase
       .from('profiles')
@@ -183,15 +187,26 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
       
       // Filter by gender ถ้ามี
       let genderMatch = true;
-      if (filters?.genders && filters.genders.length > 0 && !filters.genders.includes('default')) {
+      if (filters?.genders && filters.genders.length > 0) {
         const profileGender = profile.gender?.toLowerCase() || '';
-        genderMatch = filters.genders.some(g => {
-          const filterGender = g.toLowerCase();
-          // Handle non-binary matching
-          if (filterGender === 'non-binary' && profileGender === 'lgbtq+') return true;
-          if (filterGender === 'lgbtq+' && profileGender === 'non-binary') return true;
-          return filterGender === profileGender;
-        });
+        
+        // ตรวจสอบว่ามี "default" ใน filters หรือไม่
+        if (filters.genders.includes('default')) {
+          // ถ้ามี default ให้ใช้ sexual_preferences ของ user ปัจจุบัน
+          if (currentUserProfile?.sexual_preferences) {
+            const userPreference = currentUserProfile.sexual_preferences.toLowerCase();
+            genderMatch = profileGender === userPreference;
+          }
+        } else {
+          // ใช้ logic เดิม
+          genderMatch = filters.genders.some(g => {
+            const filterGender = g.toLowerCase();
+            // Handle non-binary matching
+            if (filterGender === 'non-binary' && profileGender === 'lgbtq+') return true;
+            if (filterGender === 'lgbtq+' && profileGender === 'non-binary') return true;
+            return filterGender === profileGender;
+          });
+        }
       }
       
       return hasName && hasPhotos && genderMatch;
@@ -237,3 +252,4 @@ export async function recordSwipeAction(
     return false;
   }
 }
+

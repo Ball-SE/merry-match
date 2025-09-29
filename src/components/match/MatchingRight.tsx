@@ -2,6 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { useState, useEffect } from "react"
 import { useMatchingContext } from "@/context/MatchingContext"
+import { getCurrentUserProfile } from "@/services/profileService"
 
 function MatchingRight() {
     const { filters, updateFilters, applyFilters } = useMatchingContext();
@@ -9,12 +10,21 @@ function MatchingRight() {
     // ใช้ local state เพื่อให้ user ปรับแต่งได้ก่อนกด Search
     const [localGenders, setLocalGenders] = useState<string[]>(filters.selectedGenders);
     const [localAgeRange, setLocalAgeRange] = useState<number[]>(filters.ageRange);
+    const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
     // อัพเดท local state เมื่อ context เปลี่ยน
     useEffect(() => {
         setLocalGenders(filters.selectedGenders);
         setLocalAgeRange(filters.ageRange);
     }, [filters]);
+
+    useEffect(() => {
+        const fetchCurrentUserProfile = async () => {
+            const profile = await getCurrentUserProfile();
+            setCurrentUserProfile(profile);
+        };
+        fetchCurrentUserProfile();
+    }, []);
 
     // ฟังก์ชันสำหรับจัดการ checkbox
     const handleGenderChange = (gender: string, checked: boolean) => {
@@ -29,6 +39,7 @@ function MatchingRight() {
     const handleSearch = () => {
         console.log("Selected genders:", localGenders);
         console.log("Age range:", localAgeRange);
+        console.log("Current user profile:", currentUserProfile);
         
         // ตรวจสอบว่ามีการเลือก gender หรือไม่
         if (localGenders.length === 0) {
