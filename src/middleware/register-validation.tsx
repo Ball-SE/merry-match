@@ -138,41 +138,6 @@ export const validateEmail = async (email: string): Promise<{ isValid: boolean; 
   }
 };
 
-// Email validation with Supabase check
-export const validateEmail = async (email: string): Promise<{ isValid: boolean; message?: string }> => {
-  if (!email) {
-    return { isValid: false, message: 'Email is required' };
-  }
-
-  // Basic email format validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return { isValid: false, message: 'Please enter a valid email address' };
-  }
-
-  try {
-    // Check if email exists in Supabase
-    const response = await fetch('/api/check-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    const result = await response.json();
-
-    if (!result.isAvailable) {
-      return { isValid: false, message: 'Email already exists' };
-    }
-
-    return { isValid: true };
-  } catch (error) {
-    console.error('Email validation error:', error);
-    return { isValid: false, message: 'Unable to verify email availability' };
-  }
-};
-
 // Step 2 Validation
 export const validateIdentitiesAndInterests = (data: {
   sexualIdentities: string;
@@ -205,12 +170,9 @@ export const validatePhotos = (photos: string[]) => {
   if (photos.length > 6) {
     errors.photos = "Maximum 6 photos allowed";
   }
-  if (photos.length > 6) {
-    errors.photos = "Maximum 6 photos allowed";
-  }
 
   return {
-    isValid: Object.keys(errors).length === 0, // เปลี่ยนเป็น true ไปก่อน
+    isValid: Object.keys(errors).length === 0,
     errors
   };
 };
