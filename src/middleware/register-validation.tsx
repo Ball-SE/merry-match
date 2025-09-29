@@ -62,6 +62,8 @@ export const validateBasicInfo = (data: {
   // Name validation
   if (!data.name || data.name.length < 2) {
     errors.name = "Name must be at least 2 characters";
+  } else if (!/^[a-zA-Z\s]+$/.test(data.name)) {
+    errors.name = "Name can only contain letters and spaces";
   }
 
   // Email validation
@@ -101,6 +103,41 @@ export const validateBasicInfo = (data: {
   };
 };
 
+// Email validation with Supabase check
+export const validateEmail = async (email: string): Promise<{ isValid: boolean; message?: string }> => {
+  if (!email) {
+    return { isValid: false, message: 'Email is required' };
+  }
+
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { isValid: false, message: 'Please enter a valid email address' };
+  }
+
+  try {
+    // Check if email exists in Supabase
+    const response = await fetch('/api/check-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const result = await response.json();
+
+    if (!result.isAvailable) {
+      return { isValid: false, message: 'Email already exists' };
+    }
+
+    return { isValid: true };
+  } catch (error) {
+    console.error('Email validation error:', error);
+    return { isValid: false, message: 'Unable to verify email availability' };
+  }
+};
+
 // Step 2 Validation
 export const validateIdentitiesAndInterests = (data: {
   sexualIdentities: string;
@@ -126,16 +163,16 @@ export const validatePhotos = (photos: string[]) => {
   const errors: Record<string, string> = {};
 
   // Comment ไว้ก่อน - ยังไม่ต้องบังคับใส่รูป
-  // if (!photos || photos.length < 2) {
-  //   errors.photos = "Please upload at least 2 photos";
-  // }
+  if (!photos || photos.length < 2) {
+    errors.photos = "Please upload at least 2 photos";
+  }
 
-  // if (photos.length > 6) {
-  //   errors.photos = "Maximum 6 photos allowed";
-  // }
+  if (photos.length > 6) {
+    errors.photos = "Maximum 6 photos allowed";
+  }
 
   return {
-    isValid: true, // เปลี่ยนเป็น true ไปก่อน
+    isValid: Object.keys(errors).length === 0,
     errors
   };
 };
