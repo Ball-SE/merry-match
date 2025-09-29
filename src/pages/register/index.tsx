@@ -8,7 +8,14 @@ import {
   validateIdentitiesAndInterests,
   validatePhotos,
 } from "@/middleware/register-validation";
+import {
+  validateBasicInfo,
+  validateIdentitiesAndInterests,
+  validatePhotos,
+} from "@/middleware/register-validation";
 import { useRouter } from "next/router";
+import { uploadPhotosOnConfirm } from "@/components/register/RegisterStep";
+import { useRef } from "react";
 import { uploadPhotosOnConfirm } from "@/components/register/RegisterStep";
 import { useRef } from "react";
 
@@ -18,6 +25,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
+  const step3Ref = useRef<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>(
+    null
+  );
   const step3Ref = useRef<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>(
     null
   );
@@ -43,15 +53,25 @@ export default function Home() {
     "Identities and Interests",
     "Upload Photos",
   ];
+  const titles = [
+    "Basic Information",
+    "Identities and Interests",
+    "Upload Photos",
+  ];
 
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const setPhotos = (next: string[]) => {
+    setFormData((prev) => ({ ...prev, photos: next }));
     setFormData((prev) => ({ ...prev, photos: next }));
   };
 
@@ -103,7 +123,9 @@ export default function Home() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify(updatedFormData), // ใช้ updatedFormData แทน formData
         body: JSON.stringify(updatedFormData), // ใช้ updatedFormData แทน formData
       });
 
@@ -128,6 +150,7 @@ export default function Home() {
       router.push("/login");
     } catch (error: any) {
       console.error("Registration error:", error);
+      console.error("Registration error:", error);
       setError(error.message);
       // alert(error.message);
     } finally {
@@ -138,12 +161,15 @@ export default function Home() {
   const goNext = () => {
     if (currentStep < 3 && validateStep(currentStep))
       setCurrentStep((s) => s + 1);
+    if (currentStep < 3 && validateStep(currentStep))
+      setCurrentStep((s) => s + 1);
     if (currentStep === 3 && validateStep(3)) {
       // เรียก API register
       void handleSubmitRegister();
     }
   };
 
+  const goBack = () => setCurrentStep((s) => Math.max(1, s - 1));
   const goBack = () => setCurrentStep((s) => Math.max(1, s - 1));
 
   return (
@@ -167,6 +193,7 @@ export default function Home() {
               matching
             </h1>
           </div>
+          </div>
           <div className="items-end max-xs:items-center max-xs:scale-95 mt-16 max-xs:mt-4 mr-10 max-xs:mr-0">
             <StepIndicator currentStep={currentStep} titles={titles} />
           </div>
@@ -179,6 +206,10 @@ export default function Home() {
             formData={formData}
             handleInputChange={handleInputChange}
             setPhotos={setPhotos}
+            setInterests={(chips) =>
+              setFormData((prev) => ({ ...prev, interests: chips }))
+            }
+            step3Ref={step3Ref}
             setInterests={(chips) =>
               setFormData((prev) => ({ ...prev, interests: chips }))
             }
@@ -212,3 +243,4 @@ export default function Home() {
     </div>
   );
 }
+

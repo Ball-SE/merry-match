@@ -36,8 +36,12 @@ interface Props {
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   setPhotos: (next: string[]) => void;
   setInterests: (chips: string[]) => void;
+  step3Ref: React.RefObject<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>;
   step3Ref: React.RefObject<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>;
 }
 
@@ -48,7 +52,28 @@ export default function RegisterStep({
   setPhotos,
   setInterests,
   step3Ref,
+  step3Ref,
 }: Props) {
+  if (currentStep === 1)
+    return <Step1 formData={formData} handleInputChange={handleInputChange} />;
+  if (currentStep === 2) {
+    return (
+      <Step2
+        formData={formData}
+        handleInputChange={handleInputChange}
+        setInterests={setInterests}
+      />
+    );
+  }
+
+  return (
+    <Step3
+      ref={step3Ref}
+      formData={formData}
+      photos={formData.photos}
+      setPhotos={setPhotos}
+    />
+  );
   if (currentStep === 1)
     return <Step1 formData={formData} handleInputChange={handleInputChange} />;
   if (currentStep === 2) {
@@ -80,6 +105,15 @@ export const uploadPhotosOnConfirm = async (
   }
   return [];
 };
+// เพิ่มฟังก์ชันสำหรับ upload รูปเมื่อกด confirm
+export const uploadPhotosOnConfirm = async (
+  step3Ref: React.RefObject<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>
+): Promise<string[]> => {
+  if (step3Ref.current) {
+    return await step3Ref.current.uploadPhotosToSupabase();
+  }
+  return [];
+};
 
 /* ------------------------------ Step 1 ------------------------------ */
 function Step1({
@@ -87,6 +121,9 @@ function Step1({
   handleInputChange,
 }: {
   formData: FormData;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
@@ -99,11 +136,14 @@ function Step1({
 
   const handleBlur = (fieldName: string) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
     const validation = validateBasicInfo(formData);
     setErrors(validation.errors);
   };
 
   const getInputClassName = (fieldName: string) => {
+    const baseClass =
+      "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const baseClass =
       "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const hasError = touched[fieldName] && errors[fieldName];
@@ -119,10 +159,16 @@ function Step1({
       <h2 className="mb-6 text-2xl font-bold text-[#A62D82]">
         Basic Information
       </h2>
+      <h2 className="mb-6 text-2xl font-bold text-[#A62D82]">
+        Basic Information
+      </h2>
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Name
+            </label>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Name
             </label>
@@ -132,10 +178,13 @@ function Step1({
               value={formData.name}
               onChange={handleInputChange}
               onBlur={() => handleBlur("name")}
+              onBlur={() => handleBlur("name")}
               placeholder="Jon Snow"
+              className={getInputClassName("name")}
               className={getInputClassName("name")}
             />
             {touched.name && errors.name && (
+              <p className="mt-1 text-sm text-[#C70039]">{errors.name}</p>
               <p className="mt-1 text-sm text-[#C70039]">{errors.name}</p>
             )}
           </div>
@@ -148,9 +197,18 @@ function Step1({
               selected={
                 formData.dateOfBirth ? new Date(formData.dateOfBirth) : null
               }
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Date Picker
+            </label>
+            <CustomDatePicker
+              selected={
+                formData.dateOfBirth ? new Date(formData.dateOfBirth) : null
+              }
               onChange={(date: Date | null) => {
                 const dateString = date ? date.toISOString().split("T")[0] : "";
+                const dateString = date ? date.toISOString().split("T")[0] : "";
                 handleInputChange({
+                  target: { name: "dateOfBirth", value: dateString },
                   target: { name: "dateOfBirth", value: dateString },
                 } as any);
               }}
@@ -164,6 +222,10 @@ function Step1({
               id="dateOfBirth"
               error={errors.dateOfBirth}
               touched={touched.dateOfBirth}
+              name="dateOfBirth"
+              id="dateOfBirth"
+              error={errors.dateOfBirth}
+              touched={touched.dateOfBirth}
             />
           </div>
         </div>
@@ -173,12 +235,18 @@ function Step1({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Location
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Location
+            </label>
             <select
               name="location"
               value={formData.location}
               onChange={(e) => {
                 handleInputChange(e);
                 // รีเซ็ต city เมื่อเปลี่ยนประเทศ
+                const resetCity = {
+                  target: { name: "city", value: "" },
+                } as any;
                 const resetCity = {
                   target: { name: "city", value: "" },
                 } as any;
@@ -202,7 +270,11 @@ function Step1({
               <option value="">
                 {!formData.location ? "Thailand" : "Select location"}
               </option>
+              <option value="">
+                {!formData.location ? "Thailand" : "Select location"}
+              </option>
 
+              {SEA_COUNTRY_OPTIONS.map((opt) => (
               {SEA_COUNTRY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -211,6 +283,7 @@ function Step1({
             </select>
             {touched.location && errors.location && (
               <p className="mt-1 text-sm text-[#C70039]">{errors.location}</p>
+              <p className="mt-1 text-sm text-[#C70039]">{errors.location}</p>
             )}
           </div>
 
@@ -218,10 +291,14 @@ function Step1({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               City
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              City
+            </label>
             <select
               name="city"
               value={formData.city}
               onChange={handleInputChange}
+              onBlur={() => handleBlur("city")}
               onBlur={() => handleBlur("city")}
               disabled={!formData.location}
               className={`${getInputClassName("city")} ${!formData.location
@@ -243,6 +320,9 @@ function Step1({
               <option value="">
                 {!formData.location ? "Bangkok" : "Select city"}
               </option>
+              <option value="">
+                {!formData.location ? "Bangkok" : "Select city"}
+              </option>
               {(SEA_CITIES_BY_COUNTRY[formData.location] || []).map((d) => (
                 <option key={d.value} value={d.value}>
                   {d.label}
@@ -260,21 +340,30 @@ function Step1({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Username
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Username
+            </label>
             <input
               type="text"
               name="username"
               value={formData.username}
               onChange={handleInputChange}
               onBlur={() => handleBlur("username")}
+              onBlur={() => handleBlur("username")}
               placeholder="At least 6 characters"
+              className={getInputClassName("username")}
               className={getInputClassName("username")}
             />
             {touched.username && errors.username && (
+              <p className="mt-1 text-sm text-[#C70039]">{errors.username}</p>
               <p className="mt-1 text-sm text-[#C70039]">{errors.username}</p>
             )}
           </div>
 
           <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Email
+            </label>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Email
             </label>
@@ -284,9 +373,63 @@ function Step1({
               value={formData.email}
               onChange={handleInputChange}
               onBlur={() => handleBlur("email")}
+              onBlur={() => handleBlur("email")}
               placeholder="name@website.com"
               className={getInputClassName("email")}
+              className={getInputClassName("email")}
             />
+            {/* แสดงสถานะการตรวจสอบ email ด้านล่าง input */}
+            {touched.email && (
+              <div className="mt-2 flex items-center gap-2">
+                {emailValidation.isChecking && (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent"></div>
+                    <span className="text-sm text-yellow-600">checking...</span>
+                  </>
+                )}
+                {!emailValidation.isChecking && emailValidation.isValid && (
+                  <>
+                    <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                      <svg
+                        className="h-2 w-2 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-green-600">
+                      Email is available
+                    </span>
+                  </>
+                )}
+                {!emailValidation.isChecking &&
+                  !emailValidation.isValid &&
+                  touched.email && (
+                    <>
+                      <div className="h-4 w-4 rounded-full bg-[#C70039] flex items-center justify-center">
+                        <svg
+                          className="h-2 w-2 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-[#C70039]">
+                        Email is already exists or invalid
+                      </span>
+                    </>
+                  )}
+              </div>
             {/* แสดงสถานะการตรวจสอบ email ด้านล่าง input */}
             {touched.email && (
               <div className="mt-2 flex items-center gap-2">
@@ -348,21 +491,30 @@ function Step1({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Password
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleInputChange}
               onBlur={() => handleBlur("password")}
+              onBlur={() => handleBlur("password")}
               placeholder="At least 8 characters"
+              className={getInputClassName("password")}
               className={getInputClassName("password")}
             />
             {touched.password && errors.password && (
+              <p className="mt-1 text-sm text-[#C70039]">{errors.password}</p>
               <p className="mt-1 text-sm text-[#C70039]">{errors.password}</p>
             )}
           </div>
 
           <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Confirm password
+            </label>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Confirm password
             </label>
@@ -372,10 +524,15 @@ function Step1({
               value={formData.confirmPassword}
               onChange={handleInputChange}
               onBlur={() => handleBlur("confirmPassword")}
+              onBlur={() => handleBlur("confirmPassword")}
               placeholder="At least 8 characters"
+              className={getInputClassName("confirmPassword")}
               className={getInputClassName("confirmPassword")}
             />
             {touched.confirmPassword && errors.confirmPassword && (
+              <p className="mt-1 text-sm text-[#C70039]">
+                {errors.confirmPassword}
+              </p>
               <p className="mt-1 text-sm text-[#C70039]">
                 {errors.confirmPassword}
               </p>
@@ -397,6 +554,9 @@ function Step2({
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   setInterests: (chips: string[]) => void;
 }) {
   const [chipInput, setChipInput] = useState("");
@@ -405,11 +565,14 @@ function Step2({
 
   const handleBlur = (fieldName: string) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
     const validation = validateIdentitiesAndInterests(formData);
     setErrors(validation.errors);
   };
 
   const getInputClassName = (fieldName: string) => {
+    const baseClass =
+      "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const baseClass =
       "w-full rounded-lg border px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2";
     const hasError = touched[fieldName] && errors[fieldName];
@@ -439,6 +602,9 @@ function Step2({
       <h2 className="mb-6 text-2xl font-semibold text-[#2A0B21]">
         Identities and Interests
       </h2>
+      <h2 className="mb-6 text-2xl font-semibold text-[#2A0B21]">
+        Identities and Interests
+      </h2>
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -446,10 +612,26 @@ function Step2({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Sexual identities
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Sexual identities
+            </label>
             <select
               name="sexualIdentities"
               value={formData.sexualIdentities}
               onChange={handleInputChange}
+              onBlur={() => handleBlur("sexualIdentities")}
+              className={getInputClassName("sexualIdentities")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
               onBlur={() => handleBlur("sexualIdentities")}
               className={getInputClassName("sexualIdentities")}
               style={{
@@ -473,6 +655,9 @@ function Step2({
               <p className="mt-1 text-sm text-red-500">
                 {errors.sexualIdentities}
               </p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.sexualIdentities}
+              </p>
             )}
           </div>
 
@@ -480,10 +665,26 @@ function Step2({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Sexual preferences
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Sexual preferences
+            </label>
             <select
               name="sexualPreferences"
               value={formData.sexualPreferences}
               onChange={handleInputChange}
+              onBlur={() => handleBlur("sexualPreferences")}
+              className={getInputClassName("sexualPreferences")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
               onBlur={() => handleBlur("sexualPreferences")}
               className={getInputClassName("sexualPreferences")}
               style={{
@@ -507,6 +708,9 @@ function Step2({
               <p className="mt-1 text-sm text-red-500">
                 {errors.sexualPreferences}
               </p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.sexualPreferences}
+              </p>
             )}
           </div>
         </div>
@@ -516,10 +720,26 @@ function Step2({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Racial preferences
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Racial preferences
+            </label>
             <select
               name="racialPreferences"
               value={formData.racialPreferences}
               onChange={handleInputChange}
+              onBlur={() => handleBlur("racialPreferences")}
+              className={getInputClassName("racialPreferences")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
               onBlur={() => handleBlur("racialPreferences")}
               className={getInputClassName("racialPreferences")}
               style={{
@@ -545,6 +765,9 @@ function Step2({
               <p className="mt-1 text-sm text-red-500">
                 {errors.racialPreferences}
               </p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.racialPreferences}
+              </p>
             )}
           </div>
 
@@ -552,10 +775,26 @@ function Step2({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Meeting interests
             </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Meeting interests
+            </label>
             <select
               name="meetingInterests"
               value={formData.meetingInterests}
               onChange={handleInputChange}
+              onBlur={() => handleBlur("meetingInterests")}
+              className={getInputClassName("meetingInterests")}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage:
+                  'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+                paddingRight: "48px",
+              }}
               onBlur={() => handleBlur("meetingInterests")}
               className={getInputClassName("meetingInterests")}
               style={{
@@ -580,6 +819,9 @@ function Step2({
               <p className="mt-1 text-sm text-red-500">
                 {errors.meetingInterests}
               </p>
+              <p className="mt-1 text-sm text-red-500">
+                {errors.meetingInterests}
+              </p>
             )}
           </div>
         </div>
@@ -594,9 +836,14 @@ function Step2({
                 key={`${chip}-${i}`}
                 className="flex items-center gap-2 rounded-sm bg-[#F4EBF2] px-3 py-1 text-md font-bold text-[#7D2262]"
               >
+              <span
+                key={`${chip}-${i}`}
+                className="flex items-center gap-2 rounded-sm bg-[#F4EBF2] px-3 py-1 text-md font-bold text-[#7D2262]"
+              >
                 {chip}
                 <button
                   onClick={() => removeChip(i)}
+                  className="rounded-full bg-[#F4EBF2] px-0 text-[#7D2262] text-xl font-bold hover:bg-[#950028]"
                   className="rounded-full bg-[#F4EBF2] px-0 text-[#7D2262] text-xl font-bold hover:bg-[#950028]"
                 >
                   ×
@@ -617,6 +864,7 @@ function Step2({
               placeholder="Type and press Enter to add"
               disabled={(formData.interests || []).length >= 10}
               className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#A62D82] disabled:bg-gray-100"
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#A62D82] disabled:bg-gray-100"
             />
             <button
               onClick={addChip}
@@ -630,6 +878,9 @@ function Step2({
             <p className="mt-1 text-sm text-yellow-600">
               Maximum 10 interests reached
             </p>
+            <p className="mt-1 text-sm text-yellow-600">
+              Maximum 10 interests reached
+            </p>
           )}
         </div>
       </div>
@@ -639,6 +890,14 @@ function Step2({
 
 /* ------------------------------ Step 3 ------------------------------ */
 
+const Step3 = React.forwardRef<
+  { uploadPhotosToSupabase: () => Promise<string[]> },
+  {
+    formData: FormData;
+    photos: string[];
+    setPhotos: (next: string[]) => void;
+  }
+>(({ formData, photos, setPhotos }, ref) => {
 const Step3 = React.forwardRef<
   { uploadPhotosToSupabase: () => Promise<string[]> },
   {
@@ -697,6 +956,9 @@ const Step3 = React.forwardRef<
     // นับจำนวนรูปที่มี
     const photoCount = photoFiles.filter((file) => file !== null).length;
     const validation = validatePhotos(Array(photoCount).fill("temp"));
+    // นับจำนวนรูปที่มี
+    const photoCount = photoFiles.filter((file) => file !== null).length;
+    const validation = validatePhotos(Array(photoCount).fill("temp"));
     setErrors(validation.errors);
   };
 
@@ -725,6 +987,9 @@ const Step3 = React.forwardRef<
         const { compressImageToTarget } = await import(
           "@/lib/image/browserImageProcessor"
         );
+        const { compressImageToTarget } = await import(
+          "@/lib/image/browserImageProcessor"
+        );
         file = await compressImageToTarget(file, 1 * 1024 * 1024);
       } catch (e) {
         console.error("Compress failed:", e);
@@ -734,6 +999,7 @@ const Step3 = React.forwardRef<
       }
     }
 
+    setUploading((prev) => {
     setUploading((prev) => {
       const next = [...prev];
       next[index] = true;
@@ -760,11 +1026,31 @@ const Step3 = React.forwardRef<
       setPhotos(newPhotos);
 
       validateCurrentPhotos();
+      // สร้าง preview URL
+      const previewUrl = URL.createObjectURL(file);
+
+      // เก็บไฟล์และ preview
+      const newPhotoFiles = [...photoFiles];
+      const newPhotoPreviews = [...photoPreviews];
+
+      newPhotoFiles[index] = file;
+      newPhotoPreviews[index] = previewUrl;
+
+      setPhotoFiles(newPhotoFiles);
+      setPhotoPreviews(newPhotoPreviews);
+
+      // อัปเดต photos array สำหรับ validation
+      const newPhotos = [...photos];
+      newPhotos[index] = previewUrl; // ใช้ preview URL ชั่วคราว
+      setPhotos(newPhotos);
+
+      validateCurrentPhotos();
     } catch (error: any) {
       console.error("File processing error:", error);
       // alert("Failed to process image");
       setUploadError("Failed to process image");
     } finally {
+      setUploading((prev) => {
       setUploading((prev) => {
         const next = [...prev];
         next[index] = false;
@@ -774,6 +1060,78 @@ const Step3 = React.forwardRef<
   };
 
   const remove = async (idx: number) => {
+    // ลบ preview URL
+    if (photoPreviews[idx]) {
+      URL.revokeObjectURL(photoPreviews[idx]);
+    }
+
+    const newPhotoFiles = [...photoFiles];
+    const newPhotoPreviews = [...photoPreviews];
+    const newPhotos = [...photos];
+
+    newPhotoFiles[idx] = null;
+    newPhotoPreviews[idx] = "";
+    newPhotos[idx] = "";
+
+    setPhotoFiles(newPhotoFiles);
+    setPhotoPreviews(newPhotoPreviews);
+    setPhotos(newPhotos);
+
+    validateCurrentPhotos();
+  };
+
+  const handleImageDragStart = (e: React.DragEvent, index: number) => {
+    if (!photoFiles[index]) return; // ไม่ให้ลากถ้าไม่มีรูป
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", index.toString());
+  };
+
+  const handleImageDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  };
+
+  const handleImageDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleImageDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const dragIndex = parseInt(e.dataTransfer.getData("text/html"));
+
+    if (dragIndex === dropIndex || !photoFiles[dragIndex]) return;
+
+    // สลับตำแหน่งรูปภาพในทุก array
+    const newPhotoFiles = [...photoFiles];
+    const newPhotoPreviews = [...photoPreviews];
+    const newPhotos = [...photos];
+
+    const draggedFile = newPhotoFiles[dragIndex];
+    const draggedPreview = newPhotoPreviews[dragIndex];
+    const draggedPhoto = newPhotos[dragIndex];
+
+    const droppedFile = newPhotoFiles[dropIndex];
+    const droppedPreview = newPhotoPreviews[dropIndex];
+    const droppedPhoto = newPhotos[dropIndex];
+
+    // สลับข้อมูล
+    newPhotoFiles[dragIndex] = droppedFile;
+    newPhotoFiles[dropIndex] = draggedFile;
+
+    newPhotoPreviews[dragIndex] = droppedPreview;
+    newPhotoPreviews[dropIndex] = draggedPreview;
+
+    newPhotos[dragIndex] = droppedPhoto;
+    newPhotos[dropIndex] = draggedPhoto;
+
+    setPhotoFiles(newPhotoFiles);
+    setPhotoPreviews(newPhotoPreviews);
+    setPhotos(newPhotos);
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
     // ลบ preview URL
     if (photoPreviews[idx]) {
       URL.revokeObjectURL(photoPreviews[idx]);
@@ -900,8 +1258,11 @@ const Step3 = React.forwardRef<
         {[0, 1, 2, 3, 4].map((i) => {
           const file = photoFiles[i];
           const previewUrl = photoPreviews[i];
+          const file = photoFiles[i];
+          const previewUrl = photoPreviews[i];
           const isUploading = uploading[i];
           const isDragOver = dragOverIndex === i;
+          const isDragging = draggedIndex === i;
           const isDragging = draggedIndex === i;
 
           return (
@@ -916,7 +1277,23 @@ const Step3 = React.forwardRef<
                   handleDragOver(e, i);
                 }
               }}
+              onDragOver={(e) => {
+                // Handle both file drag and image drag
+                if (e.dataTransfer.types.includes("text/html")) {
+                  handleImageDragOver(e, i);
+                } else {
+                  handleDragOver(e, i);
+                }
+              }}
               onDragLeave={handleDragLeave}
+              onDrop={(e) => {
+                // Handle both file drop and image drop
+                if (e.dataTransfer.types.includes("text/html")) {
+                  handleImageDrop(e, i);
+                } else {
+                  handleDrop(e, i);
+                }
+              }}
               onDrop={(e) => {
                 // Handle both file drop and image drop
                 if (e.dataTransfer.types.includes("text/html")) {
@@ -958,7 +1335,31 @@ const Step3 = React.forwardRef<
                         Main
                       </div>
                     )}
+                    <span className="text-xs text-gray-500">Processing...</span>
                   </div>
+                ) : previewUrl ? (
+                  <div className="relative h-full w-full">
+                    <img
+                      src={previewUrl}
+                      alt={`photo-${i}`}
+                      className="h-full w-full rounded-xl object-cover cursor-move"
+                      draggable={true}
+                      onDragStart={(e) => handleImageDragStart(e, i)}
+                      onDragEnd={handleImageDragEnd}
+                    />
+
+                    {/* Main photo indicator */}
+                    {i === 0 && (
+                      <div className="absolute top-2 left-2 bg-[#A62D82] text-white text-xs px-2 py-1 rounded">
+                        Main
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center flex flex-col">
+                    <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full text-[#A62D82]">
+                      +
+                    </div>
                 ) : (
                   <div className="text-center flex flex-col">
                     <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full text-[#A62D82]">
@@ -971,11 +1372,15 @@ const Step3 = React.forwardRef<
                       <span className="text-md font-bold text-[#C70039]">
                         Drop here!
                       </span>
+                      <span className="text-md font-bold text-[#C70039]">
+                        Drop here!
+                      </span>
                     )}
                   </div>
                 )}
               </div>
 
+              {!file && !isUploading ? (
               {!file && !isUploading ? (
                 <input
                   type="file"
@@ -983,6 +1388,7 @@ const Step3 = React.forwardRef<
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   onChange={(e) => onFiles(e.target.files, i)}
                 />
+              ) : file && !isUploading ? (
               ) : file && !isUploading ? (
                 <button
                   onClick={() => remove(i)}
@@ -1008,9 +1414,15 @@ const Step3 = React.forwardRef<
 
       <div className="mt-4 text-sm text-gray-500">
         {photoFiles.filter((f) => f !== null).length}/5 photos ready
+        {photoFiles.filter((f) => f !== null).length}/5 photos ready
       </div>
     </div>
+    </div>
   );
+});
+
+Step3.displayName = "Step3";
+
 });
 
 Step3.displayName = "Step3";
