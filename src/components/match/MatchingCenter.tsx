@@ -8,6 +8,9 @@ import { useMatchingContext } from "@/context/MatchingContext";
 import { supabase } from "@/lib/supabase/supabaseClient";
 import axios from "axios";
 import MerryMatch from "./MerryMatch";
+import { RiMapPin2Fill } from "react-icons/ri";
+import { GiSettingsKnobs } from "react-icons/gi";
+import MatchingRight from "./MatchingRight";
 
 function MatchingCenter() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -15,7 +18,7 @@ function MatchingCenter() {
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [showMatch, setShowMatch] = useState(false);
   const [matchedCardId, setMatchedCardId] = useState<string | null>(null); 
-
+  const [showFilterModal, setShowFilterModal] = useState(false);
   // ใช้ context เพื่อดึง filters และ searchTrigger
   const { filters, searchTrigger, refreshMatches } = useMatchingContext();
   
@@ -43,6 +46,30 @@ function MatchingCenter() {
       maxAge: 50
     })
   }, []);
+
+  // เพิ่ม useEffect สำหรับซ่อน showMatch อัตโนมัติหลังจาก 5 วินาที
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    if (showMatch) {
+      timeoutId = setTimeout(() => {
+        setShowMatch(false);
+        setMatchedCardId(null);
+        // ลบการ์ดที่ match แล้ว
+        if (matchedCardId) {
+          removeCard(matchedCardId);
+          setCurrentImageIndex(0);
+        }
+      }, 5000); // 5 วินาที
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [showMatch, matchedCardId, removeCard]);
+
 
   // ฟังก์ชันสำหรับรับ preview cards (การ์ดซ้ายและขวา)
   const getPreviewCards = () => {
@@ -93,6 +120,10 @@ function MatchingCenter() {
     setMatchedCardId(null);
     // ไม่ต้องเรียก removeCard ที่นี่อีกแล้วเพราะลบไปแล้วตอน like
   };
+
+  // ฟังก์ชันเปิด/ปิด filter modal
+  const handleOpenFilter = () => setShowFilterModal(true);
+  const handleCloseFilter = () => setShowFilterModal(false);
 
   const handleLike = async (card?: Card) => {
     const targetCard = card || currentCard;
@@ -241,60 +272,70 @@ function MatchingCenter() {
           />
           
           {/* Gradient Overlay at Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 h-52 bg-gradient-to-t from-[#390741] via-[#07094100] to-transparent rounded-none sm:rounded-b-2xl"></div>
+          <div className="absolute bottom-0 left-0 right-0 sm:h-52 h-80 bg-gradient-to-t from-[#390741] via-[#07094100] to-transparent rounded-none sm:rounded-b-2xl"></div>
         </div>
 
-        {/* Controls */}
-        {!showMatch && ( // เพิ่มเงื่อนไขเพื่อซ่อนเมื่อ match
-          <div className="absolute bottom-56 sm:-bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:gap-4 z-30">
-            <div className="flex flex-row w-[450px] sm:w-[450px] max-w-[650px] px-4 justify-between">
-              <div className="flex sm:gap-2 gap-70 items-center">
-                <div className="flex flex-row gap-2">
-                  <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.title || ''}</h3>
-                  <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.age || ''}</h3>
-                </div>
-                
-                <button
-                  onClick={handleProfile}
-                  className="rounded-full w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] backdrop-blur-xl grid place-items-center shadow-xl bg-white/30"
-                  aria-label="Open profile"
-                >
-                  <FaEye className="w-[10px] h-[10px] sm:w-[12px] sm:h-[12px] text-white" />
-                </button>
-              </div>
-
-              <div className="hidden sm:flex">
-                <button
-                  onClick={handlePreviousImage}
-                  className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
-                >
-                  <FaArrowLeft className="text-white drop-shadow-2xl text-sm sm:text-base" />
-                </button>
-                <button
-                  onClick={handleNextImage}
-                  className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
-                >
-                  <FaArrowRight className="text-white drop-shadow-2xl text-sm sm:text-base" />
-                </button>
-              </div>
+          {/* Name, Age และ Profile Button - Position คงที่ */}
+          <div className={`absolute bottom-[500px] sm:bottom-16 left-6 sm:left-10 flex items-center gap-58 sm:gap-3 z-30 ${showMatch ? 'sm:hidden' : ''}`}>
+            <div className="flex flex-row gap-2">
+              <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.title || ''}</h3>
+              <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.age || ''}</h3>
             </div>
-
-            <div className="flex gap-4 sm:gap-6">
-              <button
-                onClick={() => handlePass()}
-                className="w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
-              >
-                <IoClose className="text-gray-400 w-7 h-7 sm:w-9 sm:h-9" />
-              </button>
-              <button
-                onClick={() => handleLike()}
-                className="w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
-              >
-                <FaHeart className="text-red-500 w-6 h-6 sm:w-7 sm:h-7" />
-              </button>
-            </div>
+            
+            <button
+              onClick={handleProfile}
+              className="rounded-full w-[40px] h-[40px] sm:w-[22px] sm:h-[22px] backdrop-blur-xl grid place-items-center shadow-xl bg-white/30"
+              aria-label="Open profile"
+            >
+              <FaEye className="w-[20px] h-[20px] sm:w-[12px] sm:h-[12px] text-white" />
+            </button>
           </div>
-        )}
+        
+
+        {/* Desktop Arrow Buttons - แยกออกมา */}
+          <div className={`hidden sm:flex absolute bottom-16 right-6 gap-2 z-30 ${showMatch ? 'sm:hidden' : ''}`}>
+            <button
+              onClick={handlePreviousImage}
+              className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
+            >
+              <FaArrowLeft className="text-white drop-shadow-2xl text-sm sm:text-base" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"
+            >
+              <FaArrowRight className="text-white drop-shadow-2xl text-sm sm:text-base" />
+            </button>
+          </div>
+
+        {/* Location - Mobile only */}
+          <div className={`sm:hidden absolute bottom-[470px] left-6 flex flex-row gap-2 items-center z-30 ${showMatch ? 'sm:hidden' : ''}`}>
+            <RiMapPin2Fill className="text-[#BEBFF1] text-2xl" />
+            <p className="text-[#D6D9E4] text-xl">
+              {currentCard?.location?.city && currentCard?.location?.location 
+              ? `${currentCard.location.city}, ${currentCard.location.location}`
+              : currentCard?.location?.city || currentCard?.location?.location || 'Location not available'}
+            </p>
+          </div>
+        
+
+        {/* Action Buttons - Position คงที่ */}
+          <div className={`absolute bottom-[375px] sm:bottom-[-25px] left-1/2 -translate-x-1/2 flex gap-6 z-30 ${showMatch ? 'hidden' : ''}`}>
+            <button
+              onClick={() => handlePass()}
+              className="w-15 h-15 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
+            >
+              <IoClose className="text-gray-400 w-10 h-10 sm:w-9 sm:h-9" />
+            </button>
+            <button
+              onClick={() => handleLike()}
+              className="w-15 h-15 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
+            >
+              <FaHeart className="text-red-500 w-10 h-10 sm:w-7 sm:h-7" />
+            </button>
+          </div>
+        
+        
 
         {/* MerryMatch - แสดงเฉพาะเมื่อ match */}
         {showMatch && (
@@ -308,14 +349,30 @@ function MatchingCenter() {
           </div>
         )}
 
-        {!showMatch && ( // เพิ่มเงื่อนไขเพื่อซ่อน Merry limit เมื่อ match
-          <div className="absolute mt-15 left-0 right-0">
-            <p className="text-[#646D89] text-center text-sm">
-              Merry limit Today
-              <span className="text-[#FF1659] ml-2">20/20</span>
-            </p>
-          </div>
+        <div className="sm:hidden absolute mt-52 sm:mt-15 left-10 sm:left-0 sm:right-0 cursor-pointer">
+          <button 
+            className="text-[#C8CCDB] font-medium text-center text-sm flex flex-row gap-2 items-center"
+            onClick={handleOpenFilter}
+          >
+            <GiSettingsKnobs className="text-white w-6 h-6" />
+            Filter
+          </button>
+        </div>
+
+        {/* Filter Modal - แสดงเฉพาะบน mobile */}
+        {showFilterModal && (
+          <MatchingRight 
+            isModal={true}
+            onClose={handleCloseFilter}
+          />
         )}
+
+        <div className={`absolute mt-53 sm:mt-15 right-15 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
+          <p className="text-[#646D89] text-center text-sm">
+            Merry limit Today
+            <span className="text-[#FF1659] ml-2">20/20</span>
+          </p>
+        </div>
       </div>
 
       {/* Profile Modal */}

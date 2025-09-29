@@ -3,8 +3,14 @@ import { Slider } from "@/components/ui/slider"
 import { useState, useEffect } from "react"
 import { useMatchingContext } from "@/context/MatchingContext"
 import { getCurrentUserProfile } from "@/services/profileService"
+import { IoArrowBack, IoClose } from "react-icons/io5"
 
-function MatchingRight() {
+interface MatchingRightProps {
+    isModal?: boolean;
+    onClose?: () => void;
+}
+
+function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
     const { filters, updateFilters, applyFilters } = useMatchingContext();
     
     // ใช้ local state เพื่อให้ user ปรับแต่งได้ก่อนกด Search
@@ -55,6 +61,11 @@ function MatchingRight() {
 
         // เรียก applyFilters เพื่อให้ components อื่นๆ รู้ว่าต้องอัพเดท
         applyFilters();
+
+        // ปิด modal หลังจากค้นหา (สำหรับ mobile)
+        if (isModal && onClose) {
+            onClose();
+        }
     }
 
     // ฟังก์ชันสำหรับ clear ทั้งหมด
@@ -70,8 +81,28 @@ function MatchingRight() {
         applyFilters();
     }
 
-    return (
+    const content = (
         <div className="w-full h-full flex flex-col pt-5">
+            {/* Header สำหรับ Mobile Modal */}
+            {isModal && (
+                <div className="flex items-center justify-between mb-6 px-4 sm:px-0">
+                    <button 
+                        onClick={onClose}
+                        className="flex items-center text-[#C70039] text-sm font-medium"
+                    >
+                        <IoArrowBack className="mr-2" />
+                        Back
+                    </button>
+                    <h2 className="text-xl font-bold text-black">Filter</h2>
+                    <button 
+                        onClick={handleClear}
+                        className="text-[#C70039] text-sm font-medium"
+                    >
+                        Clear
+                    </button>
+                </div>
+            )}
+
             <h1 className="text-black text-base font-bold">Gender you interest</h1>
             <div className="flex flex-col gap-2 mt-5">
                 <div className="flex items-center gap-2">
@@ -108,8 +139,8 @@ function MatchingRight() {
                 </div>
             </div>
 
-            <div className="mt-5 ">
-                <h1 className="text-black text-base font-bold">Age range</h1>
+            <div className="mt-5">
+                <h1 className="text-black text-base font-bold">Age Range</h1>
                 <Slider 
                     className="mt-5"
                     min={18}
@@ -141,16 +172,18 @@ function MatchingRight() {
             </div>
             
             <div className="mt-auto">
-                <div className="border-t-[1px] border-gray-300 mt-10"></div>
-                <div className="flex flex-row gap-5 items-center mt-10">
+                {!isModal && <div className="border-t-[1px] border-gray-300 mt-10"></div>}
+                <div className={`flex flex-row gap-5 items-center ${isModal ? 'mt-8' : 'mt-10'}`}>
+                    {!isModal && (
+                        <button 
+                            className="w-1/2 button-ghost text-[#C70039] rounded-md p-2"
+                            onClick={handleClear}
+                        >
+                            Clear
+                        </button>
+                    )}
                     <button 
-                        className="w-1/2 button-ghost text-[#C70039] rounded-md p-2"
-                        onClick={handleClear}
-                    >
-                        Clear
-                    </button>
-                    <button 
-                        className="w-1/2 button-primary bg-[#C70039] text-white rounded-md p-2"
+                        className={`${isModal ? 'w-full' : 'w-1/2'} button-primary bg-[#C70039] text-white rounded-md p-2`}
                         onClick={handleSearch}
                     >
                         Search
@@ -158,6 +191,28 @@ function MatchingRight() {
                 </div>
             </div>
         </div>
-    )
+    );
+
+    if (isModal) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                {/* Backdrop */}
+                <div 
+                    className="absolute inset-0 bg-opacity-50"
+                    onClick={onClose}
+                />
+                
+                {/* Modal Content */}
+                <div className="relative bg-white w-full sm:w-96 sm:mx-4 rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-auto">
+                    <div className="p-6">
+                        {content}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return content;
 }
+
 export default MatchingRight;

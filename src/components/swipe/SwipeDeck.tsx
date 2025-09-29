@@ -1,7 +1,16 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSwipeable } from "react-swipeable";
 
-export type Card = { id: string; title: string; age: string; img: string[] };
+export type Card = { 
+  id: string; 
+  title: string; 
+  age: string; 
+  img: string[];
+  location?: {
+    city?: string;
+    location?: string;
+  }; 
+};
 
 interface SwipeDeckProps {
   items: Card[];

@@ -3,16 +3,39 @@ import { Profile, getMatchingProfiles, ProfileFilters } from '../services/profil
 import { Card } from '@/components/swipe/SwipeDeck';
 
 // แปลง Profile จาก Supabase เป็น Card สำหรับ SwipeDeck
-const profileToCard = (profile: Profile): Card => ({
-  id: profile.id,
-  title: profile.name,
-  age: profile.age?.toString() || 'N/A',
-  img: profile.photos && profile.photos.length > 0 
-    ? profile.photos 
-    : profile.photo_url 
-      ? [profile.photo_url] 
-      : ['/assets/user.jpg']
-});
+const profileToCard = (profile: Profile): Card => {
+  // จัดการข้อมูล location อย่างปลอดภัย
+  let locationData = undefined;
+  
+  if (profile.location) {
+    try {
+      // ถ้าเป็น string ให้ parse เป็น JSON
+      if (typeof profile.location === 'string') {
+        locationData = JSON.parse(profile.location);
+      } 
+      // ถ้าเป็น object อยู่แล้วให้ใช้เลย
+      else if (typeof profile.location === 'object') {
+        locationData = profile.location;
+      }
+    } catch (error) {
+      console.warn('Failed to parse location data:', error);
+      // ถ้า parse ไม่ได้ให้ใช้ค่า default
+      locationData = undefined;
+    }
+  }
+
+  return {
+    id: profile.id,
+    title: profile.name,
+    age: profile.age?.toString() || 'N/A',
+    img: profile.photos && profile.photos.length > 0 
+      ? profile.photos 
+      : profile.photo_url 
+        ? [profile.photo_url] 
+        : ['/assets/user.jpg'],
+    location: locationData
+  };
+};
 
 export const useMatchingProfiles = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
