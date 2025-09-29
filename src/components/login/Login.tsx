@@ -29,57 +29,66 @@ export default function LoginPage() {
     }
   }, [router])
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setErrorMsg(null)
-    setEmailError(null)
+const handleLogin = async (e: FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
+  setErrorMsg(null)
+  setEmailError(null)
 
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address')
-      setLoading(false)
-      return
-    }
-
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const result = await response.json()
-
-      setLoading(false)
-      if (!result.success) {
-        setErrorMsg(result.message || "Invalid email or password")
-      } else {
-        console.log('login ok', result)
-        // Set the session in the client
-        if (result.session && result.session.access_token && result.session.refresh_token) {
-          await supabase.auth.setSession({
-            access_token: result.session.access_token,
-            refresh_token: result.session.refresh_token
-          })
-        }
-        // The useEffect will redirect the user when auth state changes
-        // ตรวจสอบ admin role และ redirect
-        if (result.user?.app_metadata?.is_admin === true) {
-          router.replace('/admin')
-        } else {
-          router.replace('/')
-        }
-      }
-    } catch (error) {
-      setLoading(false)
-      setErrorMsg("An error occurred. Please try again.")
-      console.error('Login error:', error)
-
-      
-    }
+  // ปรับ validation ให้รองรับทั้ง email และ username
+  const isEmail = email.includes('@');
+  
+  if (isEmail && !validateEmail(email)) {
+    setEmailError('Please enter a valid email address')
+    setLoading(false)
+    return
   }
+  
+  if (!isEmail && email.length < 6) {
+    setEmailError('Username must be at least 6 characters')
+    setLoading(false)
+    return
+  }
+
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const result = await response.json()
+
+    setLoading(false)
+    if (!result.success) {
+      setErrorMsg(result.message || "Invalid username/email or password")
+    } else {
+      console.log('login ok', result)
+      // Set the session in the client
+      if (result.session && result.session.access_token && result.session.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token
+        })
+      }
+      // The useEffect will redirect the user when auth state changes
+      // ตรวจสอบ admin role และ redirect
+      if (result.user?.app_metadata?.is_admin === true) {
+        router.replace('/admin')
+      } else {
+        router.replace('/')
+      }
+    }
+  } catch (error) {
+    setLoading(false)
+    setErrorMsg("An error occurred. Please try again.")
+    console.error('Login error:', error)
+
+    
+  }
+}
 
   return (
     <div className="min-h-screen bg-[#FCFCFE] flex flex-col sm:flex-row">
@@ -118,15 +127,15 @@ export default function LoginPage() {
             {/* Email field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                Username or Email
               </label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 name="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email (e.g. name@example.com)"
+                placeholder="Enter Username or Email"
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
                   emailError ? 'border-red-500' : 'border-gray-300'
                 }`}

@@ -32,20 +32,41 @@ export default async function handler(
   if (!email || !password) {
     return res.status(400).json({
       success: false,
-      message: 'Email and password are required'
+      message: 'Username/Email and password are required'
     })
   }
 
   try {
+    let loginEmail = email;
+    
+    // ตรวจสอบว่า input เป็น email หรือ username
+    if (!email.includes('@')) {
+      // ถ้าไม่ใช่ email ให้ค้นหา email จาก username
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('username', email)
+        .single();
+        
+      if (profileError || !profileData) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid username/email or password'
+        })
+      }
+      
+      loginEmail = profileData.email;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     })
 
     if (error) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid username/email or password'
       })
     }
 
