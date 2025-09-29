@@ -16,6 +16,7 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
   const step3Ref = useRef<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>(
     null
@@ -109,8 +110,16 @@ export default function Home() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Register Failed");
+        setError(result.error || "Register Failed");
+        return; // หยุดการทำงาน
       }
+
+      // Success case
+      setError(null);
+      setSuccess("Registration successful! Redirecting to login...");
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
 
       // แสดงข้อความสำเร็จ
       // alert(result.message || 'Register Successfully');
@@ -120,7 +129,7 @@ export default function Home() {
     } catch (error: any) {
       console.error("Registration error:", error);
       setError(error.message);
-      alert(error.message);
+      // alert(error.message);
     } finally {
       setLoading(false);
     }
