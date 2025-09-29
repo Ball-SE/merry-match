@@ -17,7 +17,7 @@ function MatchingCenter() {
   const [matchedCardId, setMatchedCardId] = useState<string | null>(null); 
 
   // ใช้ context เพื่อดึง filters และ searchTrigger
-  const { filters, searchTrigger } = useMatchingContext();
+  const { filters, searchTrigger, refreshMatches } = useMatchingContext();
   
   // ใช้ custom hook
   const { profiles, cards, loading, error, removeCard, updateWithFilters } = useMatchingProfiles();
@@ -38,6 +38,8 @@ function MatchingCenter() {
 
   // ฟังก์ชันสำหรับรับ preview cards (การ์ดซ้ายและขวา)
   const getPreviewCards = () => {
+    // เพิ่มเงื่อนไขตรวจสอบเมื่อไม่มีการ์ดเลย
+    if (cards.length === 0) return { left: null, right: null };
     if (cards.length < 2) return { left: null, right: null };
     
     const leftCard = cards.length > 1 ? cards[1] : null;
@@ -77,38 +79,37 @@ function MatchingCenter() {
     }
   };
 
-   // เพิ่มฟังก์ชันปิด match modal
-   const handleCloseMatch = () => {
+  // เพิ่มฟังก์ชันปิด match modal (แก้ไข)
+  const handleCloseMatch = () => {
     setShowMatch(false);
-    // ลบการ์ดหลังจากปิด match modal
-    if (matchedCardId) {
-      removeCard(matchedCardId);
-      setMatchedCardId(null);
-      setCurrentImageIndex(0);
-    }
+    setMatchedCardId(null);
+    // ไม่ต้องเรียก removeCard ที่นี่อีกแล้วเพราะลบไปแล้วตอน like
   };
 
   const handleLike = async (card?: Card) => {
     const targetCard = card || currentCard;
     if (!targetCard) return;
-
-    // เรียก API ก่อน
-    const result = await callMerryAPI(targetCard.id, 'like');
-    
-    if (result.success) {
-      if (result.match) {
-        // ถ้า match ให้แสดง match modal และเก็บ ID การ์ดไว้
-        setShowMatch(true);
-        setMatchedCardId(targetCard.id);
-      } else {
-        // ถ้าไม่ match ให้ลบการ์ดเลย
-        removeCard(targetCard.id);
-        setCurrentImageIndex(0);
-      }
+  
+    // เรียก API ก่อน โดยยังไม่ลบการ์ด
+  const result = await callMerryAPI(targetCard.id, 'like');
+  
+  if (result.success) {
+    if (result.match) {
+      // ถ้า match ให้แสดง match modal ก่อน (ยังไม่ลบการ์ด)
+      setShowMatch(true);
+      setMatchedCardId(targetCard.id);
+      refreshMatches();
     } else {
-      alert('Error occurred while liking. Please try again.');
+      // ถ้าไม่ match ให้ลบการ์ดทันที
+      removeCard(targetCard.id);
+      setCurrentImageIndex(0);
     }
-  };
+  } else {
+    // ⚠️ ถ้า API error ให้ reload profiles เพื่อคืน state กลับมา
+    alert('Error occurred while liking. Please try again.');
+    updateWithFilters(profileFilters);
+  }
+};
 
   const handlePass = async (card?: Card) => {
     const targetCard = card || currentCard;
@@ -180,10 +181,10 @@ function MatchingCenter() {
   }
 
   return (
-    <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center relative overflow-hidden">
+    <div className="flex-1 sm:h-full h-[1000px] w-full bg-black rounded-none sm:rounded-lg flex items-center justify-center relative overflow-hidden">
       
       {/* Preview Cards Container */}
-      <div className="absolute inset-0 flex items-center justify-center z-10">
+      <div className="absolute inset-0 hidden sm:flex items-center justify-center z-10">
         <div className="relative w-full max-w-6xl px-4 flex items-center justify-center">
           
           {/* Left Preview Card */}
@@ -219,8 +220,8 @@ function MatchingCenter() {
       </div>
 
       {/* Main Content */}
-      <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl px-4 relative z-20">
-        <div className="w-full relative rounded-2xl overflow-hidden shadow-2xl">
+      <div className="w-full h-full sm:w-auto sm:h-auto sm:max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl px-0 sm:px-4 relative z-20">
+        <div className="w-full sm:h-auto relative rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-2xl">
 
           <SwipeDeck 
             items={cards} 
@@ -232,17 +233,19 @@ function MatchingCenter() {
           />
           
           {/* Gradient Overlay at Bottom */}
-          <div className="absolute bottom-0 left-0 right-0 h-52 bg-gradient-to-t from-[#390741] via-[#07094100] to-transparent rounded-b-2xl"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-52 bg-gradient-to-t from-[#390741] via-[#07094100] to-transparent rounded-none sm:rounded-b-2xl"></div>
         </div>
 
         {/* Controls */}
         {!showMatch && ( // เพิ่มเงื่อนไขเพื่อซ่อนเมื่อ match
-          <div className="absolute -bottom-6 sm:-bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:gap-4 z-30">
-            <div className="flex flex-row w-[550px] max-w-[650px] px-4 justify-between">
-              <div className="flex flex-row gap-2 items-center">
-                <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.title || ''}</h3>
-                <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.age || ''}</h3>
-
+          <div className="absolute bottom-56 sm:-bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:gap-4 z-30">
+            <div className="flex flex-row w-[450px] sm:w-[450px] max-w-[650px] px-4 justify-between">
+              <div className="flex sm:gap-2 gap-70 items-center">
+                <div className="flex flex-row gap-2">
+                  <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.title || ''}</h3>
+                  <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.age || ''}</h3>
+                </div>
+                
                 <button
                   onClick={handleProfile}
                   className="rounded-full w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] backdrop-blur-xl grid place-items-center shadow-xl bg-white/30"
@@ -252,7 +255,7 @@ function MatchingCenter() {
                 </button>
               </div>
 
-              <div className="flex">
+              <div className="hidden sm:flex">
                 <button
                   onClick={handlePreviousImage}
                   className="w-8 h-8 sm:w-10 sm:h-10 grid place-items-center"

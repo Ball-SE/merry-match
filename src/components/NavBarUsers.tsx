@@ -20,7 +20,7 @@ function NavBarUsers() {
 
     return (
         <nav className="w-full navbar-shadow bg-white shadow-2xl sticky top-0  z-[1300]">
-            <div className="w-full mx-auto px-36 py-4 flex flex-row justify-between items-center">
+            <div className="w-full mx-auto px-4 sm:px-36 py-4 flex flex-row justify-between items-center">
                 <Link href="/" className="w-auto flex flex-row">
                     <h1 className="sm:text-4xl text-xl">Merry</h1>
                     <h1 className="sm:text-4xl text-xl text-[#C70039] font-bold">Match</h1>
@@ -65,7 +65,7 @@ function NavBarUsers() {
                 </div>
                 
                 {/* Mobile hamburger menu */}
-                <div className="sm:hidden flex flex-row gap-4 mr-5">
+                <div className="sm:hidden flex flex-row gap-2 mr-7">
                     <MessageNavbar />
                     <AlertNotification />
                     <Menu 

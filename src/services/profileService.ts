@@ -143,25 +143,36 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
       return [];
     }
 
-    // ดึง list ของคนที่เคย swipe แล้ว
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // ดึง list ของคนที่เคย swipe แล้ว (รวมทั้ง like และ pass)
     const { data: swipedUsers, error: swipeError } = await supabase
       .from('swipes')
-      .select('swiped_id')
+      .select('swiped_id, action')
       .eq('swiper_id', user.id);
 
-    if (swipeError) {
-      console.error('❌ Swipes fetch error:', swipeError);
-      // ถ้า error ให้ทำต่อไปได้ แต่ไม่ filter
-    }
+    // ดึง matches ที่เกิดขึ้นแล้วด้วย
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('user1_id, user2_id')
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
 
-    const swipedUserIds = new Set(swipedUsers?.map(s => s.swiped_id) || []);
-    console.log(`🚫 Already swiped users: ${swipedUserIds.size}`);
+    const matchedUserIds = new Set();
+    matches?.forEach(match => {
+      const otherId = match.user1_id === user.id ? match.user2_id : match.user1_id;
+      matchedUserIds.add(otherId);
+    });
 
-    // กรองคนที่เคย swipe แล้วออก
-    const unswipedProfiles = data?.filter(profile => !swipedUserIds.has(profile.id)) || [];
+    const swipedUserIds = new Set([
+      ...swipedUsers?.map(s => s.swiped_id) || [],
+      ...matchedUserIds
+    ]);
+
+    // กรองคนที่เคย swipe หรือ match แล้วออก
+    const unswipedProfiles = data?.filter(profile => 
+      !swipedUserIds.has(profile.id)
+    ) || [];
     
-    console.log(`📊 Profiles before filtering: ${data?.length || 0}`);
-    console.log(`📊 Profiles after removing swiped: ${unswipedProfiles.length}`);
 
     // กรองข้อมูลอื่นๆ ใน JavaScript
     let filteredProfiles = unswipedProfiles.filter(profile => {
@@ -174,13 +185,18 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
       let genderMatch = true;
       if (filters?.genders && filters.genders.length > 0 && !filters.genders.includes('default')) {
         const profileGender = profile.gender?.toLowerCase() || '';
-        genderMatch = filters.genders.some(g => g.toLowerCase() === profileGender);
+        genderMatch = filters.genders.some(g => {
+          const filterGender = g.toLowerCase();
+          // Handle non-binary matching
+          if (filterGender === 'non-binary' && profileGender === 'lgbtq+') return true;
+          if (filterGender === 'lgbtq+' && profileGender === 'non-binary') return true;
+          return filterGender === profileGender;
+        });
       }
       
       return hasName && hasPhotos && genderMatch;
     }).slice(0, 20);
 
-    console.log(`✅ Found ${filteredProfiles.length} new matching profiles`);
     return filteredProfiles;
   } catch (error) {
     console.error('💥 Error getting matching profiles:', error);

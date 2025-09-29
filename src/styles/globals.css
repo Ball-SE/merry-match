@@ -284,3 +284,29 @@ body {
   border-color: #C70039 !important;
   background-color: rgba(199, 0, 57, 0.05) !important;
 }
+
+/* Landing Page Scale Compensation - Alternative */
+.landing-page-container {
+  zoom: 1.25; /* ใช้ zoom แทน transform */
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+@media screen and (max-width: 1920px) {
+  .landing-page-container {
+    zoom: 1.25;
+  }
+}
+
+@media screen and (max-width: 1440px) {
+  .landing-page-container {
+    zoom: 1.1;
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .landing-page-container {
+    zoom: 1;
+  }
+}

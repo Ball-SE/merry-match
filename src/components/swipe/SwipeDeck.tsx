@@ -24,14 +24,30 @@ export default function SwipeDeck({
   const [dx, setDx] = useState(0);
   const [dy, setDy] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
 
   const top = stack[0];
   const rest = useMemo(() => stack.slice(1), [stack]);
 
   // ✅ อัพเดท stack เมื่อ items prop เปลี่ยน
   useEffect(() => {
+    // ⭐️ Force update stack ทุกครั้งที่ items เปลี่ยน
     setStack(items);
+    setDx(0);
+    setDy(0);
   }, [items]);
+
+  // ตรวจจับขนาดหน้าจอ
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   // ส่งข้อมูลการ์ดปัจจุบันกลับไปยัง parent component
   useEffect(() => {
@@ -85,14 +101,16 @@ export default function SwipeDeck({
   const throwX = Math.sign(dx || 1) * 1200;
 
   return (
-    <div style={{
-      position:'relative', 
-      width:'100%', 
-      maxWidth: '100%',
-      margin:'0 auto', 
-      height: 'clamp(400px, 70vh, 700px)', // Responsive height with min/max constraints
-      aspectRatio: '3/4' // Maintain consistent aspect ratio
-    }}>
+    <div 
+      style={{
+        position:'relative', 
+        width:'100%', 
+        maxWidth: '100%',
+        margin:'0 auto',
+        height: isMobile ? '600px' : 'clamp(400px, 70vh, 700px)',
+        aspectRatio: '3/4' // Maintain consistent aspect ratio
+      }}
+    >
       {rest.slice(0, 3).map((c, i) => (
         <div
           key={c.id}

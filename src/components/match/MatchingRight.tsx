@@ -90,8 +90,8 @@ function MatchingRight() {
                 <div className="flex items-center gap-2">
                     <Checkbox 
                         id="non-binary"
-                        checked={localGenders.includes("non-binary")}
-                        onCheckedChange={(checked) => handleGenderChange("non-binary", !!checked)}
+                        checked={localGenders.includes("lgbtq+")}
+                        onCheckedChange={(checked) => handleGenderChange("lgbtq+", !!checked)}
                     />
                     <label htmlFor="non-binary">Non-binary people</label>
                 </div>

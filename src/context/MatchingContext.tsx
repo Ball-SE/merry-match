@@ -8,8 +8,10 @@ export interface MatchingFilters {
 interface MatchingContextType {
   filters: MatchingFilters;
   searchTrigger: number; // เพิ่ม trigger สำหรับการค้นหา
+  matchRefreshTrigger: number;
   updateFilters: (newFilters: Partial<MatchingFilters>) => void;
   applyFilters: () => void;
+  refreshMatches: () => void;
 }
 
 const MatchingContext = createContext<MatchingContextType | undefined>(undefined);
@@ -33,6 +35,7 @@ export const MatchingProvider: React.FC<MatchingProviderProps> = ({ children }) 
   });
   
   const [searchTrigger, setSearchTrigger] = useState(0);
+  const [matchRefreshTrigger, setMatchRefreshTrigger] = useState(0);
 
   const updateFilters = (newFilters: Partial<MatchingFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -44,8 +47,19 @@ export const MatchingProvider: React.FC<MatchingProviderProps> = ({ children }) 
     console.log('Applying filters:', filters);
   };
 
+  const refreshMatches = () => {
+    setMatchRefreshTrigger(prev => prev + 1);
+  };
+
   return (
-    <MatchingContext.Provider value={{ filters, searchTrigger, updateFilters, applyFilters }}>
+    <MatchingContext.Provider value={{ 
+      filters, 
+      searchTrigger,
+      matchRefreshTrigger, 
+      updateFilters, 
+      applyFilters,
+      refreshMatches
+      }}>
       {children}
     </MatchingContext.Provider>
   );
