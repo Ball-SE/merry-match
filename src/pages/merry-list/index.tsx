@@ -38,7 +38,6 @@ type Swipe = {
     meeting_interests: string | null;
 }
 
-type MatchListItem = { user2: Match };
 type MatchListResponse = { data: Match[] };
 type SwipeListResponse = { data: Swipe[] };
 
@@ -46,6 +45,8 @@ function MerryList () {
 
     const [matchList, setMatchList] = useState<Match[]>([]);
     const [swipeList, setSwipeList] = useState<Swipe[]>([]);
+
+    const [timeLeft, setTimeLeft] = useState("");
 
     useEffect(() => {
         const fetchMatch = async() => {
@@ -71,10 +72,29 @@ function MerryList () {
                 const matches = (resultMatch.data.data ?? []).filter(Boolean);
                 const swipes = (resultSwipe.data.data ?? []).filter(Boolean);
 
-                
-
                 setMatchList(matches)
                 setSwipeList(swipes)
+
+                const updateCountdown = () => {
+                    const now = new Date();
+              
+                    // กำหนดเป้าหมาย = เที่ยงคืนวันพรุ่งนี้
+                    const tomorrow = new Date();
+                    tomorrow.setDate(now.getDate() + 1);
+                    tomorrow.setHours(0, 0, 0, 0);
+              
+                    const diff = tomorrow.getTime() - now.getTime();
+              
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+              
+                    setTimeLeft(`${hours}h`);
+                  };
+              
+                  updateCountdown();
+                  const timer = setInterval(updateCountdown, 1000);
+              
+                  return () => clearInterval(timer);
+                  
             } catch (error) {
                 console.error(error)
             }
@@ -93,14 +113,14 @@ function MerryList () {
                 <div className="flex justify-between mx-8 items-center lg:justify-start lg:gap-20">
                     <div>
                         <div className="flex ">
-                        <p className="text-[#C70039] font-extrabold text-xl">16</p>
+                        <p className="text-[#C70039] font-extrabold text-xl">{swipeList.length}</p>
                         <Heart color = "#ff1659" fill="#ff1659" className="ml-2"/>
                         </div>
                         <p className="text-[#646D89]">Merry to you</p>
                     </div>
                     <div>
                         <div className="flex">
-                            <p className="text-[#C70039] font-extrabold text-xl">3</p>
+                            <p className="text-[#C70039] font-extrabold text-xl">{matchList.length}</p>
                             <div className="ml-2">
                                 <Heart color = "#ff1659" fill="#ff1659" 
                                 className="absolute" />
@@ -117,7 +137,7 @@ function MerryList () {
                     <p className="text-[#FF1659]">2/20</p>
                     <p className="text-[#646D89]">Merry limit today</p>
                 </div>
-                    <p className="text-end text-[#9AA1B9] text-xs">Reset in 12h...</p>
+                    <p className="text-end text-[#9AA1B9] text-xs">Reset in {timeLeft}...</p>
                 </div>
             </div>
             {matchList.map((match) => {
