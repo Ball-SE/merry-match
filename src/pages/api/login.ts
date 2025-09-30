@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { supabase } from '@/lib/supabase/supabaseClient'
+import type { User, Session } from '@supabase/supabase-js'
 
 type LoginRequest = {
   email: string
@@ -9,8 +10,8 @@ type LoginRequest = {
 type LoginResponse = {
   success: boolean
   message: string
-  user?: unknown
-  session?: unknown
+  user?: User | null
+  session?: Session | null
   access_token?: string
   refresh_token?: string
 }
