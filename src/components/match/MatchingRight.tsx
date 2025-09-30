@@ -2,8 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { useState, useEffect } from "react"
 import { useMatchingContext } from "@/context/MatchingContext"
-import { getCurrentUserProfile } from "@/services/profileService"
-import { IoArrowBack, IoClose } from "react-icons/io5"
+import { IoArrowBack } from "react-icons/io5"
 
 interface MatchingRightProps {
     isModal?: boolean;
@@ -16,21 +15,12 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
     // ใช้ local state เพื่อให้ user ปรับแต่งได้ก่อนกด Search
     const [localGenders, setLocalGenders] = useState<string[]>(filters.selectedGenders);
     const [localAgeRange, setLocalAgeRange] = useState<number[]>(filters.ageRange);
-    const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
 
     // อัพเดท local state เมื่อ context เปลี่ยน
     useEffect(() => {
         setLocalGenders(filters.selectedGenders);
         setLocalAgeRange(filters.ageRange);
     }, [filters]);
-
-    useEffect(() => {
-        const fetchCurrentUserProfile = async () => {
-            const profile = await getCurrentUserProfile();
-            setCurrentUserProfile(profile);
-        };
-        fetchCurrentUserProfile();
-    }, []);
 
     // ฟังก์ชันสำหรับจัดการ checkbox
     const handleGenderChange = (gender: string, checked: boolean) => {
@@ -43,9 +33,6 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
 
     // ฟังก์ชันสำหรับ search - อัพเดท context
     const handleSearch = () => {
-        console.log("Selected genders:", localGenders);
-        console.log("Age range:", localAgeRange);
-        console.log("Current user profile:", currentUserProfile);
         
         // ตรวจสอบว่ามีการเลือก gender หรือไม่
         if (localGenders.length === 0) {

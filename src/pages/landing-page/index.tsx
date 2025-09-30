@@ -5,18 +5,16 @@ import { Element } from "react-scroll";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabase/supabaseClient";
-import { useAdmin } from '@/hooks/useAdmin';
 import Img from "next/image";
 
 function HomePage(){
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-    const { isAdmin } = useAdmin();
     const router = useRouter();
 
     useEffect(() => {
         let mounted = true;
 
-        let init = async () => {
+        const init = async () => {
             const { data } = await supabase.auth.getSession();
             if (mounted) {
                 setIsLoggedIn(!!data?.session);
@@ -53,7 +51,6 @@ function HomePage(){
         } else {
             router.push("/login");
         }
-
     };
 
     return (
@@ -78,12 +75,12 @@ function HomePage(){
                             <div className="max-w-xl w-[358px] relative z-10">
                                 <h1 className="text-6xl font-black text-white leading-tight mb-6">
                                 Make the <br />
-                                first 'Merry'
+                                first &apos;Merry&apos;
                                 </h1>
                                 <p className="text-xl text-white mb-12">
-                                If you feel lonely, let's start meeting new people in your
+                                If you feel lonely, let&apos;s start meeting new people in your
                                 area! <br />
-                                Don't forget to get Merry with us
+                                Don&apos;t forget to get Merry with us
                                 </p>
                                 {/* authen ตรงนี้ */}
                                 <Link
@@ -98,10 +95,12 @@ function HomePage(){
                             <div className="relative w-1/2 h-[600px]">
                                 <div>
                                 <div className="absolute left-[-115px] bottom-[995px] w-[210px] h-[305px] sm:left-[-210px] sm:bottom-[920px] md:left-[550px] md:bottom-[760px] sm:w-[286px] sm:h-[500px] rounded-[999px] bg-gray-200 overflow-hidden">
-                                    <img
+                                    <Img
                                     src="/assets/image1.png"
                                     alt="Profile1"
                                     className="w-full h-full object-cover rounded-[999px]"
+                                    width={210}
+                                    height={305}
                                     />
                                 </div>
                                 <div className="absolute bottom-[1050px] right-[10px] sm:bottom-[980px] sm:right-[190px] w-[160px] md:bottom-[820px] md:right-[-275px] bg-[#64001D] text-white p-3 rounded-[24px_24px_24px_0px] text-sm font-semibold">
@@ -111,10 +110,12 @@ function HomePage(){
 
                                 <div>
                                 <div className="absolute sm:right-[-210px] sm:bottom-[10px] right-[-140px] bottom-[150px] w-[217px] h-[376px] md:right-[510px] md:bottom-[360px] sm:w-[286px] sm:h-[500px] rounded-[999px] bg-gray-200 overflow-hidden">
-                                    <img
+                                    <Img
                                     src="/assets/image2.png"
                                     alt="Profile2"
                                     className="w-full h-full object-cover rounded-[999px] grayscale "
+                                    width={217}
+                                    height={376}
                                     />
                                 </div>
                                 <div className="relative">
@@ -140,10 +141,12 @@ function HomePage(){
                                 <div className="absolute w-[60px] h-[60px] top-[-100px] right-[-355px] bg-[#320000] rounded-full">
                                 <div className="relative">
                                     <div className="absolute top-[30px] left-[-15px] ">
-                                    <img
+                                    <Img
                                         src="/assets/smile-emoji.png"
                                         alt="smile-emoji"
                                         className="w-7 h-7 object-cover rounded-full "
+                                        width={28}
+                                        height={28}
                                     />
                                     </div>
                                 </div>
@@ -165,18 +168,18 @@ function HomePage(){
                                 everyone
                                 </p>
                                 <p className="text-[#F6F7FC] text-base leading-relaxed">
-                                Whether you're committed to dating, meeting new people,
+                                Whether you&apos;re committed to dating, meeting new people,
                                 expanding your social network, meeting locals while traveling,
                                 or even just making a small chat with strangers.
                                 <br />
                                 <br />
                                 This site allows you to make your own dating profile, discover
                                 new people, save favorite profiles, and let them know that
-                                you're interested
+                                you&apos;re interested
                                 </p>
                             </div>
 
-                            <img src="/assets/vector.png" alt="why-merry-match" className="" />
+                            <Img src="/assets/vector.png" alt="why-merry-match" className="" width={620} height={260} />
                         </div>
                     </div>
                 </section>
@@ -192,10 +195,12 @@ function HomePage(){
                         <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-4 gap-6">
                         <div className="bg-[#2A0B21] rounded-[40px] p-8 text-center">
                             <div className="w-[120px] h-[120px] bg-[#411032] rounded-full mx-auto mb-10 flex justify-center items-center">
-                            <img
+                            <Img
                                 src="/assets/emote-1.png"
                                 alt="Upload-emoji"
                                 className="w-[50px] h-[50px] object-cover rounded-full "
+                                width={50}
+                                height={50}
                             />
                             </div>
                             <h3 className="text-2xl font-bold text-white mb-3">
@@ -205,10 +210,12 @@ function HomePage(){
                         </div>
                         <div className="bg-[#2A0B21] rounded-[40px] p-8 text-center">
                             <div className="w-[120px] h-[120px] bg-[#411032] rounded-full mx-auto mb-10 flex justify-center items-center ">
-                            <img
+                            <Img
                                 src="/assets/emote-2.png"
                                 alt="Explore-emoji"
                                 className="w-[50px] h-[50px] "
+                                width={50}
+                                height={50}
                             />
                             </div>
                             <h3 className="text-2xl font-bold text-white mb-3">
@@ -218,23 +225,27 @@ function HomePage(){
                         </div>
                         <div className="bg-[#2A0B21] rounded-[40px] p-8 text-center">
                             <div className="w-[120px] h-[120px] bg-[#411032] rounded-full mx-auto mb-10 flex justify-center items-center ">
-                            <img
+                            <Img
                                 src="/assets/emote-3.png"
                                 alt="Explore-emoji"
                                 className="w-[50px] h-[50px] "
+                                width={50}
+                                height={50}
                             />
                             </div>
                             <h3 className="text-2xl font-bold text-white mb-3">
-                            Click 'Merry' for get to know!
+                            Click &apos;Merry&apos; for get to know!
                             </h3>
                             <p className="text-[#C8CCDB]">Lorem ipsum is a placeholder text</p>
                         </div>
                         <div className="bg-[#2A0B21] rounded-[40px] p-8 text-center">
                             <div className="w-[120px] h-[120px] bg-[#411032] rounded-full mx-auto mb-10 flex justify-center items-center ">
-                            <img
+                            <Img
                                 src="/assets/emote-4.png"
                                 alt="Explore-emoji"
                                 className="w-[50px] h-[50px] "
+                                width={50}
+                                height={50}
                             />
                             </div>
                             <h3 className="text-2xl font-bold text-white mb-3">
@@ -255,7 +266,7 @@ function HomePage(){
                             <div className="py-20 px-12 text-center relative">
                             <div className="absolute top-[40px] left-[-10px] right-0 bottom-[-30px] bg-[url('/assets/heart_land.png')] bg-cover opacity-50"></div>
                                 <h2 className="text-5xl font-extrabold text-white mb-12 relative z-10">
-                                Let's start finding <br />
+                                Let&apos;s start finding <br />
                                 and matching someone new
                                 </h2>
                                 {/* authen ตรงนี้ */}

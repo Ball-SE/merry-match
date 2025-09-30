@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Profile } from '../services/profileService';
 import { getCurrentUserProfile } from '../services/profileService';
 import { updatePhotoUrl } from '../services/profileService';
-import { Card } from '@/components/swipe/SwipeDeck';
 
 export const useProfile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);

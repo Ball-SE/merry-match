@@ -5,6 +5,7 @@ import { FaExclamationTriangle } from "react-icons/fa";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import Img from "next/image";
 
 function UserProfileNavbar() {
     const { logout } = useAuth();
@@ -13,8 +14,7 @@ function UserProfileNavbar() {
         <div className="flex flex-col sm:w-[198px] sm:h-[308px] bg-white sm:border-[1px] sm:border-[#E4E6ED] sm:rounded-2xl sm:shadow-md p-3">
             <div className="flex justify-center">
                 <div className="bg-gradient-to-r from-[#742138] w-[343px] to-[#A878BF] rounded-full px-3 py-2 flex items-center justify-center gap-2 text-[#FFFFFF] text-sm font-medium">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/assets/star.png" alt="star" className="w-[20px] h-[20px]" />
+                    <Img src="/assets/star.png" alt="star" className="w-[20px] h-[20px]" width={20} height={20} />
                     <span>More limit Merry!</span>
                 </div>
             </div>
