@@ -108,7 +108,7 @@ function MerryList () {
         <div className="mb-15 lg:flex lg:flex-col lg:items-center lg:mt-15">
         <div className="p-3 lg:w-300">
             <p className="text-start text-xs leading-10 text-[#7B4429] font-semibold">MERRY LIST</p>
-            <p className="text-3xl font-bold text-[#A62D82]">Let's know each other with Merry!</p>
+            <p className="text-3xl font-bold text-[#A62D82]">Let&apos;s know each other with Merry!</p>
             <div className="mt-15">
                 <div className="flex justify-between mx-8 items-center lg:justify-start lg:gap-20">
                     <div>
