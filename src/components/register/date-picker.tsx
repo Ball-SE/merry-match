@@ -85,13 +85,13 @@
 //   );
 // }
 
-import React, { useState } from 'react';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Popover, Paper, TextField, Box } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
-import { cn } from '@/lib/utils';
+import React, { useState } from "react";
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Popover, Paper, TextField, Box } from "@mui/material";
+import dayjs, { Dayjs } from "dayjs";
+import { cn } from "@/lib/utils";
 
 interface CustomDatePickerProps {
   selected?: Date | null;
@@ -148,8 +148,8 @@ export function CustomDatePicker({
   };
 
   const formatDisplayDate = (date: Date | null) => {
-    if (!date) return '';
-    return dayjs(date).format('DD/MM/YYYY');
+    if (!date) return "";
+    return dayjs(date).format("DD/MM/YYYY");
   };
 
   const open = Boolean(anchorEl);
@@ -161,7 +161,9 @@ export function CustomDatePicker({
         className={cn(
           "w-full rounded-lg border border-gray-300 px-3 py-3 pr-10 text-sm transition-colors focus:border-[#A62D82] focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer",
           disabled && "cursor-not-allowed bg-gray-50 text-gray-500",
-          error && touched && "border-[#C70039] focus:border-[#C70039] focus:ring-red-500/20",
+          error &&
+            touched &&
+            "border-[#C70039] focus:border-[#C70039] focus:ring-red-500/20",
           !selectedDate && "text-gray-400",
           className
         )}
@@ -181,25 +183,24 @@ export function CustomDatePicker({
         />
       </div>
 
-
       <Popover
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
+          vertical: "bottom",
+          horizontal: "right",
         }}
         transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         }}
         PaperProps={{
           sx: {
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-            border: '1px solid #e5e7eb',
-          }
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            border: "1px solid #e5e7eb",
+          },
         }}
       >
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -208,25 +209,42 @@ export function CustomDatePicker({
             onChange={handleDateChange}
             minDate={minDate ? dayjs(minDate) : undefined}
             maxDate={maxDate ? dayjs(maxDate) : undefined}
-            views={['year', 'month', 'day']}
+            views={["year", "month", "day"]}
             sx={{
-              '& .MuiPickersCalendarHeader-root': {
-                paddingLeft: '16px',
-                paddingRight: '16px',
+              "& .MuiPickersCalendarHeader-root": {
+                paddingLeft: "32px",
+                paddingRight: "16px",
               },
-              '& .MuiDayCalendar-weekContainer': {
-                margin: '0',
+              // Style สำหรับ เดือน/ปี ด้านบน
+              "& .MuiPickersCalendarHeader-label": {
+                fontSize: "18px",
+                fontWeight: "600",
+                fontFamily: "var(--font-nunito)",
+                color: "#2A0B21",
               },
-              '& .MuiPickersDay-root': {
-                borderRadius: '50%',
-                margin: '2px',
-                '&:hover': {
-                  backgroundColor: '#f3e8ff',
+              // Style สำหรับ Day of Week (จ. อ. พ. ฯลฯ)
+              "& .MuiDayCalendar-weekDayLabel": {
+                fontSize: "16px",
+                fontWeight: "600",
+                fontFamily: "var(--font-nunito)",
+                color: "#6B7280",
+              },
+              "& .MuiDayCalendar-weekContainer": {
+                margin: "0",
+              },
+              "& .MuiPickersDay-root": {
+                fontSize: "18px",
+                fontWeight: "600",
+                fontFamily: "var(--font-nunito)",
+                borderRadius: "50%",
+                margin: "1.9px",
+                "&:hover": {
+                  backgroundColor: "#f3e8ff",
                 },
-                '&.Mui-selected': {
-                  backgroundColor: '#A62D82',
-                  '&:hover': {
-                    backgroundColor: '#933d6b',
+                "&.Mui-selected": {
+                  backgroundColor: "#A62D82",
+                  "&:hover": {
+                    backgroundColor: "#933d6b",
                   },
                 },
               },
