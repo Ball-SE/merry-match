@@ -8,14 +8,14 @@ interface Props {
 export default function StepIndicator({ currentStep, titles }: Props) {
   const steps = useMemo(() => [1, 2, 3], []);
   return (
-    <div className="flex items-center justify-center gap-0 select-none">
+    <div className="flex items-center justify-center gap-0 select-none max-lg:scale-95 max-lg:mx-auto">
       {steps.map((s, i) => {
         const active = currentStep === s;
         return (
           <div key={s} className="flex items-center">
             {active ? (
               // Active step - rounded rectangle with title
-              <div className="flex items-center gap-2 rounded-xl max-xs:rounded-2xl border-1 max-xs:border-2 border-[#A62D82] bg-white px-4 max-xs:px-4 py-4 max-xs:py-2">
+              <div className="flex items-center gap-2 rounded-xl max-xs:rounded-2xl border-1 max-xs:border-2 border-[#A62D82] bg-white px-2 max-xs:px-4 py-4 max-xs:py-2">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 ">
                   <span className="text-xl font-bold text-[#A62D82]">{s}</span>
                 </div>
