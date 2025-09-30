@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import axios from "axios";
 import { supabase } from "@/lib/supabase/supabaseClient";
+import Image from "next/image";
 
 type ProfileLocation = {
     city?: string;
@@ -108,7 +109,7 @@ function MerryList () {
         <div className="mb-15 lg:flex lg:flex-col lg:items-center lg:mt-15">
         <div className="p-3 lg:w-300">
             <p className="text-start text-xs leading-10 text-[#7B4429] font-semibold">MERRY LIST</p>
-            <p className="text-3xl font-bold text-[#A62D82]">Let's know each other with Merry!</p>
+            <p className="text-3xl font-bold text-[#A62D82]">Let&apos;s know each other with Merry!</p>
             <div className="mt-15">
                 <div className="flex justify-between mx-8 items-center lg:justify-start lg:gap-20">
                     <div>
@@ -148,7 +149,11 @@ function MerryList () {
                     <div key={match.id}>
                         <div className="p-4 mt-5 lg:w-300 lg:flex lg:p-0 lg:mb-8">
                             <div className="flex justify-between lg:w-290 lg:absolute">
-                                <img src={src} alt={match.gender || "profile"}
+                                <Image 
+                                src={src} 
+                                alt={match.gender || "profile"}
+                                width={200} 
+                                height={200}
                                 className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"/>
                                 <div className="lg:order-3">
                                     <button className="flex items-center px-4 pr-6 p-1 border-1 border-red-700 rounded-2xl cursor-pointer">
@@ -208,7 +213,11 @@ function MerryList () {
                     <div key={swipe.id}>
                         <div className="p-4 mt-2 lg:w-300 lg:flex lg:p-0 lg:mb-8">
                             <div className="flex justify-between lg:w-290 lg:absolute">
-                                <img src={src} alt={swipe.gender || "profile"}
+                                <Image 
+                                src={src}
+                                alt={swipe.gender || "profile"}
+                                width={200} 
+                                height={200}
                                 className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"/>
                                 <div className="lg:order-3 justify-items-end">
                                     <button className="flex items-center px-3 pr-4.5 p-1 border-1 border-gray-300 rounded-2xl cursor-not-allowed">

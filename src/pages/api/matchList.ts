@@ -1,6 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
+type ProfileRow = { id: string } & Record <string, unknown>;
+
+type MatchRow = {
+  id: string;
+  matched_at: string | null;
+  user1_id: string;
+  user2_id: string;
+  user1: ProfileRow | null;
+  user2: ProfileRow | null;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -34,6 +45,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
       .order("matched_at", { ascending: false });
 
+      const rows = (data ?? []) as unknown as MatchRow[];
+
     if (error) {
       return res.status(400).json({
         success: false,
@@ -42,19 +55,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // ✅ แปลง data ให้ return เฉพาะ “อีกฝั่ง”
-    const transformed = data?.map((match: any) => {
-      if (match.user1_id === user.id) return match.user2;
-      if (match.user2_id === user.id) return match.user1;
-      return null;
-    }).filter(Boolean); // ลบ null ออก
-
-    // 🔹 ลบ swipe ของคู่ที่ match แล้ว (ถ้ามี)
-    const matchedIds = data?.map((match: any) => {
-      if (match.user1_id === user.id) return match.user2_id;
-      if (match.user2_id === user.id) return match.user1_id;
-      return null;
-    }).filter(Boolean);
+        // ✅ แปลง data ให้ return เฉพาะ “อีกฝั่ง”
+        const transformed = rows
+        .map((match: MatchRow) => {
+          if (match.user1_id === user.id) return match.user2;
+          if (match.user2_id === user.id) return match.user1;
+          return null;
+        }).filter((p): p is ProfileRow => Boolean(p)); // ลบ null ออกและแคบ type
+    
+        // 🔹 ลบ swipe ของคู่ที่ match แล้ว (ถ้ามี)
+        const matchedIds = rows
+        .map((match: MatchRow) => {
+          if (match.user1_id === user.id) return match.user2_id;
+          if (match.user2_id === user.id) return match.user1_id;
+          return null;
+        }).filter((id): id is string => Boolean(id));
 
     if (matchedIds && matchedIds.length > 0) {
       const { error: delErr } = await supabase
@@ -71,8 +86,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: transformed,
       count: transformed?.length || 0,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("merry API error:", error);
-    return res.status(500).json({ error: error?.message ?? "server error" });
+    const message = error instanceof Error ? error.message : "server error"
+    return res.status(500).json({ error: message});
   }
 }
