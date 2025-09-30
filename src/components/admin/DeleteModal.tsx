@@ -36,7 +36,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
             onClick={() => setShowDeleteModal(false)}
             className="px-6 py-3 rounded-full font-bold bg-[#C70039] text-white text-base hover:bg-[#950028] transition-colors"
           >
-            No, I don't want
+            No, I don&apos;t want
           </button>
         </div>
       </div>
