@@ -155,8 +155,8 @@ function Step1({
               placeholder="01/01/2022"
               className={getInputClassName("dateOfBirth")}
               dateFormat="dd/MM/yyyy"
-              minDate={new Date(1905, 0, 1)} // 120 ปีที่แล้ว
-              maxDate={new Date(2007, 11, 31)} // 18 ปีที่แล้ว
+              minDate={new Date(new Date().getFullYear() - 120, 0, 1)} // 120 ปีที่แล้ว
+              maxDate={new Date(new Date().getFullYear() - 18, 11, 31)} // 18 ปีที่แล้ว
               name="dateOfBirth"
               id="dateOfBirth"
               error={errors.dateOfBirth}
