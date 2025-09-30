@@ -228,8 +228,19 @@ export default function ProfileView({ className = '' }: ProfileViewProps) {
           </div>
         )}
         
-        {/* Close Button */}
-        <div className="absolute top-6 right-6 z-50">
+        {/* Action Buttons */}
+        <div className="absolute top-6 right-6 z-50 flex gap-3">
+          <button 
+            onClick={() => router.push('/profile/edit')}
+            disabled={actionState.loading}
+            className={`px-4 py-2 bg-[#C70039] text-white rounded-lg shadow-lg transition-colors ${
+              actionState.loading 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-[#950028] cursor-pointer'
+            }`}
+          >
+            Edit Profile
+          </button>
           <button 
             onClick={handleClose}
             disabled={actionState.loading}
@@ -251,11 +262,14 @@ export default function ProfileView({ className = '' }: ProfileViewProps) {
             {/* กล่องรูป */}
             <div className="h-full w-full relative rounded-3xl overflow-hidden m-8 transform -translate-y-20 -translate-x-6 scale-75">
               {profile?.photos && profile.photos.length > 0 ? (
-                <img 
-                  src={profile.photos[currentImageIndex]} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={profile.photos[currentImageIndex]} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                </>
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                   <Camera className="w-16 h-16 text-gray-400" />
@@ -339,6 +353,7 @@ export default function ProfileView({ className = '' }: ProfileViewProps) {
                 {profile?.name || 'User'} {profile?.age || ''}
               </h1>
               <div className="flex items-center text-gray-600">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
                 <span className="text-gray-700 text-base">{profile?.city || 'Bangkok, Thailand'}</span>
               </div>
