@@ -46,8 +46,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       app_metadata: data.user?.app_metadata ?? { is_admin },
       note: "User must sign in again to refresh JWT.",
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("user-role api error:", e);
-    return res.status(500).json({ error: e?.message || "Internal error" });
+    return res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 }

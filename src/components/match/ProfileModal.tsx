@@ -4,6 +4,7 @@ import { mapLocationToString } from '@/lib/locationUtils';
 import { FaHeart } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { Card } from '@/components/swipe/SwipeDeck';
+import Img from 'next/image';
 
 interface UserProfile {
   id: string;
@@ -117,7 +118,7 @@ city: (() => {
             
             if (foundProfile.location && typeof foundProfile.location === 'object') {
               // ใช้ city จาก location object
-              locationData = (foundProfile.location as any).city || '';
+              locationData = (foundProfile.location as unknown as { city: string }).city || '';
             } else if (typeof foundProfile.location === 'string') {
               // ถ้าเป็น string ให้ใช้เลย
               locationData = foundProfile.location;
@@ -150,8 +151,8 @@ city: (() => {
         console.log('❌ Profile not found in profiles array');
         throw new Error('Profile not found');
       }
-    } catch (error: any) {
-      setProfileError(error.message || 'Failed to load profile');
+    } catch (error: unknown) {
+      setProfileError(error instanceof Error ? error.message : 'Failed to load profile');
       console.error('Error loading profile:', error);
     } finally {
       setProfileLoading(false);
@@ -189,12 +190,12 @@ city: (() => {
         onClose();
       }, 1500);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       setActionState({
         type: actionType,
         loading: false,
         success: false,
-        error: error.message || `Failed to ${actionType} profile. Please try again.`
+        error: error instanceof Error ? error.message : `Failed to ${actionType} profile. Please try again.`
       });
     }
   };
@@ -314,10 +315,14 @@ city: (() => {
           {/* Profile Image Section */}
           <div className="relative h-96 w-full">
             {profile.photos && profile.photos.length > 0 ? (
-              <img 
+              <Img 
                 src={profile.photos[currentImageIndex]} 
                 alt={`${profile.name}'s profile`} 
                 className="w-full h-full object-cover"
+                width={600}
+                height={450}
+                quality={100}
+                priority
               />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -361,7 +366,7 @@ city: (() => {
                 {profile.name}, {profile.age}
               </h1>
               <div className="flex items-center text-gray-600">
-                <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
+                <Img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" width={16} height={16} />
                 <span className="text-gray-700">{profile.city}</span>
               </div>
             </div>
@@ -390,7 +395,7 @@ city: (() => {
             {profile.bio && (
               <div>
                 <h3 className="font-semibold text-gray-800 mb-2">About me</h3>
-                <p className="text-gray-700 italic leading-relaxed">"{profile.bio}"</p>
+                <p className="text-gray-700 italic leading-relaxed">&quot;{profile.bio}&quot;</p>
               </div>
             )}
             
@@ -523,10 +528,14 @@ city: (() => {
               {/* กล่องรูป */}
               <div className="h-full w-full relative rounded-3xl overflow-hidden m-8 transform -translate-y-20 -translate-x-6 scale-75">
                 {profile.photos && profile.photos.length > 0 ? (
-                  <img 
+                  <Img 
                     src={profile.photos[currentImageIndex]} 
                     alt={`${profile.name}'s profile`} 
                     className="w-full h-full object-cover"
+                    width={600}
+                    height={450}
+                    quality={100}
+                    priority
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -607,7 +616,7 @@ city: (() => {
                   {profile.name} {profile.age}
                 </h1>
                 <div className="flex items-center text-gray-600">
-                  <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
+                  <Img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" width={16} height={16} />
                   <span className="text-gray-700 text-base">{profile.city}</span>
                 </div>
               </div>
@@ -636,7 +645,7 @@ city: (() => {
               {profile.bio && (
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-2 text-base">About me</h3>
-                  <p className="text-gray-900 italic text-base leading-relaxed">"{profile.bio}"</p>
+                  <p className="text-gray-900 italic text-base leading-relaxed">&quot;{profile.bio}&quot;</p>
                 </div>
               )}
               

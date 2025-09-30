@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback} from 'react';
 import { Profile, getMatchingProfiles, ProfileFilters } from '../services/profileService';
 import { Card } from '@/components/swipe/SwipeDeck';
 
@@ -86,11 +86,6 @@ export const useMatchingProfiles = () => {
   const updateWithFilters = useCallback((newFilters: ProfileFilters) => {
     fetchMatchingProfiles(newFilters);
   }, [fetchMatchingProfiles]);
-
-  // โหลดข้อมูลครั้งแรก
-  useEffect(() => {
-    fetchMatchingProfiles();
-  }, []);
 
   return {
     profiles,
