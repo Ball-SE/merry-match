@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       swiped_id?: string; action?: "like" | "pass";
     };
 
-    if (!swiped_id || !["like", "pass"].includes(action as any))
+    if (!swiped_id || (action !== "like" && action !== "pass"))
       return res.status(400).json({ error: "Missing fields" });
     if (swiped_id === user.id)
       return res.status(400).json({ error: "Cannot swipe yourself" });
@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 6) เช็ค like สวนกลับ (สลับข้างให้ถูก)
     let matched = false;
-    let matchUser: any = null;
+    let matchUser: typeof swipedUser = null;
     if (action === "like") {
       const { data: reciprocal, error: recErr } = await supabase
         .from("swipes")
@@ -82,8 +82,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       swipedUser,  // ใครที่เราเพิ่ง swipe
       matchUser,   // ถ้า match เก็บข้อมูลอีกฝ่าย
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("merry API error:", e);
-    return res.status(500).json({ error: e?.message ?? "server error" });
+    const message = e instanceof Error ? e.message : "server error"
+    return res.status(500).json({ error: message});
   }
 }

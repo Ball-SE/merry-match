@@ -1,6 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
+type ProfileRow = { id: string } & Record<string, unknown>;
+type SwipeRow = {
+  id: string;
+  created_at: string;
+  user1: ProfileRow | null;
+  user2: ProfileRow | null;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed. Use GET method." });
@@ -42,7 +50,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // ✅ map ให้ return เฉพาะ user2 (คนที่เรา swipe) และกรอง null/undefined ออก
-    const swipedUsers = (data?.map((item: any) => item.user2).filter(Boolean)) ?? [];
+    const rows = (data ?? []) as unknown as SwipeRow[];
+    const swipedUsers = rows.map((item) => item.user2).filter((p): p is ProfileRow => p !== null);
 
     res.status(200).json({
       success: true,
@@ -50,8 +59,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: swipedUsers,
       count: swipedUsers.length,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("merry API error:", error);
-    return res.status(500).json({ error: error?.message ?? "server error" });
+    const message = error instanceof Error ? error.message : "server error"
+    return res.status(500).json({ error: message});
   }
 }
