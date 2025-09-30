@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSwipeable } from "react-swipeable";
+import Img from "next/image";
 
 export type Card = { 
   id: string; 
@@ -154,7 +155,7 @@ export default function SwipeDeck({
         }}
       >
         {/* แสดงรูปภาพตาม currentImageIndex */}
-        <img 
+        <Img 
           src={top.img[currentImageIndex] || top.img[0]} 
           alt={top.title + ' ' + top.age} 
           style={{
@@ -168,6 +169,10 @@ export default function SwipeDeck({
             MozUserSelect: 'none', // Firefox
             msUserSelect: 'none' // IE
           }} 
+          width={600}
+          height={450}
+          quality={100}
+          priority
         />
         
         {/* แสดงจุดบอกจำนวนรูปภาพ */}
