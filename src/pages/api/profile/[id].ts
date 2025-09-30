@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase/supabaseClient";
 type Data = {
   success: boolean;
   message: string;
-  data?: any;
+  data?: object | null;
   error?: string;
 };
 

@@ -33,8 +33,8 @@ export function validateProfileData(
     throw new Error('Invalid profile data structure');
   }
 
-  // Cast to any to access properties safely
-  const data = profileData as any;
+  // Cast to unknown first, then to object to access properties safely
+  const data = profileData as unknown as Record<string, unknown>;
 
   return {
     id: validateString(data.id, ''),
