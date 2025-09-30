@@ -13,7 +13,7 @@ export default async function handler(
   }
 
   try {
-    const { email } = req.body;
+    const { username } = req.body;
 
     // อ่าน IP ให้ปลอดภัย
     const xff = req.headers["x-forwarded-for"];
@@ -39,22 +39,26 @@ export default async function handler(
     validRequests.push(now);
     rateLimitMap.set(clientIP, validRequests);
 
-    if (!email) {
-      return res.status(400).json({ error: "Email is required", isAvailable: false });
+    if (!username || typeof username !== "string") {
+      return res.status(400).json({ error: "Username is required", isAvailable: false });
     }
 
-    // ตรวจเฉพาะใน profiles เพื่อความเสถียร (ไม่ต้องใช้ service role)
-    const { data: profileData, error: profileError } = await supabase
+    // ตรวจ username ในตาราง profiles
+    const { data, error } = await supabase
       .from("profiles")
-      .select("email")
-      .eq("email", email)
+      .select("username")
+      .eq("username", username)
       .maybeSingle();
 
-    const emailExists = !!(profileData && !profileError);
+    if (error) {
+      return res.status(500).json({ error: error.message, isAvailable: false });
+    }
+
+    const exists = !!data;
 
     return res.status(200).json({
-      isAvailable: !emailExists,
-      message: emailExists ? "Email already exists" : "Email is available",
+      isAvailable: !exists,
+      message: exists ? "Username already exists" : "Username is available",
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "System error";
