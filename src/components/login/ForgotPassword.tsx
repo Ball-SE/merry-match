@@ -1,5 +1,4 @@
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import Image from 'next/image';
 
@@ -101,7 +100,7 @@ export default function ForgotPassword({ onBackToLogin }: ForgotPasswordProps) {
               Enter your email or username.
             </p>
             <p className="text-gray-700 text-sm mt-4">
-              We'll send you a link to reset your password.
+              We&apos;ll send you a link to reset your password.
             </p>
           </div>
 

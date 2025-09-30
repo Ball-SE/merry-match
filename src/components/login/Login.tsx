@@ -200,7 +200,7 @@ export default function LoginPage() {
             <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
               {/* Register link */}
               <div>
-                <span className="text-gray-600">Don't have an account? </span>
+                <span className="text-gray-600">Don&apos;t have an account? </span>
                 <button 
                   type="button"
                   onClick={() => router.push('/register')}

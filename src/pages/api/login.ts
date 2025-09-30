@@ -9,8 +9,8 @@ type LoginRequest = {
 type LoginResponse = {
   success: boolean
   message: string
-  user?: any
-  session?: any
+  user?: unknown
+  session?: unknown
   access_token?: string
   refresh_token?: string
 }
