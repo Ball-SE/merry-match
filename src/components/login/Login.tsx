@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import { validateEmail } from '@/middleware/validation';
 import Image from 'next/image';
+import ForgotPassword from './ForgotPassword';
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,7 +12,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
-
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
@@ -35,8 +37,17 @@ export default function LoginPage() {
     setErrorMsg(null)
     setEmailError(null)
 
-    if (!validateEmail(email)) {
+    // ปรับ validation ให้รองรับทั้ง email และ username
+    const isEmail = email.includes('@');
+    
+    if (isEmail && !validateEmail(email)) {
       setEmailError('Please enter a valid email address')
+      setLoading(false)
+      return
+    }
+    
+    if (!isEmail && email.length < 6) {
+      setEmailError('Username must be at least 6 characters')
       setLoading(false)
       return
     }
@@ -54,7 +65,7 @@ export default function LoginPage() {
 
       setLoading(false)
       if (!result.success) {
-        setErrorMsg(result.message || "Invalid email or password")
+        setErrorMsg(result.message || "Invalid username/email or password")
       } else {
         console.log('login ok', result)
         // Set the session in the client
@@ -76,9 +87,21 @@ export default function LoginPage() {
       setLoading(false)
       setErrorMsg("An error occurred. Please try again.")
       console.error('Login error:', error)
-
-      
     }
+  }
+
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true)
+    setErrorMsg(null)
+  }
+
+  const handleBackToLogin = () => {
+    setShowForgotPassword(false)
+  }
+
+  // ถ้าแสดง forgot password ให้ใช้ ForgotPassword component
+  if (showForgotPassword) {
+    return <ForgotPassword onBackToLogin={handleBackToLogin} />
   }
 
   return (
@@ -118,15 +141,15 @@ export default function LoginPage() {
             {/* Email field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                Username or Email
               </label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 name="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email (e.g. name@example.com)"
+                placeholder="Enter Username or Email"
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
                   emailError ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -157,7 +180,8 @@ export default function LoginPage() {
             {/* Login button */}
             <button
               type="submit"
-              className="button-primary w-full bg-[#C70039] hover:bg-[#FF1659] text-white py-3 px-4 rounded-lg font-medium"
+              disabled={loading}
+              className="button-primary w-full bg-[#C70039] hover:bg-[#FF1659] disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors"
             >
               {loading ? 'Loading...' : 'Login'}
             </button>
@@ -170,20 +194,36 @@ export default function LoginPage() {
             )}
           </form>
 
-          {/* Register link */}
+          {/* Register and Forgot Password links */}
           <div className="mt-8 sm:mt-6">
-            <span className="text-gray-600">Don't have an account? </span>
-            <button 
-              type="button"
-              onClick={() => router.push('/register')}
-              className="text-[#C70039] hover:text-[#FF1659] font-medium bg-transparent border-none cursor-pointer underline"
-            >
-              Register
-            </button>
+            {/* Mobile: Stack vertically, Desktop: Side by side */}
+            <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
+              {/* Register link */}
+              <div>
+                <span className="text-gray-600">Don't have an account? </span>
+                <button 
+                  type="button"
+                  onClick={() => router.push('/register')}
+                  className="text-[#C70039] hover:text-[#FF1659] font-medium bg-transparent border-none cursor-pointer underline"
+                >
+                  Register
+                </button>
+              </div>
+
+              {/* Forgot Password link */}
+              <div className="sm:text-right">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-sm text-[#C70039] hover:text-[#FF1659] font-medium bg-transparent border-none cursor-pointer underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
-
