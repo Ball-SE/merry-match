@@ -118,9 +118,9 @@ export default function Home() {
 
       // เปลี่ยนเส้นทางไปหน้า login
       router.push("/login");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration error:", error);
-      setError(error.message);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setLoading(false);
     }
