@@ -139,7 +139,7 @@ function Step1({
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Date Picker
+              Date of birth
             </label>
             <CustomDatePicker
               selected={
@@ -155,8 +155,8 @@ function Step1({
               placeholder="01/01/2022"
               className={getInputClassName("dateOfBirth")}
               dateFormat="dd/MM/yyyy"
-              minDate={new Date(1944, 0, 1)} // 80 ปีที่แล้ว
-              maxDate={new Date(2011, 11, 31)} // 13 ปีที่แล้ว
+              minDate={new Date(1905, 0, 1)} // 120 ปีที่แล้ว
+              maxDate={new Date(2007, 11, 31)} // 18 ปีที่แล้ว
               name="dateOfBirth"
               id="dateOfBirth"
               error={errors.dateOfBirth}
@@ -182,9 +182,8 @@ function Step1({
                 handleInputChange(resetCity);
               }}
               onBlur={() => handleBlur("location")}
-              className={`${getInputClassName("location")} ${
-                !formData.location ? "text-gray-400" : ""
-              }`}
+              className={`${getInputClassName("location")} ${!formData.location ? "text-gray-400" : ""
+                }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -222,11 +221,10 @@ function Step1({
               onChange={handleInputChange}
               onBlur={() => handleBlur("city")}
               disabled={!formData.location}
-              className={`${getInputClassName("city")} ${
-                !formData.location
+              className={`${getInputClassName("city")} ${!formData.location
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : ""
-              }`}
+                }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -663,11 +661,11 @@ const Step3 = React.forwardRef<
   const folderRef = useRef(
     formData.email
       ? `${formData.email
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-_]/g, "_")
-          .slice(0, 24)}`
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-_]/g, "_")
+        .slice(0, 24)}`
       : `temp-user-${Date.now()}`
   );
 
@@ -854,7 +852,7 @@ const Step3 = React.forwardRef<
   const uploadPhotosToSupabase = async (): Promise<string[]> => {
     console.log("uploadPhotosToSupabase called"); // เพิ่ม debug log
     const uploadedUrls: string[] = [];
-  
+
     for (let i = 0; i < photoFiles.length; i++) {
       const file = photoFiles[i];
       if (file) {
@@ -863,7 +861,7 @@ const Step3 = React.forwardRef<
             "@/lib/supabase/uploadPhotoUtils"
           );
           const result = await uploadProfilePhoto(file, folderRef.current, i);
-  
+
           if (result.success && result.url) {
             uploadedUrls[i] = result.url;
           } else {
@@ -875,7 +873,7 @@ const Step3 = React.forwardRef<
         }
       }
     }
-  
+
     return uploadedUrls;
   };
 
@@ -925,15 +923,14 @@ const Step3 = React.forwardRef<
               }}
             >
               <div
-                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${
-                  isDragOver
+                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${isDragOver
                     ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
                     : isDragging
-                    ? "opacity-50 scale-95"
-                    : photoFiles.filter((f) => f !== null).length < 2 && i < 2
-                    ? "border-red-300"
-                    : "border-gray-300"
-                }`}
+                      ? "opacity-50 scale-95"
+                      : photoFiles.filter((f) => f !== null).length < 2 && i < 2
+                        ? "border-red-300"
+                        : "border-gray-300"
+                  }`}
               >
                 {isUploading ? (
                   <div className="text-center">
