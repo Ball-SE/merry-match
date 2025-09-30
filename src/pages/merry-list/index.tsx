@@ -149,7 +149,11 @@ function MerryList () {
                     <div key={match.id}>
                         <div className="p-4 mt-5 lg:w-300 lg:flex lg:p-0 lg:mb-8">
                             <div className="flex justify-between lg:w-290 lg:absolute">
-                                <Image src={src} alt={match.gender || "profile"}
+                                <Image 
+                                src={src} 
+                                alt={match.gender || "profile"}
+                                width={200} 
+                                height={200}
                                 className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"/>
                                 <div className="lg:order-3">
                                     <button className="flex items-center px-4 pr-6 p-1 border-1 border-red-700 rounded-2xl cursor-pointer">
@@ -209,7 +213,11 @@ function MerryList () {
                     <div key={swipe.id}>
                         <div className="p-4 mt-2 lg:w-300 lg:flex lg:p-0 lg:mb-8">
                             <div className="flex justify-between lg:w-290 lg:absolute">
-                                <Image src={src} alt={swipe.gender || "profile"}
+                                <Image 
+                                src={src}
+                                alt={swipe.gender || "profile"}
+                                width={200} 
+                                height={200}
                                 className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"/>
                                 <div className="lg:order-3 justify-items-end">
                                     <button className="flex items-center px-3 pr-4.5 p-1 border-1 border-gray-300 rounded-2xl cursor-not-allowed">
