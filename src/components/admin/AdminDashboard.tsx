@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { PackageType, ViewType, ComplaintType } from '../../types/admin';
 import { DatabaseService } from '../../services/database';
 import Sidebar from './Sidebar';
@@ -304,12 +304,12 @@ const AdminDashboard: React.FC = () => {
     setSelectedComplaint(null);
   };
 
-  const handleResolveComplaint = (complaintId: number): void => {
+  const handleResolveComplaint = (): void => {
     setModalType('resolve');
     setShowComplaintModal(true);
   };
 
-  const handleCancelComplaint = (complaintId: number): void => {
+  const handleCancelComplaint = (): void => {
     setModalType('cancel');
     setShowComplaintModal(true);
   };

@@ -2,25 +2,11 @@
 
 import React from 'react';
 import { Package, AlertTriangle, LogOut } from 'lucide-react';
-import { SidebarProps, SidebarItem } from '../../types/admin';
+import { SidebarProps } from '../../types/admin';
 import { useAuth } from '@/hooks/useAuth';
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { logout } = useAuth();
-  const sidebarItems: SidebarItem[] = [
-    {
-      id: 'merry-package',
-      icon: <Package className="w-4 h-4 text-pink-500" />,
-      label: 'Merry Package',
-      color: 'text-pink-500'
-    },
-    {
-      id: 'complaint',
-      icon: <AlertTriangle className="w-4 h-4 text-red-500" />,
-      label: 'Complaint',
-      color: 'text-red-500'
-    }
-  ];
 
   return (
     <div className="w-64 bg-white shadow-lg flex flex-col min-h-screen">
