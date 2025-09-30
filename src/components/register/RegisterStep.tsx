@@ -6,6 +6,7 @@ import {
 } from "@/middleware/register-validation";
 import { CustomDatePicker } from "@/components/register/date-picker";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
+import { useUsernameValidation } from "@/hooks/useUsernameValidation";
 
 import { SEA_COUNTRY_OPTIONS } from "@/data/sea-countries";
 import { SEA_CITIES_BY_COUNTRY } from "@/data/sea-cities";
@@ -92,7 +93,8 @@ function Step1({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // เพิ่ม email validation hook
-  const emailValidation = useEmailValidation(formData.email, 5000);
+  const emailValidation = useEmailValidation(formData.email, 2000);
+  const usernameValidation = useUsernameValidation(formData.username, 2000);
 
   const handleBlur = (fieldName: string) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
@@ -139,7 +141,7 @@ function Step1({
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Date Picker
+              Date of birth
             </label>
             <CustomDatePicker
               selected={
@@ -149,14 +151,14 @@ function Step1({
                 const dateString = date ? date.toISOString().split("T")[0] : "";
                 handleInputChange({
                   target: { name: "dateOfBirth", value: dateString },
-                } as any);
+                } as React.ChangeEvent<HTMLInputElement>);
               }}
               onBlur={() => handleBlur("dateOfBirth")}
               placeholder="01/01/2022"
               className={getInputClassName("dateOfBirth")}
               dateFormat="dd/MM/yyyy"
-              minDate={new Date(1944, 0, 1)} // 80 ปีที่แล้ว
-              maxDate={new Date(2011, 11, 31)} // 13 ปีที่แล้ว
+              minDate={new Date(new Date().getFullYear() - 120, 0, 1)} // 120 ปีที่แล้ว
+              maxDate={new Date(new Date().getFullYear() - 18, 11, 31)} // 18 ปีที่แล้ว
               name="dateOfBirth"
               id="dateOfBirth"
               error={errors.dateOfBirth}
@@ -178,13 +180,12 @@ function Step1({
                 // รีเซ็ต city เมื่อเปลี่ยนประเทศ
                 const resetCity = {
                   target: { name: "city", value: "" },
-                } as any;
+                } as React.ChangeEvent<HTMLInputElement>;
                 handleInputChange(resetCity);
               }}
               onBlur={() => handleBlur("location")}
-              className={`${getInputClassName("location")} ${
-                !formData.location ? "text-gray-400" : ""
-              }`}
+              className={`${getInputClassName("location")} ${!formData.location ? "text-gray-400" : ""
+                }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -222,11 +223,10 @@ function Step1({
               onChange={handleInputChange}
               onBlur={() => handleBlur("city")}
               disabled={!formData.location}
-              className={`${getInputClassName("city")} ${
-                !formData.location
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : ""
-              }`}
+              className={`${getInputClassName("city")} ${!formData.location
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : ""
+                }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -256,9 +256,7 @@ function Step1({
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Username
-            </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Username</label>
             <input
               type="text"
               name="username"
@@ -270,6 +268,38 @@ function Step1({
             />
             {touched.username && errors.username && (
               <p className="mt-1 text-sm text-[#C70039]">{errors.username}</p>
+            )}
+            {touched.username && (
+              <div className="mt-2 flex items-center gap-2">
+                {usernameValidation.isChecking && (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent"></div>
+                    <span className="text-sm text-yellow-600">checking...</span>
+                  </>
+                )}
+                {!usernameValidation.isChecking && usernameValidation.isValid && (
+                  <>
+                    <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                      <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-green-600">Username is available</span>
+                  </>
+                )}
+                {!usernameValidation.isChecking && !usernameValidation.isValid && touched.username && (
+                  <>
+                    <div className="h-4 w-4 rounded-full bg-[#C70039] flex items-center justify-center">
+                      <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-[#C70039]">
+                      {usernameValidation.message || "Username already exists or invalid"}
+                    </span>
+                  </>
+                )}
+              </div>
             )}
           </div>
 
@@ -663,11 +693,11 @@ const Step3 = React.forwardRef<
   const folderRef = useRef(
     formData.email
       ? `${formData.email
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-_]/g, "_")
-          .slice(0, 24)}`
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-_]/g, "_")
+        .slice(0, 24)}`
       : `temp-user-${Date.now()}`
   );
 
@@ -757,7 +787,7 @@ const Step3 = React.forwardRef<
       setPhotos(newPhotos);
 
       validateCurrentPhotos();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("File processing error:", error);
       setUploadError("Failed to process image. Please try again.");
     } finally {
@@ -854,7 +884,7 @@ const Step3 = React.forwardRef<
   const uploadPhotosToSupabase = async (): Promise<string[]> => {
     console.log("uploadPhotosToSupabase called"); // เพิ่ม debug log
     const uploadedUrls: string[] = [];
-  
+
     for (let i = 0; i < photoFiles.length; i++) {
       const file = photoFiles[i];
       if (file) {
@@ -863,7 +893,7 @@ const Step3 = React.forwardRef<
             "@/lib/supabase/uploadPhotoUtils"
           );
           const result = await uploadProfilePhoto(file, folderRef.current, i);
-  
+
           if (result.success && result.url) {
             uploadedUrls[i] = result.url;
           } else {
@@ -875,7 +905,7 @@ const Step3 = React.forwardRef<
         }
       }
     }
-  
+
     return uploadedUrls;
   };
 
@@ -925,15 +955,14 @@ const Step3 = React.forwardRef<
               }}
             >
               <div
-                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${
-                  isDragOver
-                    ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
-                    : isDragging
+                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${isDragOver
+                  ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
+                  : isDragging
                     ? "opacity-50 scale-95"
                     : photoFiles.filter((f) => f !== null).length < 2 && i < 2
-                    ? "border-red-300"
-                    : "border-gray-300"
-                }`}
+                      ? "border-red-300"
+                      : "border-gray-300"
+                  }`}
               >
                 {isUploading ? (
                   <div className="text-center">
