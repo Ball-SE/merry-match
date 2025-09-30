@@ -5,12 +5,10 @@ import { Element } from "react-scroll";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabase/supabaseClient";
-import { useAdmin } from '@/hooks/useAdmin';
 import Img from "next/image";
 
 function HomePage(){
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-    const { isAdmin } = useAdmin();
     const router = useRouter();
 
     useEffect(() => {
@@ -53,7 +51,6 @@ function HomePage(){
         } else {
             router.push("/login");
         }
-
     };
 
     return (

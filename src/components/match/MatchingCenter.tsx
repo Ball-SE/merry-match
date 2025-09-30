@@ -109,7 +109,7 @@ function MatchingCenter() {
       
       // return ผลลัพธ์แทนการ set state
       return { success: true, match: result.match || false };
-    } catch (error: any) {
+    } catch (error) {
       return { success: false, match: false };
     }
   };
