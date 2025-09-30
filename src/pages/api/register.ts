@@ -112,10 +112,10 @@ export default async function handler(
       message: "Register Successfully Please check your email to verify your account",
       userId: userId,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Registration Error:", error);
     return res.status(500).json({
-      error: error.message || "System error",
+      error: error instanceof Error ? error.message : "System error",
     });
   }
 }

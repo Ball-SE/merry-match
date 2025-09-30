@@ -178,10 +178,10 @@ export const validatePhotos = (photos: string[]) => {
 };
 
 // Complete registration validation
-export const validateCompleteRegistration = (formData: any) => {
-  const step1 = validateBasicInfo(formData);
-  const step2 = validateIdentitiesAndInterests(formData);
-  const step3 = validatePhotos(formData.photos);
+export const validateCompleteRegistration = (formData: unknown) => {
+  const step1 = validateBasicInfo(formData as { name: string; dateOfBirth: string; location: string; city: string; username: string; email: string; password: string; confirmPassword: string });
+  const step2 = validateIdentitiesAndInterests(formData as { sexualIdentities: string; sexualPreferences: string; racialPreferences: string; meetingInterests: string });
+  const step3 = validatePhotos((formData as { photos: string[] }).photos);
 
   return {
     isValid: step1.isValid && step2.isValid && step3.isValid,

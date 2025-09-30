@@ -32,9 +32,9 @@ export const uploadProfilePhoto = async (
       .getPublicUrl(fileName);
 
     return { success: true, url: publicUrl };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Upload error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 };
 
