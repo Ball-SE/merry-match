@@ -11,6 +11,7 @@ import MerryMatch from "./MerryMatch";
 import { RiMapPin2Fill } from "react-icons/ri";
 import { GiSettingsKnobs } from "react-icons/gi";
 import MatchingRight from "./MatchingRight";
+import Img from "next/image";
 
 function MatchingCenter() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -38,14 +39,6 @@ function MatchingCenter() {
       updateWithFilters(profileFilters);
     }
   }, [searchTrigger, profileFilters, updateWithFilters]);
-
-  useEffect(() => {
-    updateWithFilters({
-      genders: ['default'],
-      minAge: 18,
-      maxAge: 50
-    })
-  }, []);
 
   // เพิ่ม useEffect สำหรับซ่อน showMatch อัตโนมัติหลังจาก 5 วินาที
   useEffect(() => {
@@ -230,11 +223,15 @@ function MatchingCenter() {
           {leftCard && (
             <div className="absolute left-0 -translate-y-1/2 w-32 h-44 sm:w-60 sm:h-56 ">
               <div className="w-full h-[450px] rounded-r-xl overflow-hidden shadow-2xl bg-gray-800 ">
-                <img 
+                <Img 
                   src={leftCard.img[0]} 
                   alt={`${leftCard.title} ${leftCard.age}`}
                   className="w-full h-full object-cover"
-                  loading="lazy"
+                  loading="eager"
+                  width={600}
+                  height={450}
+                  quality={100}
+                  priority
                 />
                 <div className="absolute -bottom-60 inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               </div>
@@ -245,11 +242,15 @@ function MatchingCenter() {
           {rightCard && (
             <div className="absolute right-0 -translate-y-1/2 w-32 h-44 sm:w-60 sm:h-56 ">
               <div className="w-full h-[450px] rounded-l-xl overflow-hidden shadow-2xl bg-gray-800">
-                <img 
+                <Img 
                   src={rightCard.img[0]} 
                   alt={`${rightCard.title} ${rightCard.age}`}
                   className="w-full h-full object-cover"
-                  loading="lazy"
+                  loading="eager"
+                  width={600}
+                  height={450}
+                  quality={100}
+                  priority
                 />
                 <div className="absolute -bottom-60 inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               </div>

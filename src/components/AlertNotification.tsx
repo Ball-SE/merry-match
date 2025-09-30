@@ -1,5 +1,6 @@
 import { HiMiniBellAlert } from "react-icons/hi2";
 import { useState } from "react";
+import Img from "next/image";
 
 export const AlertNotiNavbar = () => {
     const notifications = [
@@ -39,10 +40,12 @@ export const AlertNotiNavbar = () => {
                         className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
                     >
                         <div className="relative">
-                            <img 
+                            <Img 
                                 src={notification.image} 
                                 alt={notification.name} 
                                 className="w-12 h-12 rounded-full object-cover"
+                                width={48}
+                                height={48}
                             />
                             {notification.hasHeart && (
                                 <div className="absolute -bottom-1 -right-1">
@@ -50,27 +53,33 @@ export const AlertNotiNavbar = () => {
                                         // Multiple hearts for Daeny
                                         <div className="relative">
                                             <div className="absolute -top-0 -left-1.5 w-6 h-6 flex items-center justify-center">
-                                                <img 
+                                                <Img 
                                                     src="/assets/merry.png" 
                                                     alt="heart" 
                                                     className="w-3 h-3"
+                                                    width={12}
+                                                    height={12}
                                                 />
                                             </div>
                                             <div className="relative w-6 h-6 flex items-center justify-center">
-                                                <img 
+                                                <Img 
                                                     src="/assets/merry.png" 
                                                     alt="heart" 
                                                     className="w-3 h-3"
+                                                    width={12}
+                                                    height={12}
                                                 />
                                             </div>
                                         </div>
                                     ) : (
                                         // Single heart for others
                                         <div className="w-6 h-6 flex items-center justify-center">
-                                            <img 
+                                            <Img 
                                                 src="/assets/merry.png" 
                                                 alt="heart" 
                                                 className="w-3 h-3"
+                                                width={12}
+                                                height={12}
                                             />
                                         </div>
                                     )}

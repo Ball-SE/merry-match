@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
+import Img from 'next/image';
 
 interface UserProfile {
   id: string;
@@ -95,8 +96,8 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
 
         setProfile(result.data);
         */
-      } catch (error: any) {
-        setError(error.message || 'Failed to fetch profile');
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : 'Failed to fetch profile');
       } finally {
         setLoading(false);
       }
@@ -139,12 +140,12 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
         onClose();
       }, 2000);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       setActionState({
         type: actionType,
         loading: false,
         success: false,
-        error: error.message || `Failed to ${actionType} profile. Please try again.`
+        error: error instanceof Error ? error.message : `Failed to ${actionType} profile. Please try again.`
       });
     }
   };
@@ -283,10 +284,14 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
             {/* กล่องรูป */}
             <div className="h-full w-full relative rounded-3xl overflow-hidden m-8 transform -translate-y-20 -translate-x-6 scale-75">
               {profile.photos && profile.photos.length > 0 ? (
-                <img 
+                <Img 
                   src={profile.photos[currentImageIndex]} 
                   alt="Profile" 
                   className="w-full h-full object-cover"
+                  width={600}
+                  height={450}
+                  quality={100}
+                  priority
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -371,7 +376,7 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
                 {profile.name} {profile.age}
               </h1>
               <div className="flex items-center text-gray-600">
-                <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
+                <Img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" width={16} height={16} />
                 <span className="text-base">{profile.city}</span>
               </div>
             </div>
@@ -400,7 +405,7 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
             {profile.bio && (
               <div>
                 <h3 className="font-semibold text-gray-800 mb-2 text-base">About me</h3>
-                <p className="text-gray-900 italic text-base leading-relaxed">"{profile.bio}"</p>
+                <p className="text-gray-900 italic text-base leading-relaxed">&quot;{profile.bio}&quot;</p>
               </div>
             )}
             
