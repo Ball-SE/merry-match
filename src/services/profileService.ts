@@ -150,7 +150,7 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // ดึง list ของคนที่เคย swipe แล้ว (รวมทั้ง like และ pass)
-    const { data: swipedUsers, error: swipeError } = await supabase
+    const { data: swipedUsers } = await supabase
       .from('swipes')
       .select('swiped_id, action')
       .eq('swiper_id', user.id);
@@ -179,7 +179,7 @@ export async function getMatchingProfiles(filters?: ProfileFilters): Promise<Pro
     
 
     // กรองข้อมูลอื่นๆ ใน JavaScript
-    let filteredProfiles = unswipedProfiles.filter(profile => {
+    const filteredProfiles = unswipedProfiles.filter(profile => {
       const hasName = profile.name && profile.name.trim() !== '';
       const hasPhotos = (profile.photos && Array.isArray(profile.photos) && profile.photos.length > 0) ||
                        (profile.photo_url && profile.photo_url.trim() !== '') ||
