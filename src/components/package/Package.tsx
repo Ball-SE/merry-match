@@ -98,7 +98,7 @@ export default function Package() {
             query: {
                 packageId: pkg.id,
                 packageName: pkg.name,
-                packagePrice: pkg.price_cents,
+                packagePrice: pkg.price,
                 packageCurrency: pkg.currency,
                 packageInterval: pkg.billing_interval,
                 packageDetails: JSON.stringify(pkg.details)
@@ -135,21 +135,21 @@ export default function Package() {
                 // Mobile Layout - Grid แบบเดิม
                 <div className="grid grid-cols-1 gap-8 max-w-7xl mx-auto mb-10">
                     {packages.map((pkg) => (
-                        <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative min-h-[500px] flex flex-col">
+                        <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative">
                         <div className="text-left mb-6">
                             <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
                                 {renderIcon(pkg.icon)}
                             </div>
                             <h3 className="text-4xl font-bold text-[#411032] mb-2">{pkg.name}</h3>
                             <p className="text-xl font-bold text-[#2A2E3F]">
-                                {pkg.currency} {pkg.price_cents.toFixed(2)} 
+                                {pkg.currency} {pkg.price.toFixed(2)} 
                                 <span className="text-base font-regular text-[#9AA1B9]">
                                     /{pkg.billing_interval}
                                 </span>
                             </p>
                         </div>
                         
-                        <div className="space-y-4 mb-8 flex-grow">
+                        <div className="space-y-4 mb-8">
                             {pkg.details.map((detail, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
@@ -158,15 +158,13 @@ export default function Package() {
                             ))}
                         </div>
 
-                        <div className="mt-auto">
-                            <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
-                            
-                            <button 
-                                onClick={() => handleChoosePackage(pkg)}
-                                className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
-                                Choose Package
+                        <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
+                        
+                        <button 
+                            onClick={() => handleChoosePackage(pkg)}
+                            className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
+                            Choose Package
                             </button>
-                        </div>
                         </div>
                     ))}
                 </div>
@@ -210,25 +208,25 @@ export default function Package() {
                     {/* Cards Container */}
                     <div 
                         ref={scrollContainerRef}
-                        className={`overflow-hidden  ${showArrows ? 'mx-16' : ''}`}
+                        className={`overflow-hidden ${showArrows ? 'mx-16' : ''}`}
                     >
                         <div className="flex gap-8 transition-transform duration-300 ease-in-out">
                             {packages.map((pkg) => (
-                                <div key={pkg.id} className="bg-white rounded-3xl p-8  border-2 border-gray-100 relative flex-shrink-0 min-h-[500px] flex flex-col" style={{width: cardsPerView === 3 ? 'calc(33.333% - 21.33px)' : cardsPerView === 2 ? 'calc(50% - 16px)' : '100%'}}>
+                                <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative flex-shrink-0 w-full md:w-1/2 lg:w-1/3">
                                     <div className="text-left mb-6">
                                         <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
                                             {renderIcon(pkg.icon)}
                                         </div>
                                         <h3 className="text-4xl font-bold text-[#411032] mb-2">{pkg.name}</h3>
                                         <p className="text-xl font-bold text-[#2A2E3F]">
-                                            {pkg.currency} {pkg.price_cents.toFixed(2)} 
+                                            {pkg.currency} {pkg.price.toFixed(2)} 
                                             <span className="text-base font-regular text-[#9AA1B9]">
                                                 /{pkg.billing_interval}
                                             </span>
                                         </p>
                                     </div>
                                     
-                                    <div className="space-y-4 mb-8 flex-grow">
+                                    <div className="space-y-4 mb-8">
                                         {pkg.details.map((detail, index) => (
                                             <div key={index} className="flex items-center gap-2">
                                                 <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
@@ -237,15 +235,13 @@ export default function Package() {
                                         ))}
                                     </div>
 
-                                    <div className="mt-auto">
-                                        <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
-                                        
-                                        <button 
-                                            onClick={() => handleChoosePackage(pkg)}
-                                            className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
-                                            Choose Package
-                                        </button>
-                                    </div>
+                                    <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
+                                    
+                                    <button 
+                                        onClick={() => handleChoosePackage(pkg)}
+                                        className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
+                                        Choose Package
+                                    </button>
                                 </div>
                             ))}
                         </div>
