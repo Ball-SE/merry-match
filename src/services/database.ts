@@ -1,4 +1,3 @@
-
 // services/database.ts
 
 import { supabase } from '../lib/supabase/supabaseClient';
@@ -20,9 +19,10 @@ class DatabaseServiceClass {
     return {
       id: dbPackage.id,
       name: dbPackage.name,
-      merryLimit: dbPackage.merrylimit.toString(), // Convert number to string for frontend
+      dailySwipeLimit: dbPackage.daily_swipe_limit,
       icon: dbPackage.icon,
       details: dbPackage.details,
+      price_cents: dbPackage.price_cents,
       createdDate: dbPackage.created_at || '',
       updatedDate: dbPackage.updated_at || ''
     };
@@ -39,6 +39,83 @@ class DatabaseServiceClass {
       resolvedDate: dbComplaint.resolved_date || undefined,
       canceledDate: dbComplaint.canceled_date || undefined
     };
+  }
+
+  // ==================== IMAGE UPLOAD METHODS ====================
+
+  /**
+   * Upload an icon to Supabase Storage
+   * @param file - The image file to upload
+   * @returns The public URL of the uploaded image
+   */
+  async uploadIcon(file: File): Promise<string> {
+    try {
+      console.log('Uploading icon:', file.name);
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 15);
+      const fileName = `${timestamp}-${randomStr}.${fileExt}`;
+      const filePath = `package-icons/${fileName}`;
+
+      // Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('package-icons') // Make sure this bucket exists in your Supabase project
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Failed to upload icon: ${uploadError.message}`);
+      }
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('package-icons')
+        .getPublicUrl(filePath);
+
+      console.log('Icon uploaded successfully:', data.publicUrl);
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading icon:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an icon from Supabase Storage
+   * @param iconUrl - The URL of the icon to delete
+   */
+  async deleteIcon(iconUrl: string): Promise<void> {
+    try {
+      // Extract the file path from the URL
+      // URL format: https://[project].supabase.co/storage/v1/object/public/package-icons/[filepath]
+      const urlParts = iconUrl.split('/package-icons/');
+      if (urlParts.length < 2) {
+        console.warn('Invalid icon URL format, skipping deletion:', iconUrl);
+        return;
+      }
+
+      const filePath = `package-icons/${urlParts[1]}`;
+      console.log('Deleting icon:', filePath);
+
+      const { error } = await supabase.storage
+        .from('package-icons')
+        .remove([filePath]);
+
+      if (error) {
+        console.error('Error deleting icon:', error);
+        // Don't throw error here - we don't want to fail the whole operation if icon deletion fails
+      } else {
+        console.log('Icon deleted successfully');
+      }
+    } catch (error) {
+      console.error('Error in deleteIcon:', error);
+      // Don't throw - this is a cleanup operation
+    }
   }
 
   // ==================== PACKAGE METHODS ====================
@@ -72,6 +149,13 @@ class DatabaseServiceClass {
     try {
       console.log('Creating package with data:', packageData);
 
+      // Upload icon if there's a file, otherwise use the provided icon URL
+      let iconUrl = packageData.icon;
+      if (packageData.iconFile) {
+        console.log('Uploading new icon file...');
+        iconUrl = await this.uploadIcon(packageData.iconFile);
+      }
+
       // Get the highest order_index and add 1
       const { data: maxOrderData } = await supabase
         .from('packages')
@@ -84,9 +168,10 @@ class DatabaseServiceClass {
       // Convert frontend data to database format
       const dbData: PackageInsert = {
         name: packageData.name,
-        merrylimit: parseInt(packageData.merryLimit) || 0, // Convert string to number
-        icon: packageData.icon,
+        daily_swipe_limit: packageData.dailySwipeLimit,
+        icon: iconUrl, // Use the uploaded URL
         details: packageData.details,
+        price_cents: packageData.price_cents,
         order_index: nextOrderIndex
       };
 
@@ -100,6 +185,10 @@ class DatabaseServiceClass {
 
       if (error) {
         console.error('Supabase error creating package:', error);
+        // If database insert fails and we uploaded a new icon, try to clean it up
+        if (packageData.iconFile && iconUrl !== packageData.icon) {
+          await this.deleteIcon(iconUrl);
+        }
         throw new Error(`Failed to create package: ${error.message}`);
       }
 
@@ -120,12 +209,36 @@ class DatabaseServiceClass {
     try {
       console.log('Updating package:', id, 'with data:', packageData);
 
+      // Get the existing package to check if we need to delete the old icon
+      const { data: existingPackage, error: fetchError } = await supabase
+        .from('packages')
+        .select('icon')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching existing package:', fetchError);
+      }
+
+      // Upload new icon if there's a file
+      let iconUrl = packageData.icon;
+      if (packageData.iconFile) {
+        console.log('Uploading new icon file...');
+        iconUrl = await this.uploadIcon(packageData.iconFile);
+
+        // Delete old icon if it exists and is different from the new one
+        if (existingPackage && existingPackage.icon && existingPackage.icon !== iconUrl) {
+          await this.deleteIcon(existingPackage.icon);
+        }
+      }
+
       // Convert frontend data to database format
       const dbData: PackageUpdate = {
         name: packageData.name,
-        merrylimit: parseInt(packageData.merryLimit) || 0, // Convert string to number
-        icon: packageData.icon,
+        daily_swipe_limit: packageData.dailySwipeLimit,
+        icon: iconUrl, // Use the uploaded URL
         details: packageData.details,
+        price_cents: packageData.price_cents,
         updated_at: new Date().toISOString()
       };
 
@@ -140,6 +253,10 @@ class DatabaseServiceClass {
 
       if (error) {
         console.error('Supabase error updating package:', error);
+        // If database update fails and we uploaded a new icon, try to clean it up
+        if (packageData.iconFile && iconUrl !== packageData.icon) {
+          await this.deleteIcon(iconUrl);
+        }
         throw new Error(`Failed to update package: ${error.message}`);
       }
 
@@ -160,6 +277,18 @@ class DatabaseServiceClass {
     try {
       console.log('Deleting package:', id);
 
+      // Get the package to find its icon URL
+      const { data: packageData, error: fetchError } = await supabase
+        .from('packages')
+        .select('icon')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching package for deletion:', fetchError);
+      }
+
+      // Delete the package from database
       const { error } = await supabase
         .from('packages')
         .delete()
@@ -168,6 +297,11 @@ class DatabaseServiceClass {
       if (error) {
         console.error('Supabase error deleting package:', error);
         throw new Error(`Failed to delete package: ${error.message}`);
+      }
+
+      // Delete the icon from storage if it exists
+      if (packageData && packageData.icon) {
+        await this.deleteIcon(packageData.icon);
       }
 
       console.log('Package deleted successfully:', id);
@@ -331,6 +465,18 @@ class DatabaseServiceClass {
         console.error('Complaints table error:', complaintsError);
       } else {
         console.log('Complaints table accessible, count:', complaintsData);
+      }
+
+      // Test storage bucket
+      const { data: storageData, error: storageError } = await supabase
+        .storage
+        .from('package-icons')
+        .list('', { limit: 1 });
+
+      if (storageError) {
+        console.error('Storage bucket error:', storageError);
+      } else {
+        console.log('Storage bucket accessible');
       }
 
       console.log('=== END DATABASE INFO ===');

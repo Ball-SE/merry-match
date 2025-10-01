@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { PackageType, ViewType, ComplaintType } from '../../types/admin';
+import { PackageType, ViewType, ComplaintType, PackageFormData } from '../../types/admin';
 import { DatabaseService } from '../../services/database';
 import Sidebar from './Sidebar';
 import TopNavigation from './TopNavigation';
@@ -50,8 +50,6 @@ const AdminDashboard: React.FC = () => {
         const connectionOk = await DatabaseService.testConnection();
         if (!connectionOk) {
           console.warn('Database connection test failed, but continuing anyway...');
-          // Temporarily comment out the throw to see more specific errors
-          // throw new Error('Could not connect to database. Please check your Supabase configuration.');
         }
 
         // Load initial data
@@ -127,12 +125,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleCreatePackage = async (packageData: {
-    name: string;
-    merryLimit: string;
-    icon: string;
-    details: string[];
-  }): Promise<void> => {
+  const handleCreatePackage = async (packageData: PackageFormData): Promise<void> => {
     try {
       setLoading(true);
       setError('');
@@ -153,18 +146,13 @@ const AdminDashboard: React.FC = () => {
       }
       
       setError(errorMessage);
-      throw err; // Re-throw so form can handle it too
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdatePackage = async (packageData: {
-    name: string;
-    merryLimit: string;
-    icon: string;
-    details: string[];
-  }): Promise<void> => {
+  const handleUpdatePackage = async (packageData: PackageFormData): Promise<void> => {
     if (!editingPackage) return;
 
     try {
@@ -193,7 +181,7 @@ const AdminDashboard: React.FC = () => {
       }
       
       setError(errorMessage);
-      throw err; // Re-throw so form can handle it too
+      throw err;
     } finally {
       setLoading(false);
     }

@@ -27,6 +27,12 @@ const PackageList: React.FC<PackageListProps> = ({
     }
   };
 
+  // Format price from cents to baht
+  const formatPrice = (priceCents: number) => {
+    const amount = priceCents / 100;
+    return `฿${amount.toFixed(2)}`;
+  };
+
   // Filter packages based on search term
   const filteredPackages = packages.filter(pkg => {
     if (!searchTerm) return true;
@@ -34,7 +40,7 @@ const PackageList: React.FC<PackageListProps> = ({
     const searchLower = searchTerm.toLowerCase();
     return (
       pkg.name.toLowerCase().includes(searchLower) ||
-      pkg.merryLimit.toLowerCase().includes(searchLower) ||
+      pkg.dailySwipeLimit.toString().includes(searchLower) ||
       pkg.details.some(detail => detail.toLowerCase().includes(searchLower)) ||
       pkg.id.toString().includes(searchLower)
     );
@@ -48,9 +54,10 @@ const PackageList: React.FC<PackageListProps> = ({
           <thead className="bg-[#D6D9E4]">
             <tr>
               <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider w-20"></th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Icon</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider w-24">Icon</th>
               <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Package name</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Merry limit</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Merry Limit</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Price</th>
               <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Created date</th>
               <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Updated date</th>
               <th className="px-6 py-4 text-left text-sm font-medium text-[#424C6B] uppercase tracking-wider">Actions</th>
@@ -93,13 +100,27 @@ const PackageList: React.FC<PackageListProps> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-2xl">{pkg.icon}</span>
+                  <div className="flex items-center justify-center">
+                    <img 
+                      src={pkg.icon} 
+                      alt={pkg.name}
+                      className="w-12 h-12 object-contain rounded-lg bg-pink-50 p-1"
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerHTML = '<span class="text-2xl">📦</span>';
+                      }}
+                    />
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{pkg.name}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{pkg.merryLimit}</div>
+                  <div className="text-sm text-gray-900">{pkg.dailySwipeLimit}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900 font-medium">{formatPrice(pkg.price_cents)}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-[#424C6B]">{formatDate(pkg.createdDate)}</div>
