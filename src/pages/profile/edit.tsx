@@ -174,7 +174,7 @@ export default function EditProfilePage() {
           
           {/* Header */}
           <div className="px-4 md:px-12 py-6 md:py-12 border-b border-gray-100">
-            <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
                 <p className="text-xs md:text-sm text-[#7B4429] uppercase tracking-wider mb-2 md:mb-3 font-medium">PROFILE</p>
                 <h1 className="text-[46px] font-extrabold text-[#A62D82] leading-[125%] tracking-[-0.02em]" style={{ fontFamily: 'Nunito, sans-serif' }}>
@@ -182,17 +182,31 @@ export default function EditProfilePage() {
                 </h1>
               </div>
               {/* Desktop Buttons */}
-              <div className="hidden md:flex flex-row gap-3 md:gap-4">
+              <div className="hidden md:flex flex-row gap-2 mb-2">
                 <button
                   onClick={() => router.push('/profile')}
-                  className="px-6 md:px-8 py-3 md:py-3.5 border-2 border-[#C70039] text-[#C70039] rounded-lg md:rounded-xl hover:bg-pink-50 transition-colors text-sm md:text-base font-semibold"
+                  className="px-6 py-3 text-[#C70039] rounded-full hover:opacity-90 transition-all duration-300 font-bold text-center leading-[150%]"
+                  style={{ 
+                    fontFamily: 'Nunito, sans-serif', 
+                    fontSize: '16px', 
+                    letterSpacing: '0%',
+                    backgroundColor: '#FFE1EA',
+                    boxShadow: '2px 2px 12px 0px rgba(64, 50, 133, 0.08)'
+                  }}
                 >
                   Preview Profile
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-6 md:px-8 py-3 md:py-3.5 bg-[#C70039] text-white rounded-lg md:rounded-xl hover:bg-[#950028] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm md:text-base font-semibold"
+                  className="px-6 py-3 bg-[#C70039] text-white rounded-full hover:bg-[#950028] transition-all duration-300 disabled:opacity-50 flex items-center justify-center font-bold text-center leading-[150%]"
+                  style={{ 
+                    fontFamily: 'Nunito, sans-serif', 
+                    fontSize: '16px', 
+                    letterSpacing: '0%',
+                    gap: '8px',
+                    boxShadow: '2px 2px 12px 0px rgba(64, 50, 133, 0.16)'
+                  }}
                 >
                   {saving && <Loader2 className="w-4 md:w-5 h-4 md:h-5 animate-spin" />}
                   Update Profile
@@ -228,8 +242,8 @@ export default function EditProfilePage() {
                 <input
                   type="date"
                   value={formData.date_of_birth}
-                  onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
+                  disabled
+                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg text-sm md:text-base bg-gray-100 text-gray-500 cursor-not-allowed"
                 />
               </div>
 
@@ -266,7 +280,7 @@ export default function EditProfilePage() {
               </div>
 
               {/* Username */}
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Username</label>
                 <input
                   type="text"
@@ -274,6 +288,18 @@ export default function EditProfilePage() {
                   onChange={(e) => handleInputChange('username', e.target.value)}
                   className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
                   placeholder="At least 6 character"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Email</label>
+                <input
+                  type="email"
+                  value={profile?.email || ''}
+                  disabled
+                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg text-sm md:text-base bg-gray-100 text-gray-500 cursor-not-allowed"
+                  placeholder="name@website.com"
                 />
               </div>
             </div>
@@ -423,14 +449,28 @@ export default function EditProfilePage() {
           <div className="mb-8 md:mb-10 flex md:hidden flex-row gap-4">
             <button
               onClick={() => router.push('/profile')}
-              className="flex-1 px-4 py-3 border-2 border-[#C70039] text-[#C70039] rounded-xl hover:bg-pink-50 transition-colors text-base font-bold"
+              className="flex-1 px-6 py-3 text-[#C70039] rounded-full transition-all duration-300 font-bold text-center leading-[150%]"
+              style={{ 
+                fontFamily: 'Nunito, sans-serif', 
+                fontSize: '16px', 
+                letterSpacing: '0%',
+                backgroundColor: '#FFE1EA',
+                boxShadow: '2px 2px 12px 0px rgba(64, 50, 133, 0.08)'
+              }}
             >
               Preview Profile
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 px-4 py-3 bg-[#C70039] text-white rounded-xl hover:bg-[#950028] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-base font-bold"
+              className="flex-1 px-6 py-3 bg-[#C70039] text-white rounded-full hover:bg-[#950028] transition-all duration-300 disabled:opacity-50 flex items-center justify-center font-bold text-center leading-[150%]"
+              style={{ 
+                fontFamily: 'Nunito, sans-serif', 
+                fontSize: '16px', 
+                letterSpacing: '0%',
+                gap: '8px',
+                boxShadow: '2px 2px 12px 0px rgba(64, 50, 133, 0.16)'
+              }}
             >
               {saving && <Loader2 className="w-5 h-5 animate-spin" />}
               Update Profile
