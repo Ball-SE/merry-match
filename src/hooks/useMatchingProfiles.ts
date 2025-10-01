@@ -1,4 +1,4 @@
-import { useState, useCallback} from 'react';
+import { useState, useCallback, useEffect} from 'react';
 import { Profile, getMatchingProfiles, ProfileFilters } from '../services/profileService';
 import { Card } from '@/components/swipe/SwipeDeck';
 
@@ -75,6 +75,16 @@ export const useMatchingProfiles = () => {
       setLoading(false);
     }
   }, []);
+
+   // เพิ่ม useEffect สำหรับ initial load
+   useEffect(() => {
+    // โหลดข้อมูลครั้งแรกด้วย default filters
+    fetchMatchingProfiles({
+      genders: ['default'],
+      minAge: 18,
+      maxAge: 50
+    });
+  }, [fetchMatchingProfiles]);
 
   // ฟังก์ชันสำหรับลบ card ที่ swiped แล้ว
   const removeCard = useCallback((cardId: string) => {

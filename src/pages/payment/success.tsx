@@ -1,9 +1,9 @@
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
-import Payment from "@/components/payment/Payment";
+import PaymentSuccess from "@/components/payment/PaymentSuccess";
 import { useAuth } from '@/hooks/useAuth';
 
-function PaymentPage() {
+function PaymentSuccessPage() {
     const { isLoggedIn } = useAuth('/login');
 
     if (isLoggedIn === null) {
@@ -15,12 +15,12 @@ function PaymentPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen">
             <NavBar />
-            <Payment />
+            <PaymentSuccess />
             <Footer />
         </div>
     );
 }
 
-export default PaymentPage;
+export default PaymentSuccessPage;
