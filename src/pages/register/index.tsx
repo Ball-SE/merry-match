@@ -160,7 +160,7 @@ export default function Home() {
               matching
             </h1>
           </div>
-          <div className="items-center max-lg:mx-auto mt-8 mr-32">
+          <div className="items-center max-lg:mx-auto mt-8 mr-28">
             <StepIndicator currentStep={currentStep} titles={titles} />
           </div>
         </div>
