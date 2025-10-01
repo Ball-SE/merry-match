@@ -195,7 +195,7 @@ function MatchingLeft() {
                             {matches.map((match) => (
                                 <div key={match.id} 
                                      className="flex flex-row gap-2 sm:gap-3 items-center cursor-pointer hover:bg-[#f9f9f9] p-2 sm:p-3 rounded-lg transition-colors mx-1 hover:border-1 hover:border-[#A62D82]"
-                                     onClick={() => router.push(`/matching/${match.id}`)}
+                                     onClick={() => router.push(`/chat`)}
                                      >
                                     <div className="w-[40px] h-[40px] sm:w-[50px] sm:h-[50px] relative overflow-hidden rounded-full flex-shrink-0">
                                         <Image 
