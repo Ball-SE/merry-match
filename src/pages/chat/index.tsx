@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MatchingLeft from "@/components/match/MatchingLeft";
 import NavBar from "@/components/NavBar";
 import ChatList from "@/components/chat/ChatList";
-import ChatWindow from "@/components/chat/chatWindow";
+import ChatWindow from "@/components/chat/ChatWindow";
 import { useAuth } from '@/hooks/useAuth';
 import { MatchingProvider } from "@/context/MatchingContext";
 import { MatchWithProfile } from '@/services/chatService';
