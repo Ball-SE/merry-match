@@ -36,7 +36,9 @@ interface Props {
   ) => void;
   setPhotos: (next: string[]) => void;
   setInterests: (chips: string[]) => void;
-  step3Ref: React.RefObject<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>;
+  step3Ref: React.RefObject<{
+    uploadPhotosToSupabase: () => Promise<string[]>;
+  } | null>;
 }
 
 export default function RegisterStep({
@@ -71,7 +73,9 @@ export default function RegisterStep({
 
 // เพิ่มฟังก์ชันสำหรับ upload รูปเมื่อกด confirm
 export const uploadPhotosOnConfirm = async (
-  step3Ref: React.RefObject<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>
+  step3Ref: React.RefObject<{
+    uploadPhotosToSupabase: () => Promise<string[]>;
+  } | null>
 ): Promise<string[]> => {
   if (step3Ref.current) {
     return await step3Ref.current.uploadPhotosToSupabase();
@@ -112,6 +116,13 @@ function Step1({
     }
     return `${baseClass} border-gray-300 focus:ring-[#C70039]`;
   };
+
+  useEffect(() => {
+    if (Object.values(touched).some(Boolean)) {
+      const validation = validateBasicInfo(formData);
+      setErrors(validation.errors);
+    }
+  }, [formData, touched]);
 
   return (
     <div>
@@ -157,8 +168,20 @@ function Step1({
               placeholder="01/01/2022"
               className={getInputClassName("dateOfBirth")}
               dateFormat="dd/MM/yyyy"
-              minDate={new Date(new Date().getFullYear() - 120, 0, 1)} // 120 ปีที่แล้ว
-              maxDate={new Date(new Date().getFullYear() - 18, 11, 31)} // 18 ปีที่แล้ว
+              minDate={
+                new Date(
+                  new Date().getFullYear() - 120,
+                  new Date().getMonth(),
+                  new Date().getDate()
+                )
+              } // 120 ปีที่แล้ว
+              maxDate={
+                new Date(
+                  new Date().getFullYear() - 18,
+                  new Date().getMonth(),
+                  new Date().getDate()
+                )
+              } // 18 ปีที่แล้ว
               name="dateOfBirth"
               id="dateOfBirth"
               error={errors.dateOfBirth}
@@ -184,7 +207,7 @@ function Step1({
                 handleInputChange(resetCity);
               }}
               onBlur={() => handleBlur("location")}
-              className={`${getInputClassName("location")} ${!formData.location ? "text-gray-400" : ""
+              className={`${getInputClassName("location")} ${!formData.location ? "text-gray-400" : "text-black"
                 }`}
               style={{
                 appearance: "none",
@@ -203,7 +226,7 @@ function Step1({
               </option>
 
               {SEA_COUNTRY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <option key={opt.value} value={opt.value} style={{ color: "#000000" }}>
                   {opt.label}
                 </option>
               ))}
@@ -224,8 +247,8 @@ function Step1({
               onBlur={() => handleBlur("city")}
               disabled={!formData.location}
               className={`${getInputClassName("city")} ${!formData.location
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : ""
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : ""
                 }`}
               style={{
                 appearance: "none",
@@ -256,7 +279,9 @@ function Step1({
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Username</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Username
+            </label>
             <input
               type="text"
               name="username"
@@ -277,28 +302,50 @@ function Step1({
                     <span className="text-sm text-yellow-600">checking...</span>
                   </>
                 )}
-                {!usernameValidation.isChecking && usernameValidation.isValid && (
-                  <>
-                    <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
-                      <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-green-600">Username is available</span>
-                  </>
-                )}
-                {!usernameValidation.isChecking && !usernameValidation.isValid && touched.username && (
-                  <>
-                    <div className="h-4 w-4 rounded-full bg-[#C70039] flex items-center justify-center">
-                      <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-[#C70039]">
-                      {usernameValidation.message || "Username already exists or invalid"}
-                    </span>
-                  </>
-                )}
+                {!usernameValidation.isChecking &&
+                  usernameValidation.isValid && (
+                    <>
+                      <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <svg
+                          className="h-2 w-2 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-green-600">
+                        Username is available
+                      </span>
+                    </>
+                  )}
+                {!usernameValidation.isChecking &&
+                  !usernameValidation.isValid &&
+                  touched.username && (
+                    <>
+                      <div className="h-4 w-4 rounded-full bg-[#C70039] flex items-center justify-center">
+                        <svg
+                          className="h-2 w-2 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-sm text-[#C70039]">
+                        {usernameValidation.message ||
+                          "Username already exists or invalid"}
+                      </span>
+                    </>
+                  )}
               </div>
             )}
           </div>
@@ -782,9 +829,12 @@ const Step3 = React.forwardRef<
       setPhotoPreviews(newPhotoPreviews);
 
       // อัปเดต photos array สำหรับ validation
-      const newPhotos = [...photos];
-      newPhotos[index] = previewUrl; // ใช้ preview URL ชั่วคราว
-      setPhotos(newPhotos);
+      // const newPhotos = [...photos];
+      // newPhotos[index] = previewUrl; // ใช้ preview URL ชั่วคราว
+      // setPhotos(newPhotos);
+
+      const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
+      setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
 
       validateCurrentPhotos();
     } catch (error: unknown) {
@@ -816,6 +866,11 @@ const Step3 = React.forwardRef<
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
     setPhotos(newPhotos);
+
+    // อัปเดต formData.photos ด้วยจำนวนรูปที่เหลือ
+    const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
+    setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
+
 
     validateCurrentPhotos();
   };
@@ -869,6 +924,10 @@ const Step3 = React.forwardRef<
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
     setPhotos(newPhotos);
+
+    // อัปเดต formData.photos ด้วยจำนวนรูปที่เหลือ
+    const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
+    setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
 
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -956,12 +1015,12 @@ const Step3 = React.forwardRef<
             >
               <div
                 className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${isDragOver
-                  ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
-                  : isDragging
-                    ? "opacity-50 scale-95"
-                    : photoFiles.filter((f) => f !== null).length < 2 && i < 2
-                      ? "border-red-300"
-                      : "border-gray-300"
+                    ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
+                    : isDragging
+                      ? "opacity-50 scale-95"
+                      : photoFiles.filter((f) => f !== null).length < 2 && i < 2
+                        ? "border-red-300"
+                        : "border-gray-300"
                   }`}
               >
                 {isUploading ? (

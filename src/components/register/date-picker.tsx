@@ -85,13 +85,13 @@
 //   );
 // }
 
-import React, { useState } from 'react';
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Popover, Paper, TextField, Box } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Popover, Paper, TextField, Box } from "@mui/material";
+import dayjs, { Dayjs } from "dayjs";
+import { cn } from "@/lib/utils";
 
 interface CustomDatePickerProps {
   selected?: Date | null;
@@ -128,6 +128,14 @@ export function CustomDatePicker({
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(
     selected ? dayjs(selected) : null
   );
+  const [tempDate, setTempDate] = useState<Dayjs | null>(
+    selected ? dayjs(selected) : null
+  );
+
+  // อัปเดต tempDate เมื่อ selected เปลี่ยน
+  useEffect(() => {
+    setTempDate(selected ? dayjs(selected) : null);
+  }, [selected]);
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!disabled) {
@@ -140,16 +148,25 @@ export function CustomDatePicker({
     onBlur?.();
   };
 
-  const handleDateChange = (newValue: Dayjs | null) => {
-    setSelectedDate(newValue);
-    const date = newValue ? newValue.toDate() : null;
+  const handleConfirmDate = () => {
+    setSelectedDate(tempDate);
+    const date = tempDate ? tempDate.toDate() : null;
     onChange(date);
     handleClose();
   };
 
+  const handleCancelDate = () => {
+    setTempDate(selectedDate); // รีเซ็ตกลับเป็นค่าเดิม
+    handleClose();
+  };
+
+  const handleTempDateChange = (newValue: Dayjs | null) => {
+    setTempDate(newValue);
+  };
+
   const formatDisplayDate = (date: Date | null) => {
-    if (!date) return '';
-    return dayjs(date).format('DD/MM/YYYY');
+    if (!date) return "";
+    return dayjs(date).format("DD/MM/YYYY");
   };
 
   const open = Boolean(anchorEl);
@@ -161,7 +178,9 @@ export function CustomDatePicker({
         className={cn(
           "w-full rounded-lg border border-gray-300 px-3 py-3 pr-10 text-sm transition-colors focus:border-[#A62D82] focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer",
           disabled && "cursor-not-allowed bg-gray-50 text-gray-500",
-          error && touched && "border-[#C70039] focus:border-[#C70039] focus:ring-red-500/20",
+          error &&
+            touched &&
+            "border-[#C70039] focus:border-[#C70039] focus:ring-red-500/20",
           !selectedDate && "text-gray-400",
           className
         )}
@@ -181,57 +200,92 @@ export function CustomDatePicker({
         />
       </div>
 
-
       <Popover
         open={open}
         anchorEl={anchorEl}
-        onClose={handleClose}
+        onClose={handleCancelDate} // เปลี่ยนเป็น handleCancelDate แทน
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
+          vertical: "bottom",
+          horizontal: "right",
         }}
         transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         }}
         PaperProps={{
           sx: {
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-            border: '1px solid #e5e7eb',
-          }
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            border: "1px solid #e5e7eb",
+          },
         }}
       >
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DateCalendar
-            value={selectedDate}
-            onChange={handleDateChange}
-            minDate={minDate ? dayjs(minDate) : undefined}
-            maxDate={maxDate ? dayjs(maxDate) : undefined}
-            views={['year', 'month', 'day']}
-            sx={{
-              '& .MuiPickersCalendarHeader-root': {
-                paddingLeft: '16px',
-                paddingRight: '16px',
-              },
-              '& .MuiDayCalendar-weekContainer': {
-                margin: '0',
-              },
-              '& .MuiPickersDay-root': {
-                borderRadius: '50%',
-                margin: '2px',
-                '&:hover': {
-                  backgroundColor: '#f3e8ff',
+          <div className="p-2">
+            <DateCalendar
+              value={tempDate} // ใช้ tempDate แทน selectedDate
+              onChange={handleTempDateChange} // ใช้ handleTempDateChange แทน
+              minDate={minDate ? dayjs(minDate) : undefined}
+              maxDate={maxDate ? dayjs(maxDate) : undefined}
+              views={["year", "month", "day"]}
+              sx={{
+                "& .MuiPickersCalendarHeader-root": {
+                  paddingLeft: "32px",
+                  paddingRight: "16px",
                 },
-                '&.Mui-selected': {
-                  backgroundColor: '#A62D82',
-                  '&:hover': {
-                    backgroundColor: '#933d6b',
+                // Style สำหรับ เดือน/ปี ด้านบน
+                "& .MuiPickersCalendarHeader-label": {
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  fontFamily: "var(--font-nunito)",
+                  color: "#2A0B21",
+                },
+                // Style สำหรับ Day of Week (จ. อ. พ. ฯลฯ)
+                "& .MuiDayCalendar-weekDayLabel": {
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  fontFamily: "var(--font-nunito)",
+                  color: "#6B7280",
+                },
+                "& .MuiDayCalendar-weekContainer": {
+                  margin: "0",
+                },
+                "& .MuiPickersDay-root": {
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  fontFamily: "var(--font-nunito)",
+                  borderRadius: "50%",
+                  margin: "1.9px",
+                  "&:hover": {
+                    border:"1px solid #933d6b",
+                    backgroundColor: "#F4EBF2",
+                  },
+                  "&.Mui-selected": {
+                    backgroundColor: "#933d6b",
+                    "&:hover": {
+                      backgroundColor: "#933d6b",
+                    },
                   },
                 },
-              },
-            }}
-          />
+              }}
+            />
+            
+            {/* ปุ่ม Confirm และ Cancel */}
+            <div className="flex justify-end gap-2 mt-0 px-4 pb-2 font-nunito">
+              <button
+                onClick={handleCancelDate}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDate}
+                className="px-4 py-2 text-sm font-medium bg-[#A62D82] text-white rounded-lg hover:bg-[#933d6b] transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </LocalizationProvider>
       </Popover>
 

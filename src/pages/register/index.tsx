@@ -17,9 +17,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const step3Ref = useRef<{ uploadPhotosToSupabase: () => Promise<string[]> } | null>(
-    null
-  );
+  const step3Ref = useRef<{
+    uploadPhotosToSupabase: () => Promise<string[]>;
+  } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     dateOfBirth: "", // ตั้งค่าเริ่มต้นเป็น 18 ปีที่แล้ว
@@ -80,7 +80,7 @@ export default function Home() {
       let uploadedPhotoUrls: string[] = [];
 
       // รอ 100ms ให้ Step3 component render เสร็จก่อน
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       if (step3Ref.current) {
         console.log("step3Ref.current exists, uploading photos...");
@@ -120,7 +120,9 @@ export default function Home() {
       router.push("/login");
     } catch (error: unknown) {
       console.error("Registration error:", error);
-      setError(error instanceof Error ? error.message : "An unknown error occurred");
+      setError(
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
     } finally {
       setLoading(false);
     }
@@ -147,7 +149,7 @@ export default function Home() {
           <div className="block absolute top-33 left-[-110px] w-2 h-2 bg-[#7B4429] rounded-full -z-10"></div>
         </div>
         {/* Header row */}
-        <div className="flex max-xs:flex-col items-center justify-between max-xs:my-4 max-xs:gap-4 max-xs:items-start">
+        <div className="flex max-sm:flex-col items-center justify-between max-xs:my-4 max-xs:gap-4 max-xs:items-start">
           <div>
             <span className="text-[#7B4429] text-lg font-semibold">
               REGISTER
@@ -158,7 +160,7 @@ export default function Home() {
               matching
             </h1>
           </div>
-          <div className="items-end max-xs:items-center max-xs:scale-95 mt-16 max-xs:mt-4 mr-10 max-xs:mr-0">
+          <div className="items-center max-lg:mx-auto mt-8 mr-32">
             <StepIndicator currentStep={currentStep} titles={titles} />
           </div>
         </div>
