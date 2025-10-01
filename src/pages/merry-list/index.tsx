@@ -17,6 +17,8 @@ type ProfileLocation = {
 
 type Match = {
     id: string | number;
+    match_id?: string; // from API matchList
+    other_user_id?: string; // from API matchList
     gender?: string;
     name?: string;
     age?: number;
@@ -49,10 +51,61 @@ function MerryList () {
 
     const [timeLeft, setTimeLeft] = useState("");
 
+    const [unmatchedIds, setUnmatchedIds] = useState<(string | number)[]>([]);
+
+    async function toggleMatch(matchId: string | number, isCurrentlyMatched: boolean, otherUserId?: string) {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        console.warn("No token found, cannot toggle match.");
+        return;
+      }
+
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+      if (isCurrentlyMatched) {
+        // ยิง API unmatch
+        await axios.post(
+          `${origin}/api/unmatch`,
+          { matchId, otherUserId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        // อัปเดต state local
+        setUnmatchedIds((prev) => [...prev, matchId]);
+      } else {
+        // ยิง API match กลับมาใหม่
+        await axios.post(
+          `${origin}/api/rematch`,
+          { matchId, otherUserId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        // ลบออกจาก unmatchedIds
+        setUnmatchedIds((prev) => prev.filter((id) => id !== matchId));
+        }
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error(
+                  "Toggle match error:",
+                  {
+                    message: error.message,
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    status: error.response?.status,
+                    data: error.response?.data,
+                  }
+                );
+            } else {
+                console.error("Toggle match error:", error);
+            }
+        }
+    }
+
     useEffect(() => {
         const fetchMatch = async() => {
             try {
-
+                // เช็คว่ามี session token หรือไม่
                 const { data: { session } } = await supabase.auth.getSession();
                 const token = session?.access_token;
                 if (!token) {
@@ -61,6 +114,7 @@ function MerryList () {
                     return;
                 }
 
+                // ดึง match list API และ swipe list API
                 const resultMatch = await axios.get<MatchListResponse>(
                     `/api/matchList`,
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -75,7 +129,8 @@ function MerryList () {
 
                 setMatchList(matches)
                 setSwipeList(swipes)
-
+                
+                // นับเวลาถอยหลังถึงเที่ยงคืน
                 const updateCountdown = () => {
                     const now = new Date();
               
@@ -145,6 +200,10 @@ function MerryList () {
                 const src =
                 (Array.isArray(match.photo_url) ? match.photo_url[0] : match.photo_url) ??
                 "/assets/user.jpg";
+
+                const effectiveMatchId = (match as Match & { match_id?: string }).match_id ?? match.id;
+                const isUnmatched = unmatchedIds.includes(effectiveMatchId);
+
                 return(
                     <div key={match.id}>
                         <div className="p-4 mt-5 lg:w-300 lg:flex lg:p-0 lg:mb-8">
@@ -154,24 +213,42 @@ function MerryList () {
                                 alt={match.gender || "profile"}
                                 width={200} 
                                 height={200}
-                                className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"/>
-                                <div className="lg:order-3">
-                                    <button className="flex items-center px-4 pr-6 p-1 border-1 border-red-700 rounded-2xl cursor-pointer">
+                                className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"
+                                />
+                                <div className="lg:order-3 justify-items-end">
+                                    {isUnmatched ? 
+                                    <span className="flex items-end w-35 px-2.5 p-1 border-1 border-gray-300 rounded-2xl cursor-not-allowed">
+                                    <p className="ml-2 text-gray-600">
+                                    Not Match yet
+                                    </p>
+                                    </span> 
+                                    : 
+                                    <p className="flex items-center px-4 pr-4.5 p-1 border-1 border-red-700 rounded-2xl">
                                         <Heart color = "#ff1659" fill="#ff1659" size={10}
                                         className="absolute" />
                                         <Heart color = "#ff1659" fill="#ff1659" stroke="white" strokeWidth={1} size={12}
                                         className="relative left-1.5" />
-                                        <p className="ml-2 text-[#C70039] font-extrabold">Merry Match!</p>
-                                    </button>
-                                    <div className="flex justify-between items-center mt-6">
+                                        <span className="ml-2 text-[#C70039] font-extrabold">
+                                        Merry Match!
+                                        </span>
+                                    </p>
+                                    }
+                                    <div className="flex justify-between items-center mt-6 w-40">
                                         <button className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <MessageCircleMore color="white" fill ="#646D89" size={22}/>
                                         </button>
                                         <button className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <Eye color="white" fill ="#646D89" size={28}/>
                                         </button>
-                                        <button className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039]">
-                                            <Heart color = "white" fill="white" size={20}/>
+                                        <button 
+                                        onClick={() => toggleMatch(effectiveMatchId, !isUnmatched, (match as Match & { other_user_id?: string }).other_user_id)} 
+                                        className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039]"
+                                        >
+                                            <Heart 
+                                            color = "white" 
+                                            fill="white" 
+                                            size={20}
+                                            />
                                         </button>
                                     </div>
                                 </div>
@@ -186,16 +263,16 @@ function MerryList () {
                                 </div>
                                 <div className="flex flex-cols gap-8 mt-1 lg:relative lg:bottom-3">
                                     <div>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Sexual identities</p>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Sexual preferences</p>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Racial preferences</p>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Meeting interests</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Sexual identities</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Sexual preferences</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Racial preferences</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Meeting interests</p>
                                     </div>
                                     <div>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{match.gender}</p>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{match.sexual_preferences}</p>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{match.racial_preferences}</p>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{match.meeting_interests}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{match.gender}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{match.sexual_preferences}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{match.racial_preferences}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{match.meeting_interests}</p>
                                     </div>
                                 </div>
                             </div>
