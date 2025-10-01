@@ -47,7 +47,9 @@ export default function ForgotPassword({ onBackToLogin }: ForgotPasswordProps) {
       }
 
       // ใช้ Supabase reset password โดยตรง
-      const redirectUrl = `${window.location.protocol}//${window.location.host}/reset-password`
+      // ใช้ environment variable สำหรับ production URL หรือ fallback เป็น current host
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `${window.location.protocol}//${window.location.host}`
+      const redirectUrl = `${baseUrl}/reset-password`
       console.log('Reset password redirect URL:', redirectUrl) // Debug log
       
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
