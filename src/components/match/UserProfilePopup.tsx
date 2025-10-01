@@ -104,7 +104,7 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
     };
 
     fetchProfile();
-  }, [isOpen, userId]);
+  }, [isOpen, userId, cardData]);
 
   // Handle Like/Pass actions
   const handleAction = async (actionType: 'like' | 'pass') => {

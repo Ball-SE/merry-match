@@ -157,7 +157,7 @@ city: (() => {
     } finally {
       setProfileLoading(false);
     }
-  }, [isOpen, currentCard?.id, profiles]);
+  }, [isOpen, currentCard, profiles]);
 
   // Handle Like/Pass actions
   const handleAction = async (actionType: 'like' | 'pass') => {
