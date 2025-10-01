@@ -79,13 +79,13 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
                     <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 justify-left mt-8 sm:mt-12 px-4 transition-all duration-1000 delay-500`}>
                         <button
                             onClick={handleBackToHome}
-                            className="button-ghost text-[#C70039] border-2 border-[#C70039] hover:bg-[#C70039] hover:text-white transition-all duration-300 w-full sm:w-auto sm:min-w-[160px] py-3 sm:py-2"
+                            className="button-ghost text-[#C70039] border-2 border-[#C70039] hover:bg-[#C70039] hover:text-white transition-all duration-300 w-full sm:w-auto sm:min-w-[160px] py-3 sm:py-2 cursor-pointer"
                         >
                             Back to Home
                         </button>
                         <button
                             onClick={handleCheckMembership}
-                            className="button-primary bg-gradient-to-r from-[#C70039] to-[#FF1744] hover:from-[#A00030] hover:to-[#D01040] transition-all duration-300 w-full sm:w-auto sm:min-w-[160px] shadow-lg py-3 sm:py-2"
+                            className="button-primary bg-gradient-to-r from-[#C70039] to-[#FF1744] hover:from-[#A00030] hover:to-[#D01040] transition-all duration-300 w-full sm:w-auto sm:min-w-[160px] shadow-lg py-3 sm:py-2 cursor-pointer"
                         >
                             Check Membership
                         </button>

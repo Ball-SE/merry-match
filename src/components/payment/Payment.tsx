@@ -232,7 +232,7 @@ function PaymentForm() {
                                     <button
                                         type="button"
                                         onClick={handleCancel}
-                                        className="button-ghost text-[#C70039] hover:bg-gray-50 transition-colors"
+                                        className="button-ghost text-[#C70039] hover:bg-gray-50 transition-colors cursor-pointer"
                                         disabled={loading}
                                     >
                                         Cancel
