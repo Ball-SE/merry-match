@@ -207,9 +207,8 @@ function Step1({
                 handleInputChange(resetCity);
               }}
               onBlur={() => handleBlur("location")}
-              className={`${getInputClassName("location")} ${
-                !formData.location ? "text-gray-400" : ""
-              }`}
+              className={`${getInputClassName("location")} ${!formData.location ? "text-gray-400" : "text-black"
+                }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -227,7 +226,7 @@ function Step1({
               </option>
 
               {SEA_COUNTRY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <option key={opt.value} value={opt.value} style={{ color: "#000000" }}>
                   {opt.label}
                 </option>
               ))}
@@ -247,11 +246,10 @@ function Step1({
               onChange={handleInputChange}
               onBlur={() => handleBlur("city")}
               disabled={!formData.location}
-              className={`${getInputClassName("city")} ${
-                !formData.location
+              className={`${getInputClassName("city")} ${!formData.location
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : ""
-              }`}
+                }`}
               style={{
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -742,11 +740,11 @@ const Step3 = React.forwardRef<
   const folderRef = useRef(
     formData.email
       ? `${formData.email
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-_]/g, "_")
-          .slice(0, 24)}`
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-_]/g, "_")
+        .slice(0, 24)}`
       : `temp-user-${Date.now()}`
   );
 
@@ -831,9 +829,12 @@ const Step3 = React.forwardRef<
       setPhotoPreviews(newPhotoPreviews);
 
       // อัปเดต photos array สำหรับ validation
-      const newPhotos = [...photos];
-      newPhotos[index] = previewUrl; // ใช้ preview URL ชั่วคราว
-      setPhotos(newPhotos);
+      // const newPhotos = [...photos];
+      // newPhotos[index] = previewUrl; // ใช้ preview URL ชั่วคราว
+      // setPhotos(newPhotos);
+
+      const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
+      setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
 
       validateCurrentPhotos();
     } catch (error: unknown) {
@@ -865,6 +866,11 @@ const Step3 = React.forwardRef<
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
     setPhotos(newPhotos);
+
+    // อัปเดต formData.photos ด้วยจำนวนรูปที่เหลือ
+    const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
+    setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
+
 
     validateCurrentPhotos();
   };
@@ -918,6 +924,10 @@ const Step3 = React.forwardRef<
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
     setPhotos(newPhotos);
+
+    // อัปเดต formData.photos ด้วยจำนวนรูปที่เหลือ
+    const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
+    setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
 
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -1004,15 +1014,14 @@ const Step3 = React.forwardRef<
               }}
             >
               <div
-                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${
-                  isDragOver
+                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${isDragOver
                     ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
                     : isDragging
-                    ? "opacity-50 scale-95"
-                    : photoFiles.filter((f) => f !== null).length < 2 && i < 2
-                    ? "border-red-300"
-                    : "border-gray-300"
-                }`}
+                      ? "opacity-50 scale-95"
+                      : photoFiles.filter((f) => f !== null).length < 2 && i < 2
+                        ? "border-red-300"
+                        : "border-gray-300"
+                  }`}
               >
                 {isUploading ? (
                   <div className="text-center">
