@@ -169,28 +169,30 @@ export default function EditProfilePage() {
       <NavBar />
       
       {/* Main Container */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 md:py-10">
+      <div className="mx-auto px-4 md:px-8 lg:px-16 xl:px-32 py-4 md:py-10">
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           
           {/* Header */}
           <div className="px-4 md:px-12 py-6 md:py-12 border-b border-gray-100">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="text-xs md:text-sm text-[#7B4429] uppercase tracking-wider mb-2 md:mb-3 font-medium">PROFILE</p>
-                <h1 className="text-2xl md:text-5xl font-bold text-[#A62D82] mb-2 md:mb-3 leading-tight">Let&apos;s make profile</h1>
-                <p className="text-2xl md:text-5xl font-bold text-[#A62D82] leading-tight">to let others know you</p>
+                <h1 className="text-[46px] font-extrabold text-[#A62D82] leading-[125%] tracking-[-0.02em]" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  Let&apos;s make profile<br />to let others know you
+                </h1>
               </div>
-              <div className="flex flex-col md:flex-row gap-3 md:gap-4 w-full md:w-auto">
+              {/* Desktop Buttons */}
+              <div className="hidden md:flex flex-row gap-3 md:gap-4">
                 <button
                   onClick={() => router.push('/profile')}
-                  className="w-full md:w-auto px-6 md:px-8 py-3 md:py-3.5 border-2 border-[#C70039] text-[#C70039] rounded-lg md:rounded-xl hover:bg-pink-50 transition-colors text-sm md:text-base font-semibold"
+                  className="px-6 md:px-8 py-3 md:py-3.5 border-2 border-[#C70039] text-[#C70039] rounded-lg md:rounded-xl hover:bg-pink-50 transition-colors text-sm md:text-base font-semibold"
                 >
                   Preview Profile
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full md:w-auto px-6 md:px-8 py-3 md:py-3.5 bg-[#C70039] text-white rounded-lg md:rounded-xl hover:bg-[#950028] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm md:text-base font-semibold"
+                  className="px-6 md:px-8 py-3 md:py-3.5 bg-[#C70039] text-white rounded-lg md:rounded-xl hover:bg-[#950028] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm md:text-base font-semibold"
                 >
                   {saving && <Loader2 className="w-4 md:w-5 h-4 md:h-5 animate-spin" />}
                   Update Profile
@@ -201,6 +203,7 @@ export default function EditProfilePage() {
 
           {/* Form Content */}
           <div className="p-4 md:p-12">
+            <div className="max-w-4xl mx-auto">
           
           {/* Basic Information */}
           <div className="mb-8 md:mb-10">
@@ -416,13 +419,32 @@ export default function EditProfilePage() {
             </div>
           </div>
 
+          {/* Mobile Action Buttons */}
+          <div className="mb-8 md:mb-10 flex md:hidden flex-row gap-4">
+            <button
+              onClick={() => router.push('/profile')}
+              className="flex-1 px-4 py-3 border-2 border-[#C70039] text-[#C70039] rounded-xl hover:bg-pink-50 transition-colors text-base font-bold"
+            >
+              Preview Profile
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 px-4 py-3 bg-[#C70039] text-white rounded-xl hover:bg-[#950028] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-base font-bold"
+            >
+              {saving && <Loader2 className="w-5 h-5 animate-spin" />}
+              Update Profile
+            </button>
+          </div>
+
           {/* Delete Account */}
-          <div className="pt-6 md:pt-8 border-t border-gray-200 flex justify-end">
+          <div className="pt-6 md:pt-8 border-t border-gray-200 flex justify-center md:justify-end">
             <button className="text-gray-500 hover:text-gray-700 text-sm md:text-base font-medium">
               Delete account
             </button>
           </div>
 
+            </div>
           </div>
         </div>
       </div>
