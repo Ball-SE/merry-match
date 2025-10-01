@@ -1,12 +1,13 @@
 import { ReactNode } from 'react';
 
-// Database types (matches your Database interface from supabaseClient)
+// Database types (matches your actual database schema)
 export interface PackageDbType {
   id: number;
   name: string;
-  merrylimit: number;  // Database column name
+  daily_swipe_limit: number;  // Updated to match database
   icon: string;
   details: string[];
+  price_cents: number;  // Will be converted from baht
   order_index?: number;
   created_at?: string;
   updated_at?: string;
@@ -25,12 +26,13 @@ export interface ComplaintDbType {
   updated_at?: string;
 }
 
-// Frontend types (your existing structure with camelCase)
+// Frontend types
 export interface PackageType {
   id: number;
   icon: string;
   name: string;
-  merryLimit: string;
+  dailySwipeLimit: number;  // Changed to number for consistency
+  price_cents: number;  // Keep in cents internally
   createdDate: string;
   updatedDate: string;
   details: string[];
@@ -47,29 +49,33 @@ export interface ComplaintType {
   canceledDate?: string; 
 }
 
-// Form data types
+// Form data types - what PackageForm sends
 export interface PackageFormData {
   name: string;
-  merryLimit: string;  // Frontend uses string (you can change to number if needed)
+  dailySwipeLimit: number;
   icon: string;
+  iconFile: File | null;  // Added for file upload
   details: string[];
+  price_cents: number;  // Internally stored in cents, displayed in baht
 }
 
 // Database operation types
 export interface PackageInsert {
   name: string;
-  merrylimit: number;  // Database expects number
+  daily_swipe_limit: number;
   icon: string;
   details: string[];
+  price_cents: number;
   order_index?: number;
 }
 
 export interface PackageUpdate {
   id?: number;
   name?: string;
-  merrylimit?: number;  // Database expects number
+  daily_swipe_limit?: number;
   icon?: string;
   details?: string[];
+  price_cents?: number;
   order_index?: number;
   updated_at?: string;
 }
@@ -82,7 +88,7 @@ export interface ComplaintUpdate {
   updated_at?: string;
 }
 
-// Your existing component interfaces (keeping them as-is)
+// Component interfaces
 export interface SidebarItem {
   id: string;
   icon: ReactNode;
@@ -117,12 +123,7 @@ export interface PackageListProps {
 export interface PackageFormProps {
   isEdit: boolean;
   editingPackage: PackageType | null;
-  onSubmit: (packageData: {
-    name: string;
-    merryLimit: string;
-    icon: string;
-    details: string[];
-  }) => void;
+  onSubmit: (packageData: PackageFormData) => Promise<void>;  // Fixed type
   onDelete: () => void;
 }
 

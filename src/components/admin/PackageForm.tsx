@@ -1,83 +1,88 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Plus, X, GripVertical, ChevronDown } from 'lucide-react';
-import { PackageFormProps } from '../../types/admin';
+import React, { useState, useRef } from 'react';
+import { X, GripVertical, Upload } from 'lucide-react';
+import { PackageFormProps, PackageType } from '../../types/admin';
 
 interface ValidationErrors {
   packageName?: string;
-  merryLimit?: string;
+  dailySwipeLimit?: string;
   icon?: string;
   details?: string;
+  price?: string;
 }
 
 const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSubmit, onDelete }) => {
   const [details, setDetails] = useState<string[]>(
-    isEdit ? editingPackage?.details || [''] : ['']
+    isEdit && editingPackage ? editingPackage.details : ['']
   );
   const [packageName, setPackageName] = useState<string>(
-    isEdit ? editingPackage?.name || '' : ''
+    isEdit && editingPackage ? editingPackage.name : ''
   );
-  const [merryLimit, setMerryLimit] = useState<string>(
-    isEdit ? editingPackage?.merryLimit.replace(' Merry', '') || '' : ''
+  const [dailySwipeLimit, setDailySwipeLimit] = useState<string>(
+    isEdit && editingPackage ? String(editingPackage.dailySwipeLimit) : ''
   );
   const [icon, setIcon] = useState<string>(
-    isEdit ? editingPackage?.icon || '' : ''
+    isEdit && editingPackage ? editingPackage.icon : ''
   );
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  
+  // Changed to store in baht (full number), convert to cents when submitting
+  const [priceBaht, setPriceBaht] = useState<string>(
+    isEdit && editingPackage ? String(editingPackage.price_cents / 100) : ''
+  );
+  
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [showValidation, setShowValidation] = useState<boolean>(false);
-
-  // Dropdown options
-  const packageNameOptions = ['Basic', 'Platinum', 'Premium'];
-  const merryLimitOptions = ['25', '45', '70'];
-
-  // Icon mapping for package names
-  const iconMapping: { [key: string]: string } = {
-    'Basic': '❤️',
-    'Platinum': '⭐',
-    'Premium': '✨'
-  };
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
 
-    // Validate package name
     if (!packageName.trim()) {
       errors.packageName = 'Package name is required';
     }
 
-    // Validate merry limit
-    if (!merryLimit.trim()) {
-      errors.merryLimit = 'Merry limit is required';
-    } else if (isNaN(Number(merryLimit)) || Number(merryLimit) <= 0) {
-      errors.merryLimit = 'Merry limit must be a valid positive number';
+    if (!dailySwipeLimit.trim()) {
+      errors.dailySwipeLimit = 'Daily swipe limit is required';
+    } else if (isNaN(Number(dailySwipeLimit)) || Number(dailySwipeLimit) <= 0) {
+      errors.dailySwipeLimit = 'Daily swipe limit must be a valid positive number';
     }
 
-    // Validate icon (automatically set based on package name)
-    if (!icon) {
+    if (!icon && !iconFile) {
       errors.icon = 'Icon is required';
     }
 
-    // Validate first detail
     if (!details[0] || !details[0].trim()) {
       errors.details = 'At least one detail is required';
+    }
+
+    if (!priceBaht.trim()) {
+      errors.price = 'Price is required';
+    } else if (isNaN(Number(priceBaht)) || Number(priceBaht) < 0) {
+      errors.price = 'Price must be a valid number';
     }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowValidation(true);
     
     if (validateForm()) {
-      // Form is valid, call the onSubmit prop
-      onSubmit({
+      // Convert baht to cents for storage
+      const priceCents = Math.round(Number(priceBaht) * 100);
+      
+      await onSubmit({
         name: packageName,
-        merryLimit: merryLimit,
+        dailySwipeLimit: Number(dailySwipeLimit),
         icon: icon,
-        details: details.filter(d => d.trim())
+        iconFile: iconFile,
+        details: details.filter(d => d.trim()),
+        price_cents: priceCents
       });
     }
   };
@@ -91,7 +96,6 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
       const newDetails = details.filter((_, i) => i !== index);
       setDetails(newDetails);
       
-      // Re-validate if first detail is being removed
       if (index === 0 && showValidation) {
         setTimeout(() => validateForm(), 0);
       }
@@ -103,26 +107,65 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
     newDetails[index] = value;
     setDetails(newDetails);
     
-    // Re-validate first detail if it's being updated
     if (index === 0 && showValidation) {
       setTimeout(() => validateForm(), 0);
     }
   };
 
-  const handlePackageNameChange = (value: string) => {
-    setPackageName(value);
-    // Auto-set icon based on package name
-    setIcon(iconMapping[value] || '');
-    if (showValidation) {
-      setTimeout(() => validateForm(), 0);
+  const handleFileSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      setIconFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setIcon(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      if (showValidation) {
+        setTimeout(() => validateForm(), 0);
+      }
     }
   };
 
-  const handleMerryLimitChange = (value: string) => {
-    setMerryLimit(value);
-    if (showValidation) {
-      setTimeout(() => validateForm(), 0);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileSelect(file);
     }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const removeIcon = () => {
+    setIcon('');
+    setIconFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const formatPrice = (baht: string): string => {
+    if (!baht) return '฿0.00';
+    const amount = Number(baht);
+    return `฿${amount.toFixed(2)}`;
   };
 
   return (
@@ -133,54 +176,73 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Package name <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <select
-                value={packageName}
-                onChange={(e) => handlePackageNameChange(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm appearance-none ${
-                  showValidation && validationErrors.packageName
-                    ? 'border-red-500 bg-red-50'
-                    : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select package name</option>
-                {packageNameOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
+            <input
+              type="text"
+              value={packageName}
+              onChange={(e) => {
+                setPackageName(e.target.value);
+                if (showValidation) setTimeout(() => validateForm(), 0);
+              }}
+              placeholder="Enter package name"
+              className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                showValidation && validationErrors.packageName
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-gray-300'
+              }`}
+            />
             {showValidation && validationErrors.packageName && (
               <p className="mt-1 text-sm text-red-600">{validationErrors.packageName}</p>
             )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Merry limit <span className="text-red-500">*</span>
+              Daily swipe limit <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <select
-                value={merryLimit}
-                onChange={(e) => handleMerryLimitChange(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm appearance-none ${
-                  showValidation && validationErrors.merryLimit
-                    ? 'border-red-500 bg-red-50'
-                    : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select merry limit</option>
-                {merryLimitOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
-            {showValidation && validationErrors.merryLimit && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.merryLimit}</p>
+            <input
+              type="number"
+              value={dailySwipeLimit}
+              onChange={(e) => {
+                setDailySwipeLimit(e.target.value);
+                if (showValidation) setTimeout(() => validateForm(), 0);
+              }}
+              placeholder="Enter daily swipe limit"
+              className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                showValidation && validationErrors.dailySwipeLimit
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-gray-300'
+              }`}
+            />
+            {showValidation && validationErrors.dailySwipeLimit && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.dailySwipeLimit}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-8">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Price (฿) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={priceBaht}
+              onChange={(e) => {
+                setPriceBaht(e.target.value);
+                if (showValidation) setTimeout(() => validateForm(), 0);
+              }}
+              placeholder="Enter price in baht (e.g., 159.00)"
+              className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                showValidation && validationErrors.price
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-gray-300'
+              }`}
+            />
+            {priceBaht && (
+              <p className="mt-1 text-sm text-gray-600">Display: {formatPrice(priceBaht)}</p>
+            )}
+            {showValidation && validationErrors.price && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.price}</p>
             )}
           </div>
         </div>
@@ -191,30 +253,42 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
           </label>
           {icon ? (
             <div className="relative inline-block">
-              <div className="w-20 h-20 bg-pink-50 rounded-lg flex items-center justify-center border border-pink-200">
-                <span className="text-3xl">
-                  {icon}
-                </span>
+              <div className="w-32 h-32 bg-pink-50 rounded-lg flex items-center justify-center border border-pink-200 overflow-hidden">
+                <img src={icon} alt="Package icon" className="w-full h-full object-contain" />
               </div>
               <button 
                 type="button"
-                onClick={() => setIcon('')}
+                onClick={removeIcon}
                 className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
               >
                 <X className="w-3 h-3" />
               </button>
             </div>
           ) : (
-            <div className={`flex items-center justify-center w-28 h-28 border-2 border-dashed rounded-lg bg-gray-50 ${
-              showValidation && validationErrors.icon
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300'
-            }`}>
-              <div className="text-center">
-                <Plus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-400 font-medium">Auto-generated</p>
-                <p className="text-xs text-gray-400">Select package name</p>
-              </div>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                isDragging
+                  ? 'border-pink-500 bg-pink-50'
+                  : showValidation && validationErrors.icon
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+              }`}
+            >
+              <Upload className={`w-8 h-8 mb-2 ${isDragging ? 'text-pink-500' : 'text-pink-400'}`} />
+              <p className="text-xs font-medium text-pink-600">
+                Upload icon
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
             </div>
           )}
           {showValidation && validationErrors.icon && (

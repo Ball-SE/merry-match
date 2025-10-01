@@ -12,7 +12,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
   if (!showDeleteModal) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-xl">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-semibold text-gray-900">Delete Confirmation</h3>
@@ -23,8 +23,8 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-  <hr className="my-4 border-gray-200 w-[calc(100%+4rem)] -ml-8 -mr-8" />
-  <p className="text-base text-[#7B7B7B] mb-8 mt-2">Do you sure to delete this Package?</p>
+        <hr className="my-4 border-gray-200 w-[calc(100%+4rem)] -ml-8 -mr-8" />
+        <p className="text-base text-[#7B7B7B] mb-8 mt-2">Do you sure to delete this Package?</p>
         <div className="flex gap-4">
           <button
             onClick={confirmDelete}
