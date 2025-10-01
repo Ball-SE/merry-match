@@ -1,8 +1,21 @@
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import Image from "next/image";
+import { useRouter } from "next/router";
+import { useAuth } from '@/hooks/useAuth';
 
 export default function PackagePage() {
+    const router = useRouter();
+    const { isLoggedIn } = useAuth('/login');
+
+    if (isLoggedIn === null) {
+        return <div>Loading...</div>;
+    }
+
+    if (!isLoggedIn) {
+        return <div>Redirecting to login...</div>;
+    }
+    
     return (
         <div className="min-h-screen bg-gray-50">
             <NavBar />
@@ -53,7 +66,9 @@ export default function PackagePage() {
 
                         <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
                         
-                        <button className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors">
+                        <button 
+                        onClick={() => router.push('/payment')}
+                        className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors">
                             Choose Package
                         </button>
                     </div>
@@ -85,7 +100,9 @@ export default function PackagePage() {
                         
                         <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
 
-                        <button className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors">
+                        <button 
+                        onClick={() => router.push('/payment')}
+                        className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors">
                             Choose Package
                         </button>
                     </div>
@@ -117,7 +134,9 @@ export default function PackagePage() {
 
                         <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
                         
-                        <button className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors">
+                        <button 
+                        onClick={() => router.push('/payment')}
+                        className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors">
                             Choose Package
                         </button>
                     </div>
