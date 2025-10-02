@@ -1,6 +1,21 @@
 import { useRouter } from "next/router";
 import { BsBoxFill } from "react-icons/bs";
 import { FaCheckCircle } from "react-icons/fa";
+// import { supabase } from '@/lib/supabase/supabaseClient';
+// import { useState, useEffect } from "react";
+
+// interface SubscriptionData {
+//     id: string;
+//     user_id: string;
+//     package_id: string;
+//     stripe_subscription_id: string | null;
+//     stripe_customer_id: string | null;
+//     status: string;
+//     current_period_start: string;
+//     current_period_end: string;
+//     cancel_at_period_end: boolean;
+//     created_at: string;
+// }
 
 interface PaymentSuccessProps {
     packageName?: string;
@@ -14,6 +29,7 @@ interface PaymentSuccessProps {
 
 function PaymentSuccess(props: PaymentSuccessProps = {}) {
     const router = useRouter();
+    // const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
 
     // รับข้อมูลจาก props หรือ URL query parameters
     const {
@@ -42,10 +58,11 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
     const nextMonth = new Date(today);
     nextMonth.setMonth(today.getMonth() + 1);
     
-    const startDate = props.startDate || (queryStartDate as string) || 
-        today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const nextBilling = props.nextBilling || (queryNextBilling as string) || 
-        nextMonth.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const startDate = props.startDate || (queryStartDate as string) || today.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        
+    
+    const nextBilling = props.nextBilling || (queryNextBilling as string) || nextMonth.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        
 
     const handleBackToHome = () => {
         router.push('/');
@@ -54,6 +71,28 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
     const handleCheckMembership = () => {
         router.push('/package');
     };
+
+     // ดึงข้อมูล subscription ล่าสุดจาก database
+    //  useEffect(() => {
+    //     const fetchLatestSubscription = async () => {
+    //         const { data: { session } } = await supabase.auth.getSession();
+    //         if (!session) return;
+
+    //         const { data, error } = await supabase
+    //             .from('subscriptions')
+    //             .select('*')
+    //             .eq('user_id', session.user.id)
+    //             .order('created_at', { ascending: false })
+    //             .limit(1)
+    //             .single();
+
+    //         if (data && !error) {
+    //             setSubscriptionData(data);
+    //         }
+    //     };
+
+    //     fetchLatestSubscription();
+    // }, []);
 
     return (
         <div className=" bg-[#FCFCFE] py-8 sm:py-12 lg:py-20">
@@ -110,7 +149,7 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
                                     {packageName}
                                 </div>
                                 <div className="text-2xl sm:text-3xl font-bold text-[#2A2E3F] mb-2">
-                                    {packageCurrency} {packagePrice.toFixed(2)}
+                                    {packageCurrency} {(packagePrice / 100).toFixed(2)}
                                 </div>
                                 <div className="text-sm text-[#646C80]">
                                     /{packageInterval === 'month' ? 'Month' : packageInterval}

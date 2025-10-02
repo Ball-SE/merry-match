@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import PackageDetailsCard from "./PackageDetailsCard";
 import { supabase } from '@/lib/supabase/supabaseClient';
 import Image from "next/image";
+import { stripePromise } from '@/lib/devtool';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+function formatDateUTC(dateString: string): string {
+    const date = new Date(dateString);
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+}
+
 
 // PaymentForm component ที่ใช้ PaymentElement
 function PaymentForm() {
@@ -14,7 +22,6 @@ function PaymentForm() {
     const elements = useElements();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [clientSecret, setClientSecret] = useState('');
     const [cardOwnerName, setCardOwnerName] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -31,33 +38,33 @@ function PaymentForm() {
     const features = packageDetails ? JSON.parse(packageDetails as string) : [];
     const price = packagePrice ? parseFloat(packagePrice as string) : 0;
 
-    // สร้าง Payment Intent เมื่อ component load
-    useEffect(() => {
-        if (price > 0 && packageId) {
-            createPaymentIntent();
-        }
-    }, [price, packageId]);
+    // // สร้าง Payment Intent เมื่อ component load
+    // useEffect(() => {
+    //     if (price > 0 && packageId) {
+    //         createPaymentIntent();
+    //     }
+    // }, [price, packageId]);
 
-    const createPaymentIntent = async () => {
-        try {
-            const response = await fetch('/api/stripe/create-payment-intent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    amount: price,
-                    currency: packageCurrency || 'thb',
-                    packageId: packageId
-                }),
-            });
+    // const createPaymentIntent = async () => {
+    //     try {
+    //         const response = await fetch('/api/stripe/create-payment-intent', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify({
+    //                 amount: price,
+    //                 currency: packageCurrency || 'thb',
+    //                 packageId: packageId
+    //             }),
+    //         });
 
-            const data = await response.json();
-            setClientSecret(data.clientSecret);
-        } catch (error) {
-            console.error('Error creating payment intent:', error);
-        }
-    };
+    //         const data = await response.json();
+    //         setClientSecret(data.clientSecret);
+    //     } catch (error) {
+    //         console.error('Error creating payment intent:', error);
+    //     }
+    // };
 
     const handleCancel = () => {
         window.history.back();
@@ -71,7 +78,7 @@ function PaymentForm() {
             return;
         }
         
-        if (!stripe || !elements || !clientSecret) {
+        if (!stripe || !elements) {
             alert('Payment not ready. Please try again.');
             return;
         }
@@ -86,7 +93,7 @@ function PaymentForm() {
         setIsProcessing(true); // ป้องกันการกดซ้ำ
 
         try {
-            // ใช้ confirmPayment แทน confirmCardPayment
+            // ใช้ confirmPayment
             const { error, paymentIntent } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
@@ -109,7 +116,17 @@ function PaymentForm() {
                 alert('Payment failed: ' + error.message);
             } else if (paymentIntent && paymentIntent.status === 'succeeded') {
                 console.log('Payment succeeded!', paymentIntent);
-                await saveSubscription(paymentIntent.id);
+                const subscription = await saveSubscription(paymentIntent.id);
+                
+                // Format วันที่จาก subscription (ใช้ UTC)
+                const startDate = subscription?.current_period_start 
+                    ? formatDateUTC(subscription.current_period_start)
+                    : undefined;
+                
+                const nextBilling = subscription?.current_period_end 
+                    ? formatDateUTC(subscription.current_period_end)
+                    : undefined;
+
                 router.push({
                     pathname: '/payment/success',
                     query: {
@@ -117,7 +134,9 @@ function PaymentForm() {
                         packagePrice: packagePrice,
                         packageCurrency: packageCurrency,
                         packageInterval: packageInterval,
-                        packageFeatures: JSON.stringify(features)
+                        packageFeatures: JSON.stringify(features),
+                        startDate: startDate,
+                        nextBilling: nextBilling
                     }
                 });
             }
@@ -154,8 +173,11 @@ function PaymentForm() {
             if (!response.ok) {
                 throw new Error('Failed to save subscription');
             }
+            const data = await response.json();
+            return data.subscription;
         } catch (error) {
             console.error('Error saving subscription:', error);
+            return null;
         }
     };
 
@@ -186,7 +208,7 @@ function PaymentForm() {
                             <form className="space-y-6" onSubmit={handlePaymentSubmit}>
 
                                 {/* PaymentElement */}
-                                {clientSecret && (
+                                
                                     <div>
                                         <label className="block text-base font-regular mb-2">
                                             Payment Information <span className="text-red-500">*</span>
@@ -196,7 +218,7 @@ function PaymentForm() {
                                             {/* Card Owner Name Input - ย้ายมาอยู่ใน div เดียวกัน */}
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Card Owner <span className="text-red-500">*</span>
+                                                    Card Owner
                                                 </label>
                                                 <input
                                                     type="text"
@@ -224,7 +246,7 @@ function PaymentForm() {
                                             />
                                         </div>
                                     </div>
-                                )}
+                                
 
                                 <div className="border-t border-gray-200 -mx-8 my-8"></div>
                                 
@@ -240,7 +262,7 @@ function PaymentForm() {
                                     <button
                                         type="submit"
                                         className="button-primary bg-[#C70039] hover:bg-[#A00030] transition-colors disabled:opacity-50"
-                                        disabled={loading || !clientSecret || !stripe || isProcessing}
+                                        disabled={loading || !stripe || isProcessing}
                                     >
                                         {loading || isProcessing ? 'Processing...' : 'Payment Confirm'}
                                     </button>
@@ -301,6 +323,7 @@ function Payment() {
                 colorPrimary: '#C70039',
             },
         },
+        locale: 'en' as const,
         paymentMethodCreation: 'manual', // ควบคุมการสร้าง payment method
         defaultValues: {
             billingDetails: {
