@@ -150,7 +150,15 @@ export const useChat = (matchId: string): UseChatReturn => {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to send message");
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Failed to send message:", {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData,
+          });
+          throw new Error(
+            errorData.error || `Failed to send message: ${response.status}`
+          );
         }
 
         const result = await response.json();
