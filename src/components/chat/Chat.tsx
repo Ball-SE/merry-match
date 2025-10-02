@@ -117,36 +117,8 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
           return (
             <div
               key={message.id}
-              className={`flex ${isCurrentUser ? 'justify-start' : 'justify-end'} items-end gap-2`}
+              className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
             >
-              {isCurrentUser && (
-                <div className="w-8 h-8 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
-                  <Image
-                    src={user?.user_metadata?.avatar_url || "/assets/user.jpg"}
-                    alt="User Avatar"
-                    width={40}
-                    height={40}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              
-              <div
-                className={`max-w-[70%] md:max-w-xs lg:max-w-md px-3 md:px-6 py-4 rounded-3xl ${
-                  isCurrentUser
-                    ? 'bg-[#EFC4E2] text-black rounded-bl-none'
-                    : 'bg-[#7D2262] text-white rounded-br-none'
-                }`}
-              >
-                <p className="text-xs md:text-sm break-words">{message.message_text}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {new Date(message.created_at).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
-              </div>
-
               {!isCurrentUser && (
                 <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
                   <Image
@@ -158,6 +130,22 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
                   />
                 </div>
               )}
+              
+              <div
+                className={`max-w-[70%] md:max-w-xs lg:max-w-md px-3 md:px-6 py-4 rounded-3xl ${
+                  isCurrentUser
+                    ? 'bg-[#7D2262] text-white rounded-br-none'
+                    : 'bg-[#EFC4E2] text-black rounded-bl-none'
+                }`}
+              >
+                <p className="text-xs md:text-sm break-words">{message.message_text}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {new Date(message.created_at).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </p>
+              </div>
             </div>
           );
         })}
