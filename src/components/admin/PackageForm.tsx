@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { X, GripVertical, Upload } from 'lucide-react';
-import { PackageFormProps, PackageType } from '../../types/admin';
+import { PackageFormProps } from '../../types/admin';
 
 interface ValidationErrors {
   packageName?: string;
@@ -28,9 +29,9 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   
-  // Changed to store in baht (full number), convert to cents when submitting
-  const [priceBaht, setPriceBaht] = useState<string>(
-    isEdit && editingPackage ? String(editingPackage.price_cents / 100) : ''
+  // Store price directly in baht (no conversion)
+  const [price, setPrice] = useState<string>(
+    isEdit && editingPackage ? String(editingPackage.price) : ''
   );
   
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -58,9 +59,9 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
       errors.details = 'At least one detail is required';
     }
 
-    if (!priceBaht.trim()) {
+    if (!price.trim()) {
       errors.price = 'Price is required';
-    } else if (isNaN(Number(priceBaht)) || Number(priceBaht) < 0) {
+    } else if (isNaN(Number(price)) || Number(price) < 0) {
       errors.price = 'Price must be a valid number';
     }
 
@@ -73,8 +74,8 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
     setShowValidation(true);
     
     if (validateForm()) {
-      // Convert baht to cents for storage
-      const priceCents = Math.round(Number(priceBaht) * 100);
+      // Store price directly in baht (no conversion to cents)
+      const priceValue = parseFloat(price);
       
       await onSubmit({
         name: packageName,
@@ -82,7 +83,7 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
         icon: icon,
         iconFile: iconFile,
         details: details.filter(d => d.trim()),
-        price_cents: priceCents
+        price: priceValue
       });
     }
   };
@@ -164,8 +165,35 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
 
   const formatPrice = (baht: string): string => {
     if (!baht) return '฿0.00';
-    const amount = Number(baht);
+    const amount = parseFloat(baht);
     return `฿${amount.toFixed(2)}`;
+  };
+
+  // Handle daily swipe limit input - only allow positive numbers
+  const handleDailySwipeLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty string or positive numbers only
+    if (value === '' || (Number(value) >= 0 && !value.includes('-'))) {
+      setDailySwipeLimit(value);
+      if (showValidation) setTimeout(() => validateForm(), 0);
+    }
+  };
+
+  // Handle price input - only allow positive numbers
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty string or positive numbers only
+    if (value === '' || (Number(value) >= 0 && !value.includes('-'))) {
+      setPrice(value);
+      if (showValidation) setTimeout(() => validateForm(), 0);
+    }
+  };
+
+  // Prevent typing minus sign
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+    }
   };
 
   return (
@@ -201,10 +229,9 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
             <input
               type="number"
               value={dailySwipeLimit}
-              onChange={(e) => {
-                setDailySwipeLimit(e.target.value);
-                if (showValidation) setTimeout(() => validateForm(), 0);
-              }}
+              onChange={handleDailySwipeLimitChange}
+              onKeyDown={handleKeyDown}
+              min="0"
               placeholder="Enter daily swipe limit"
               className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
                 showValidation && validationErrors.dailySwipeLimit
@@ -226,20 +253,21 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
             <input
               type="number"
               step="0.01"
-              value={priceBaht}
-              onChange={(e) => {
-                setPriceBaht(e.target.value);
-                if (showValidation) setTimeout(() => validateForm(), 0);
-              }}
-              placeholder="Enter price in baht (e.g., 159.00)"
+              min="0"
+              value={price}
+              onChange={handlePriceChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter price in baht (e.g., 99.00)"
               className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
                 showValidation && validationErrors.price
                   ? 'border-red-500 bg-red-50'
                   : 'border-gray-300'
               }`}
             />
-            {priceBaht && (
-              <p className="mt-1 text-sm text-gray-600">Display: {formatPrice(priceBaht)}</p>
+            {price && (
+              <p className="mt-1 text-sm text-gray-600">
+                Display: {formatPrice(price)}
+              </p>
             )}
             {showValidation && validationErrors.price && (
               <p className="mt-1 text-sm text-red-600">{validationErrors.price}</p>
@@ -254,7 +282,14 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
           {icon ? (
             <div className="relative inline-block">
               <div className="w-32 h-32 bg-pink-50 rounded-lg flex items-center justify-center border border-pink-200 overflow-hidden">
-                <img src={icon} alt="Package icon" className="w-full h-full object-contain" />
+                <Image 
+                  src={icon} 
+                  alt="Package icon" 
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-contain"
+                  unoptimized
+                />
               </div>
               <button 
                 type="button"

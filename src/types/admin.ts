@@ -4,10 +4,10 @@ import { ReactNode } from 'react';
 export interface PackageDbType {
   id: number;
   name: string;
-  daily_swipe_limit: number;  // Updated to match database
+  daily_swipe_limit: number;
   icon: string;
   details: string[];
-  price_cents: number;  // Will be converted from baht
+  price: number;  // Stores price in baht (e.g., 99.00)
   order_index?: number;
   created_at?: string;
   updated_at?: string;
@@ -31,8 +31,8 @@ export interface PackageType {
   id: number;
   icon: string;
   name: string;
-  dailySwipeLimit: number;  // Changed to number for consistency
-  price_cents: number;  // Keep in cents internally
+  dailySwipeLimit: number;
+  price: number;  // Changed from price_cents - now stores in baht
   createdDate: string;
   updatedDate: string;
   details: string[];
@@ -54,9 +54,9 @@ export interface PackageFormData {
   name: string;
   dailySwipeLimit: number;
   icon: string;
-  iconFile: File | null;  // Added for file upload
+  iconFile: File | null;
   details: string[];
-  price_cents: number;  // Internally stored in cents, displayed in baht
+  price: number;  // Changed from price_cents - stores in baht
 }
 
 // Database operation types
@@ -65,7 +65,7 @@ export interface PackageInsert {
   daily_swipe_limit: number;
   icon: string;
   details: string[];
-  price_cents: number;
+  price: number;  // Stores price in baht
   order_index?: number;
 }
 
@@ -75,7 +75,7 @@ export interface PackageUpdate {
   daily_swipe_limit?: number;
   icon?: string;
   details?: string[];
-  price_cents?: number;
+  price?: number;  // Stores price in baht
   order_index?: number;
   updated_at?: string;
 }
@@ -123,7 +123,7 @@ export interface PackageListProps {
 export interface PackageFormProps {
   isEdit: boolean;
   editingPackage: PackageType | null;
-  onSubmit: (packageData: PackageFormData) => Promise<void>;  // Fixed type
+  onSubmit: (packageData: PackageFormData) => Promise<void>;
   onDelete: () => void;
 }
 

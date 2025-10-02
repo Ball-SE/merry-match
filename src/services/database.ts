@@ -22,7 +22,7 @@ class DatabaseServiceClass {
       dailySwipeLimit: dbPackage.daily_swipe_limit,
       icon: dbPackage.icon,
       details: dbPackage.details,
-      price_cents: dbPackage.price_cents,
+      price: dbPackage.price, // Both database and frontend now use 'price' in baht
       createdDate: dbPackage.created_at || '',
       updatedDate: dbPackage.updated_at || ''
     };
@@ -43,25 +43,18 @@ class DatabaseServiceClass {
 
   // ==================== IMAGE UPLOAD METHODS ====================
 
-  /**
-   * Upload an icon to Supabase Storage
-   * @param file - The image file to upload
-   * @returns The public URL of the uploaded image
-   */
   async uploadIcon(file: File): Promise<string> {
     try {
       console.log('Uploading icon:', file.name);
 
-      // Generate unique filename
       const fileExt = file.name.split('.').pop();
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(2, 15);
       const fileName = `${timestamp}-${randomStr}.${fileExt}`;
       const filePath = `package-icons/${fileName}`;
 
-      // Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('package-icons') // Make sure this bucket exists in your Supabase project
+        .from('package-icons')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -72,7 +65,6 @@ class DatabaseServiceClass {
         throw new Error(`Failed to upload icon: ${uploadError.message}`);
       }
 
-      // Get public URL
       const { data } = supabase.storage
         .from('package-icons')
         .getPublicUrl(filePath);
@@ -85,14 +77,8 @@ class DatabaseServiceClass {
     }
   }
 
-  /**
-   * Delete an icon from Supabase Storage
-   * @param iconUrl - The URL of the icon to delete
-   */
   async deleteIcon(iconUrl: string): Promise<void> {
     try {
-      // Extract the file path from the URL
-      // URL format: https://[project].supabase.co/storage/v1/object/public/package-icons/[filepath]
       const urlParts = iconUrl.split('/package-icons/');
       if (urlParts.length < 2) {
         console.warn('Invalid icon URL format, skipping deletion:', iconUrl);
@@ -108,13 +94,11 @@ class DatabaseServiceClass {
 
       if (error) {
         console.error('Error deleting icon:', error);
-        // Don't throw error here - we don't want to fail the whole operation if icon deletion fails
       } else {
         console.log('Icon deleted successfully');
       }
     } catch (error) {
       console.error('Error in deleteIcon:', error);
-      // Don't throw - this is a cleanup operation
     }
   }
 
@@ -134,7 +118,6 @@ class DatabaseServiceClass {
         throw new Error(`Failed to fetch packages: ${error.message}`);
       }
 
-      // Convert database format to frontend format
       const frontendPackages = (data || []).map(pkg => this.dbPackageToFrontend(pkg));
       
       console.log('Packages fetched successfully:', frontendPackages.length, 'packages');
@@ -149,14 +132,12 @@ class DatabaseServiceClass {
     try {
       console.log('Creating package with data:', packageData);
 
-      // Upload icon if there's a file, otherwise use the provided icon URL
       let iconUrl = packageData.icon;
       if (packageData.iconFile) {
         console.log('Uploading new icon file...');
         iconUrl = await this.uploadIcon(packageData.iconFile);
       }
 
-      // Get the highest order_index and add 1
       const { data: maxOrderData } = await supabase
         .from('packages')
         .select('order_index')
@@ -165,13 +146,12 @@ class DatabaseServiceClass {
 
       const nextOrderIndex = (maxOrderData?.[0]?.order_index || 0) + 1;
 
-      // Convert frontend data to database format
       const dbData: PackageInsert = {
         name: packageData.name,
         daily_swipe_limit: packageData.dailySwipeLimit,
-        icon: iconUrl, // Use the uploaded URL
+        icon: iconUrl,
         details: packageData.details,
-        price_cents: packageData.price_cents,
+        price: packageData.price, // Store price directly in baht
         order_index: nextOrderIndex
       };
 
@@ -185,7 +165,6 @@ class DatabaseServiceClass {
 
       if (error) {
         console.error('Supabase error creating package:', error);
-        // If database insert fails and we uploaded a new icon, try to clean it up
         if (packageData.iconFile && iconUrl !== packageData.icon) {
           await this.deleteIcon(iconUrl);
         }
@@ -209,7 +188,6 @@ class DatabaseServiceClass {
     try {
       console.log('Updating package:', id, 'with data:', packageData);
 
-      // Get the existing package to check if we need to delete the old icon
       const { data: existingPackage, error: fetchError } = await supabase
         .from('packages')
         .select('icon')
@@ -220,25 +198,22 @@ class DatabaseServiceClass {
         console.error('Error fetching existing package:', fetchError);
       }
 
-      // Upload new icon if there's a file
       let iconUrl = packageData.icon;
       if (packageData.iconFile) {
         console.log('Uploading new icon file...');
         iconUrl = await this.uploadIcon(packageData.iconFile);
 
-        // Delete old icon if it exists and is different from the new one
         if (existingPackage && existingPackage.icon && existingPackage.icon !== iconUrl) {
           await this.deleteIcon(existingPackage.icon);
         }
       }
 
-      // Convert frontend data to database format
       const dbData: PackageUpdate = {
         name: packageData.name,
         daily_swipe_limit: packageData.dailySwipeLimit,
-        icon: iconUrl, // Use the uploaded URL
+        icon: iconUrl,
         details: packageData.details,
-        price_cents: packageData.price_cents,
+        price: packageData.price, // Store price directly in baht
         updated_at: new Date().toISOString()
       };
 
@@ -253,7 +228,6 @@ class DatabaseServiceClass {
 
       if (error) {
         console.error('Supabase error updating package:', error);
-        // If database update fails and we uploaded a new icon, try to clean it up
         if (packageData.iconFile && iconUrl !== packageData.icon) {
           await this.deleteIcon(iconUrl);
         }
@@ -277,7 +251,6 @@ class DatabaseServiceClass {
     try {
       console.log('Deleting package:', id);
 
-      // Get the package to find its icon URL
       const { data: packageData, error: fetchError } = await supabase
         .from('packages')
         .select('icon')
@@ -288,7 +261,6 @@ class DatabaseServiceClass {
         console.error('Error fetching package for deletion:', fetchError);
       }
 
-      // Delete the package from database
       const { error } = await supabase
         .from('packages')
         .delete()
@@ -299,7 +271,6 @@ class DatabaseServiceClass {
         throw new Error(`Failed to delete package: ${error.message}`);
       }
 
-      // Delete the icon from storage if it exists
       if (packageData && packageData.icon) {
         await this.deleteIcon(packageData.icon);
       }
@@ -315,7 +286,6 @@ class DatabaseServiceClass {
     try {
       console.log('Reordering packages...');
 
-      // Update each package with its new order_index
       for (let i = 0; i < packages.length; i++) {
         const pkg = packages[i];
         const { error } = await supabase
@@ -352,7 +322,6 @@ class DatabaseServiceClass {
         throw new Error(`Failed to fetch complaints: ${error.message}`);
       }
 
-      // Convert database format to frontend format
       const frontendComplaints = (data || []).map(complaint => this.dbComplaintToFrontend(complaint));
       
       console.log('Complaints fetched successfully:', frontendComplaints.length, 'complaints');
@@ -372,7 +341,6 @@ class DatabaseServiceClass {
         updated_at: new Date().toISOString()
       };
 
-      // Add specific date fields based on status
       if (status === 'Resolved') {
         updateData.resolved_date = new Date().toISOString();
         updateData.canceled_date = null;
@@ -411,8 +379,6 @@ class DatabaseServiceClass {
   async testConnection(): Promise<boolean> {
     try {
       console.log('Testing database connection...');
-      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET');
-      console.log('Supabase Anon Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
 
       const { error } = await supabase
         .from('packages')
@@ -421,12 +387,6 @@ class DatabaseServiceClass {
 
       if (error) {
         console.error('Connection test failed:', error);
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
         return false;
       }
 
@@ -437,55 +397,7 @@ class DatabaseServiceClass {
       return false;
     }
   }
-
-  // Get database info for debugging
-  async getDatabaseInfo(): Promise<void> {
-    try {
-      console.log('=== DATABASE INFO ===');
-      
-      // Test packages table
-      const { data: packagesData, error: packagesError } = await supabase
-        .from('packages')
-        .select('count', { count: 'exact' })
-        .limit(1);
-
-      if (packagesError) {
-        console.error('Packages table error:', packagesError);
-      } else {
-        console.log('Packages table accessible, count:', packagesData);
-      }
-
-      // Test complaints table
-      const { data: complaintsData, error: complaintsError } = await supabase
-        .from('complaints')
-        .select('count', { count: 'exact' })
-        .limit(1);
-
-      if (complaintsError) {
-        console.error('Complaints table error:', complaintsError);
-      } else {
-        console.log('Complaints table accessible, count:', complaintsData);
-      }
-
-      // Test storage bucket
-      const { data: storageData, error: storageError } = await supabase
-        .storage
-        .from('package-icons')
-        .list('', { limit: 1 });
-
-      if (storageError) {
-        console.error('Storage bucket error:', storageError);
-      } else {
-        console.log('Storage bucket accessible');
-      }
-
-      console.log('=== END DATABASE INFO ===');
-    } catch (error) {
-      console.error('Error getting database info:', error);
-    }
-  }
 }
 
-// Export singleton instance
 export const DatabaseService = new DatabaseServiceClass();
 export default DatabaseService;
