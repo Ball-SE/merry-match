@@ -40,6 +40,9 @@ export default function Package() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [cardsPerView, setCardsPerView] = useState(3);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // เรียง packages ตามราคาจากน้อยไปมาก
+    const sortedPackages = packages.sort((a, b) => a.price - b.price);
     
     // จำนวนการ์ดที่จะแสดงในแต่ละหน้าจอ
     const getCardsPerView = () => {
@@ -64,14 +67,14 @@ export default function Package() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const totalSlides = Math.max(0, packages.length - cardsPerView + 1);
+    const totalSlides = Math.max(0, sortedPackages.length - cardsPerView + 1);
     const showArrows = packages.length > cardsPerView;
     const isMobile = cardsPerView === 1; // ตรวจสอบว่าเป็น mobile หรือไม่
 
     const scrollToIndex = (index: number) => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
-            const cardWidth = container.scrollWidth / packages.length;
+            const cardWidth = container.scrollWidth / sortedPackages.length;
             container.scrollTo({
                 left: cardWidth * index,
                 behavior: 'smooth'
@@ -134,7 +137,7 @@ export default function Package() {
             {isMobile ? (
                 // Mobile Layout - Grid แบบเดิม
                 <div className="grid grid-cols-1 gap-8 max-w-7xl mx-auto mb-10">
-                    {packages.map((pkg) => (
+                    {sortedPackages.map((pkg) => (
                         <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative">
                         <div className="text-left mb-6">
                             <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
@@ -142,7 +145,7 @@ export default function Package() {
                             </div>
                             <h3 className="text-4xl font-bold text-[#411032] mb-2">{pkg.name}</h3>
                             <p className="text-xl font-bold text-[#2A2E3F]">
-                                {pkg.currency} {pkg.price.toFixed(2)} 
+                                {pkg.currency} {(pkg.price / 100).toFixed(2)} 
                                 <span className="text-base font-regular text-[#9AA1B9]">
                                     /{pkg.billing_interval}
                                 </span>
@@ -170,13 +173,13 @@ export default function Package() {
                 </div>
             ) : (
                 // Desktop/Tablet Layout - Carousel
-                <div className="relative max-w-7xl mx-auto mb-10">
+                <div className="relative max-w-[1400px] mx-auto mb-10 px-4">
                     {/* Left Arrow */}
                     {showArrows && (
                         <button
                             onClick={handlePrevious}
                             disabled={currentIndex === 0}
-                            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all ${
+                            className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all ${
                                 currentIndex === 0 
                                     ? 'opacity-50 cursor-not-allowed' 
                                     : 'hover:bg-gray-50 hover:shadow-xl'
@@ -193,7 +196,7 @@ export default function Package() {
                         <button
                             onClick={handleNext}
                             disabled={currentIndex >= totalSlides - 1}
-                            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all ${
+                            className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all ${
                                 currentIndex >= totalSlides - 1 
                                     ? 'opacity-50 cursor-not-allowed' 
                                     : 'hover:bg-gray-50 hover:shadow-xl'
@@ -208,18 +211,18 @@ export default function Package() {
                     {/* Cards Container */}
                     <div 
                         ref={scrollContainerRef}
-                        className={`overflow-hidden ${showArrows ? 'mx-16' : ''}`}
+                        className={`overflow-hidden ${showArrows ? 'mx-16' : 'mx-4'}`}
                     >
-                        <div className="flex gap-8 transition-transform duration-300 ease-in-out">
-                            {packages.map((pkg) => (
-                                <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative flex-shrink-0 w-full md:w-1/2 lg:w-1/3">
+                        <div className="flex gap-4 transition-transform duration-300 ease-in-out">
+                            {sortedPackages.map((pkg) => (
+                                <div key={pkg.id} className="bg-white rounded-3xl p-6 border-2 border-gray-100 relative flex-shrink-0 w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                     <div className="text-left mb-6">
                                         <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
                                             {renderIcon(pkg.icon)}
                                         </div>
                                         <h3 className="text-4xl font-bold text-[#411032] mb-2">{pkg.name}</h3>
                                         <p className="text-xl font-bold text-[#2A2E3F]">
-                                            {pkg.currency} {pkg.price.toFixed(2)} 
+                                            {pkg.currency} {(pkg.price / 100).toFixed(2)} 
                                             <span className="text-base font-regular text-[#9AA1B9]">
                                                 /{pkg.billing_interval}
                                             </span>
