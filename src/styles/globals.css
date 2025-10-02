@@ -2,6 +2,23 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Custom animation for Match Notification */
+@keyframes fade-in-out {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-fade-in-out {
+  animation: fade-in-out 10s ease-in-out forwards;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

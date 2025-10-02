@@ -1,10 +1,14 @@
 import MatchingLeft from "@/components/match/MatchingLeft";
 import NavBar from "@/components/NavBar";
+import Chat from "@/components/chat/Chat";
 import { useAuth } from '@/hooks/useAuth';
 import { MatchingProvider } from "@/context/MatchingContext";
+import { useState } from 'react';
+import { LuArrowLeft } from 'react-icons/lu';
 
-function Chat() {
+function ChatPage() {
     const { isLoggedIn } = useAuth('/login');
+    const [showChat, setShowChat] = useState(false);
 
     if (isLoggedIn === null) {
         return <div>Loading...</div>;
@@ -17,13 +21,56 @@ function Chat() {
     return (
         <MatchingProvider>
             <div className="h-screen flex flex-col">
+                {/* NavBar - Always visible */}
                 <NavBar />
-                <div className="flex flex-1 w-full h-full">
-                    <div className="basis-1/5 p-4 overflow-auto bg-[#F6F7FC]">
-                        <MatchingLeft />
+
+                {/* Mobile Chat Header - Only show when in chat */}
+                {showChat && (
+                    <div className="md:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={() => setShowChat(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <LuArrowLeft size={20} className="text-gray-600" />
+                            </button>
+                            <h1 className="text-lg font-semibold text-gray-900">Daeny</h1>
+                        </div>
                     </div>
-                    <div className="basis-2/2 p-4 flex min-h-0 bg-black">
-                        
+                )}
+
+                <div className="flex flex-1 w-full h-full relative">
+                    {/* Desktop Sidebar */}
+                    <div className="hidden md:block md:basis-1/4 lg:basis-1/5 overflow-auto bg-[#F6F7FC] ">
+                        <div className="w-full p-4 h-full">
+                            <MatchingLeft onChatSelect={() => {}} />
+                        </div>
+                    </div>
+
+                    {/* Mobile Layout */}
+                    <div className="md:hidden flex-1 flex flex-col">
+                        {!showChat ? (
+                            /* Mobile MatchingLeft - Full screen */
+                            <div className="flex-1 overflow-auto bg-[#F6F7FC]">
+                                <div className="p-4 w-full">
+                                    <MatchingLeft onChatSelect={() => setShowChat(true)} />
+                                </div>
+                            </div>
+                        ) : (
+                            /* Mobile Chat - Full screen */
+                            <div className="flex-1 flex min-h-0">
+                                <div className="w-full">
+                                    <Chat />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Desktop Chat Area */}
+                    <div className="hidden md:flex flex-1 md:basis-3/4 lg:basis-4/5 min-h-0">
+                        <div className="w-full">
+                            <Chat />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -31,4 +78,4 @@ function Chat() {
     )
 }
 
-export default Chat;
+export default ChatPage;

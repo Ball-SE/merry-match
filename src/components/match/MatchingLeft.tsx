@@ -11,7 +11,11 @@ type Match = {
     photo_url: string | string[] | null;
 };
 
-function MatchingLeft() {
+interface MatchingLeftProps {
+    onChatSelect?: () => void;
+}
+
+function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -88,14 +92,16 @@ function MatchingLeft() {
 
     return (
         <div className="w-full h-full flex flex-col pt-5">
+            <div className="mx-auto">
             <button 
-            className="w-[282px] h-[187px] flex flex-col items-center cursor-pointer justify-center mb-7 border-1 bg-[#E4E6ED] border-[#A62D82] rounded-lg p-4"
+            className="sm:w-[282px] w-[330px] h-[187px] flex flex-col items-center cursor-pointer justify-center mb-7 border-1 bg-[#E4E6ED] border-[#A62D82] rounded-lg p-4"
             onClick={handleDiscoverMatch}
             >
                 <Image src="/assets/hearchsearch.png" alt="discover" width={50} height={50} />
                 <h4 className="text-2xl font-bold text-[#95002B]">Discover New Match</h4>
                 <p className="text-sm text-[#646D89]">Start find and Merry to get know and connect with new friend!</p>
             </button>
+            </div>
             <div className="border-t-[1px] border-[#E4E6ED] mb-5"></div>
             
             {/* Merry Match Section with Horizontal Scroll */}
@@ -143,7 +149,7 @@ function MatchingLeft() {
                                                 alt="Merry Match" 
                                                 width={20} 
                                                 height={20}
-                                                className="w-4 h-4 sm:w-8 sm:h-5"
+                                                className="w-6 h-4 sm:w-8 sm:h-5"
                                             />
                                         </div>
                                     </div>
@@ -195,7 +201,13 @@ function MatchingLeft() {
                             {matches.map((match) => (
                                 <div key={match.id} 
                                      className="flex flex-row gap-2 sm:gap-3 items-center cursor-pointer hover:bg-[#f9f9f9] p-2 sm:p-3 rounded-lg transition-colors mx-1 hover:border-1 hover:border-[#A62D82]"
-                                     onClick={() => router.push(`/chat`)}
+                                     onClick={() => {
+                                         if (onChatSelect) {
+                                             onChatSelect();
+                                         } else {
+                                             router.push(`/chat`);
+                                         }
+                                     }}
                                      >
                                     <div className="w-[40px] h-[40px] sm:w-[50px] sm:h-[50px] relative overflow-hidden rounded-full flex-shrink-0">
                                         <Image 
