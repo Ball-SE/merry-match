@@ -145,7 +145,7 @@ export default function Package() {
                             </div>
                             <h3 className="text-4xl font-bold text-[#411032] mb-2">{pkg.name}</h3>
                             <p className="text-xl font-bold text-[#2A2E3F]">
-                                {pkg.currency} {(pkg.price / 100).toFixed(2)} 
+                                {pkg.currency} {pkg.price.toFixed(2)} 
                                 <span className="text-base font-regular text-[#9AA1B9]">
                                     /{pkg.billing_interval}
                                 </span>
@@ -222,7 +222,7 @@ export default function Package() {
                                         </div>
                                         <h3 className="text-4xl font-bold text-[#411032] mb-2">{pkg.name}</h3>
                                         <p className="text-xl font-bold text-[#2A2E3F]">
-                                            {pkg.currency} {(pkg.price / 100).toFixed(2)} 
+                                            {pkg.currency} {pkg.price.toFixed(2)} 
                                             <span className="text-base font-regular text-[#9AA1B9]">
                                                 /{pkg.billing_interval}
                                             </span>
