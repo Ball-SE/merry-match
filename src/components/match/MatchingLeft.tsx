@@ -9,10 +9,11 @@ type Match = {
     id: string | number;
     name?: string;
     photo_url: string | string[] | null;
+    match_id?: string;
 };
 
 interface MatchingLeftProps {
-    onChatSelect?: () => void;
+    onChatSelect?: (matchId: string) => void;
 }
 
 function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
@@ -202,8 +203,8 @@ function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
                                 <div key={match.id} 
                                      className="flex flex-row gap-2 sm:gap-3 items-center cursor-pointer hover:bg-[#f9f9f9] p-2 sm:p-3 rounded-lg transition-colors mx-1 hover:border-1 hover:border-[#A62D82]"
                                      onClick={() => {
-                                         if (onChatSelect) {
-                                             onChatSelect();
+                                         if (onChatSelect && match.match_id) {
+                                             onChatSelect(match.match_id);
                                          } else {
                                              router.push(`/chat`);
                                          }
