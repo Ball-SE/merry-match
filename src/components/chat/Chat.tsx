@@ -2,59 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { LuPaperclip, LuSend } from 'react-icons/lu';
 import { Heart } from 'lucide-react';
-
-interface Message {
-  id: string;
-  text?: string;
-  image?: string;
-  sender: 'user' | 'other';
-  timestamp: Date;
-}
+import { useChat } from '@/hooks/useChat';
+import { supabase } from '@/lib/supabase/supabaseClient';
 
 interface ChatProps {
-  matchName?: string;
-  userAvatar?: string;
-  otherUserAvatar?: string;
+  matchId: string;
 }
 
-const Chat: React.FC<ChatProps> = ({ 
-  matchName = "Daeny", 
-  userAvatar = "/assets/daeny.png",
-  otherUserAvatar = "/assets/ygritte.png"
-}) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hi',
-      sender: 'user',
-      timestamp: new Date()
-    },
-    {
-      id: '2',
-      text: 'Do you like ma dragons?',
-      sender: 'user',
-      timestamp: new Date()
-    },
-    {
-      id: '3',
-      image: '/assets/dragons.jpg', // You'll need to add this image
-      sender: 'user',
-      timestamp: new Date()
-    },
-    {
-      id: '4',
-      text: 'Yep, they\'re cool...',
-      sender: 'other',
-      timestamp: new Date()
-    },
-    {
-      id: '5',
-      text: 'But i like u better 😉😍',
-      sender: 'other',
-      timestamp: new Date()
-    }
-  ]);
-
+const Chat: React.FC<ChatProps> = ({ matchId }) => {
+  const [user, setUser] = useState<{ id: string; user_metadata?: { avatar_url?: string } } | null>(null);
+  const { messages, match, loading, error, sendMessage } = useChat(matchId);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -66,17 +23,26 @@ const Chat: React.FC<ChatProps> = ({
     scrollToBottom();
   }, [messages]);
 
+  // ดึงข้อมูล user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      }
+    };
+    getUser();
+  }, []);
 
-  const handleSendMessage = () => {
+
+  const handleSendMessage = async () => {
     if (newMessage.trim()) {
-      const message: Message = {
-        id: Date.now().toString(),
-        text: newMessage,
-        sender: 'user',
-        timestamp: new Date()
-      };
-      setMessages([...messages, message]);
-      setNewMessage('');
+      try {
+        await sendMessage(newMessage);
+        setNewMessage('');
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
     }
   };
 
@@ -86,6 +52,30 @@ const Chat: React.FC<ChatProps> = ({
       handleSendMessage();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#160404]">
+        <div className="text-white">Loading chat...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#160404]">
+        <div className="text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
+
+  if (!match) {
+    return (
+      <div className="h-full flex items-center justify-center bg-[#160404]">
+        <div className="text-white">Match not found</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-[#160404] relative">
@@ -109,7 +99,7 @@ const Chat: React.FC<ChatProps> = ({
                     {/* Text block */}
                     <div className="flex flex-col flex-1">
                         <p className="text-[#95002B] text-xs md:text-sm font-medium">
-                            Now you and {matchName} are Merry Match!
+                            Now you and {match.other_user.name} are Merry Match!
                         </p>
                         <p className="text-[#95002B] text-xs md:text-sm font-medium">
                             You can messege something nice and make a good conversation. Happy Merry!
@@ -121,48 +111,56 @@ const Chat: React.FC<ChatProps> = ({
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto px-2 py-6 md:px-8 pb-4 space-y-3 md:space-y-4 flex flex-col justify-end">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-start' : 'justify-end'} items-end gap-2`}
-          >
-            {message.sender === 'user' && (
-              <div className="w-8 h-8 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
-                <Image
-                  src={userAvatar}
-                  alt="User Avatar"
-                  width={40}
-                  height={40}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            
+        {messages.map((message) => {
+          const isCurrentUser = message.sender_id === user?.id;
+          
+          return (
             <div
-              className={`max-w-[70%] md:max-w-xs lg:max-w-md px-3 md:px-6 py-4 rounded-3xl ${
-                message.sender === 'user'
-                  ? 'bg-[#EFC4E2] text-black rounded-bl-none'
-                  : 'bg-[#7D2262] text-white rounded-br-none'
-              }`}
+              key={message.id}
+              className={`flex ${isCurrentUser ? 'justify-start' : 'justify-end'} items-end gap-2`}
             >
-              {message.text && (
-                <p className="text-xs md:text-sm break-words">{message.text}</p>
-              )}
-              {message.image && (
-                <div className="mt-2">
+              {isCurrentUser && (
+                <div className="w-8 h-8 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
                   <Image
-                    src={message.image}
-                    alt="Message image"
-                    width={200}
-                    height={150}
-                    className="rounded-lg object-cover w-full h-auto"
+                    src={user?.user_metadata?.avatar_url || "/assets/user.jpg"}
+                    alt="User Avatar"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
+              <div
+                className={`max-w-[70%] md:max-w-xs lg:max-w-md px-3 md:px-6 py-4 rounded-3xl ${
+                  isCurrentUser
+                    ? 'bg-[#EFC4E2] text-black rounded-bl-none'
+                    : 'bg-[#7D2262] text-white rounded-br-none'
+                }`}
+              >
+                <p className="text-xs md:text-sm break-words">{message.message_text}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {new Date(message.created_at).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </p>
+              </div>
+
+              {!isCurrentUser && (
+                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
+                  <Image
+                    src={match.other_user.photo_url || "/assets/user.jpg"}
+                    alt="Other User Avatar"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
                   />
                 </div>
               )}
             </div>
-
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>          
 

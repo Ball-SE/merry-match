@@ -9,6 +9,7 @@ import { LuArrowLeft } from 'react-icons/lu';
 function ChatPage() {
     const { isLoggedIn } = useAuth('/login');
     const [showChat, setShowChat] = useState(false);
+    const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
 
     if (isLoggedIn === null) {
         return <div>Loading...</div>;
@@ -43,7 +44,9 @@ function ChatPage() {
                     {/* Desktop Sidebar */}
                     <div className="hidden md:block md:basis-1/4 lg:basis-1/5 overflow-auto bg-[#F6F7FC] ">
                         <div className="w-full p-4 h-full">
-                            <MatchingLeft onChatSelect={() => {}} />
+                            <MatchingLeft onChatSelect={(matchId: string) => {
+                                setSelectedMatchId(matchId);
+                            }} />
                         </div>
                     </div>
 
@@ -53,14 +56,17 @@ function ChatPage() {
                             /* Mobile MatchingLeft - Full screen */
                             <div className="flex-1 overflow-auto bg-[#F6F7FC]">
                                 <div className="p-4 w-full">
-                                    <MatchingLeft onChatSelect={() => setShowChat(true)} />
+                                    <MatchingLeft onChatSelect={(matchId: string) => {
+                                        setSelectedMatchId(matchId);
+                                        setShowChat(true);
+                                    }} />
                                 </div>
                             </div>
                         ) : (
                             /* Mobile Chat - Full screen */
                             <div className="flex-1 flex min-h-0">
                                 <div className="w-full">
-                                    <Chat />
+                                    {selectedMatchId && <Chat matchId={selectedMatchId} />}
                                 </div>
                             </div>
                         )}
@@ -69,7 +75,16 @@ function ChatPage() {
                     {/* Desktop Chat Area */}
                     <div className="hidden md:flex flex-1 md:basis-3/4 lg:basis-4/5 min-h-0">
                         <div className="w-full">
-                            <Chat />
+                            {selectedMatchId ? (
+                                <Chat matchId={selectedMatchId} />
+                            ) : (
+                                <div className="h-full flex items-center justify-center bg-[#160404]">
+                                    <div className="text-white text-center">
+                                        <p className="text-lg mb-2">Select a match to start chatting</p>
+                                        <p className="text-sm opacity-70">Choose someone from your matches to begin the conversation</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
