@@ -120,6 +120,13 @@ export const useChat = (matchId: string): UseChatReturn => {
   const sendMessage = useCallback(async (messageText: string) => {
     if (!match || !session?.user?.id || !session?.access_token) return;
 
+    console.log('Sending message:', {
+      matchId,
+      messageText,
+      receiverId: match.other_user.id,
+      senderId: session.user.id
+    });
+
     try {
       const response = await fetch('/api/messages', {
         method: 'POST',
@@ -137,6 +144,9 @@ export const useChat = (matchId: string): UseChatReturn => {
       if (!response.ok) {
         throw new Error('Failed to send message');
       }
+
+      const result = await response.json();
+      console.log('Message sent successfully:', result);
 
       // ข้อความจะถูกเพิ่มผ่าน realtime subscription
     } catch (err) {
@@ -183,7 +193,16 @@ export const useChat = (matchId: string): UseChatReturn => {
 
   // ตั้งค่า realtime subscription
   useEffect(() => {
-    if (!matchId || !session?.user?.id || !session?.access_token) return;
+    if (!matchId || !session?.user?.id || !session?.access_token) {
+      console.log('Missing required data for realtime:', { matchId, userId: session?.user?.id, hasToken: !!session?.access_token });
+      return;
+    }
+
+    console.log('Setting up realtime with:', {
+      matchId,
+      userId: session.user.id,
+      token: session.access_token.substring(0, 20) + '...'
+    });
 
     // สร้าง supabase client ด้วย user context
     const supabase = createClient(
@@ -193,6 +212,7 @@ export const useChat = (matchId: string): UseChatReturn => {
     );
 
     // สร้าง channel สำหรับ match นี้
+    console.log('Setting up realtime subscription for match:', matchId);
     const channel = supabase
       .channel(`match-${matchId}`)
       .on(
@@ -204,10 +224,14 @@ export const useChat = (matchId: string): UseChatReturn => {
           filter: `match_id=eq.${matchId}`,
         },
         (payload) => {
+          console.log('Realtime INSERT payload:', payload);
           const newMessage = payload.new as Message;
           
           // เพิ่มข้อความใหม่
-          setMessages(prev => [...prev, newMessage]);
+          setMessages(prev => {
+            console.log('Adding new message:', newMessage);
+            return [...prev, newMessage];
+          });
           
           // ถ้าเป็นข้อความที่ส่งมาหาเรา ให้เพิ่มจำนวน unread
           if (newMessage.receiver_id === session.user.id) {
@@ -234,7 +258,18 @@ export const useChat = (matchId: string): UseChatReturn => {
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to realtime channel');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Channel error occurred');
+        } else if (status === 'TIMED_OUT') {
+          console.error('Subscription timed out');
+        } else if (status === 'CLOSED') {
+          console.log('Channel closed');
+        }
+      });
 
     channelRef.current = channel;
 

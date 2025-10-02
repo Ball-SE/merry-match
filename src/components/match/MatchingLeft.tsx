@@ -13,7 +13,7 @@ type Match = {
 };
 
 interface MatchingLeftProps {
-    onChatSelect?: (matchId: string) => void;
+    onChatSelect?: (matchId: string, matchName: string) => void;
 }
 
 function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
@@ -203,8 +203,8 @@ function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
                                 <div key={match.id} 
                                      className="flex flex-row gap-2 sm:gap-3 items-center cursor-pointer hover:bg-[#f9f9f9] p-2 sm:p-3 rounded-lg transition-colors mx-1 hover:border-1 hover:border-[#A62D82]"
                                      onClick={() => {
-                                         if (onChatSelect && match.match_id) {
-                                             onChatSelect(match.match_id);
+                                         if (onChatSelect && match.match_id && match.name) {
+                                             onChatSelect(match.match_id, match.name);
                                          } else {
                                              router.push(`/chat`);
                                          }
