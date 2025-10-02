@@ -4,6 +4,11 @@ import { Loader2, AlertCircle, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
+import { CustomDatePicker } from '@/components/register/date-picker';
+import { useUsernameValidation } from '@/hooks/useUsernameValidation';
+import { validateBasicInfo } from '@/middleware/register-validation';
+import { SEA_COUNTRY_OPTIONS } from '@/data/sea-countries';
+import { SEA_CITIES_BY_COUNTRY } from '@/data/sea-cities';
 
 interface UserProfile {
   id: string;
@@ -33,7 +38,7 @@ export default function EditProfilePage() {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    date_of_birth: '',
+    dateOfBirth: '',
     location: '',
     city: '',
     username: '',
@@ -45,6 +50,49 @@ export default function EditProfilePage() {
     interests: [] as string[],
     photos: [] as string[]
   });
+
+  // Validation state
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Username validation
+  const usernameValidation = useUsernameValidation(formData.username, 2000);
+
+  // Handle input change
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  // Handle blur for validation
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    
+    // Validate specific fields
+    if (field === 'name' || field === 'dateOfBirth' || field === 'location' || field === 'city' || field === 'username') {
+      const validation = validateBasicInfo({
+        name: formData.name,
+        dateOfBirth: formData.dateOfBirth,
+        location: formData.location,
+        city: formData.city,
+        username: formData.username,
+        email: '', // Not needed for edit
+        password: '', // Not needed for edit
+        confirmPassword: '' // Not needed for edit
+      });
+      
+      if (!validation.isValid && validation.errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: validation.errors[field] }));
+      }
+    }
+  };
 
   // ดึงข้อมูล profile
   useEffect(() => {
@@ -85,7 +133,7 @@ export default function EditProfilePage() {
 
         setFormData({
           name: profileData.name || '',
-          date_of_birth: profileData.date_of_birth || '',
+          dateOfBirth: profileData.date_of_birth || '',
           location: profileData.location || '',
           city: profileData.city || '',
           username: profileData.username || '',
@@ -109,23 +157,54 @@ export default function EditProfilePage() {
     fetchProfile();
   }, [router]);
 
-  // Handle input changes
-  const handleInputChange = (field: string, value: string | string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
 
   // Handle save
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
+    
     try {
-      // TODO: Implement save logic
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      router.push('/profile');
-    } catch {
+      // ตรวจสอบ authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('Please login first');
+        return;
+      }
+
+      // ตรวจสอบข้อมูลที่จำเป็น
+      if (!formData.name || formData.name.trim().length < 2) {
+        setError('Name must be at least 2 characters long');
+        return;
+      }
+
+      if (!formData.username || formData.username.trim().length < 6) {
+        setError('Username must be at least 6 characters long');
+        return;
+      }
+
+      // ส่งข้อมูลไปยัง API
+      const response = await fetch('/api/profile/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          date_of_birth: formData.dateOfBirth // Convert to API format
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        router.push('/profile');
+      } else {
+        setError(result.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
       setError('Failed to save profile');
     } finally {
       setSaving(false);
@@ -215,6 +294,20 @@ export default function EditProfilePage() {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="px-4 md:px-12 py-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex">
+                  <AlertCircle className="h-5 w-5 text-red-400" />
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Form Content */}
           <div className="p-4 md:p-12">
             <div className="max-w-4xl mx-auto">
@@ -229,54 +322,137 @@ export default function EditProfilePage() {
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Name</label>
                 <input
                   type="text"
+                  name="name"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
-                  placeholder="At least 2 character"
+                  onChange={handleInputChange}
+                  onBlur={() => handleBlur("name")}
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                    touched.name && errors.name
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="At least 2 characters"
                 />
+                {touched.name && errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                )}
               </div>
 
               {/* Date of birth */}
               <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Date of birth</label>
-                <input
-                  type="date"
-                  value={formData.date_of_birth}
-                  disabled
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg text-sm md:text-base bg-gray-100 text-gray-500 cursor-not-allowed"
+                <CustomDatePicker
+                  selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                  onChange={(date: Date | null) => {
+                    const dateString = date ? date.toISOString().split("T")[0] : "";
+                    handleInputChange({
+                      target: { name: "dateOfBirth", value: dateString },
+                    } as React.ChangeEvent<HTMLInputElement>);
+                  }}
+                  onBlur={() => handleBlur("dateOfBirth")}
+                  placeholder="Select date"
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg text-sm md:text-base ${
+                    touched.dateOfBirth && errors.dateOfBirth
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                  } focus:outline-none focus:ring-2 focus:border-transparent`}
+                  minDate={new Date(new Date().getFullYear() - 120, new Date().getMonth(), new Date().getDate())}
+                  maxDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())}
+                  name="dateOfBirth"
+                  id="dateOfBirth"
+                  error={errors.dateOfBirth}
+                  touched={touched.dateOfBirth}
                 />
+                {touched.dateOfBirth && errors.dateOfBirth && (
+                  <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth}</p>
+                )}
               </div>
 
               {/* Location */}
               <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Location</label>
                 <select
+                  name="location"
                   value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
+                  onChange={(e) => {
+                    handleInputChange(e);
+                    // Reset city when location changes
+                    const resetCity = {
+                      target: { name: "city", value: "" },
+                    } as React.ChangeEvent<HTMLInputElement>;
+                    handleInputChange(resetCity);
+                  }}
+                  onBlur={() => handleBlur("location")}
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white ${
+                    touched.location && errors.location
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300'
+                  } ${!formData.location ? "text-gray-400" : "text-black"}`}
+                  style={{
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    backgroundImage:
+                      'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 12px center",
+                    backgroundSize: "16px",
+                  }}
                 >
-                  <option value="">Thailand</option>
-                  <option value="Thailand">Thailand</option>
-                  <option value="Bangkok">Bangkok</option>
-                  <option value="Chiang Mai">Chiang Mai</option>
-                  <option value="Phuket">Phuket</option>
+                  <option value="">
+                    {!formData.location ? "Thailand" : "Select location"}
+                  </option>
+                  {SEA_COUNTRY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value} style={{ color: "#000000" }}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
+                {touched.location && errors.location && (
+                  <p className="mt-1 text-sm text-red-600">{errors.location}</p>
+                )}
               </div>
 
               {/* City */}
               <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">City</label>
                 <select
+                  name="city"
                   value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
+                  onChange={handleInputChange}
+                  onBlur={() => handleBlur("city")}
+                  disabled={!formData.location}
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white ${
+                    touched.city && errors.city
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300'
+                  } ${!formData.location
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : ""
+                    }`}
+                  style={{
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    backgroundImage:
+                      'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 12px center",
+                    backgroundSize: "16px",
+                  }}
                 >
-                  <option value="">Bangkok</option>
-                  <option value="Bangkok">Bangkok</option>
-                  <option value="Chiang Mai">Chiang Mai</option>
-                  <option value="Phuket">Phuket</option>
-                  <option value="Pattaya">Pattaya</option>
+                  <option value="">
+                    {!formData.location ? "Bangkok" : "Select city"}
+                  </option>
+                  {(SEA_CITIES_BY_COUNTRY[formData.location] || []).map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
                 </select>
+                {touched.city && errors.city && (
+                  <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+                )}
               </div>
 
               {/* Username */}
@@ -284,11 +460,50 @@ export default function EditProfilePage() {
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Username</label>
                 <input
                   type="text"
+                  name="username"
                   value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
-                  placeholder="At least 6 character"
+                  onChange={handleInputChange}
+                  onBlur={() => handleBlur("username")}
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                    touched.username && errors.username
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="At least 6 characters"
                 />
+                {touched.username && errors.username && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+                )}
+                {touched.username && (
+                  <div className="mt-2 flex items-center gap-2">
+                    {usernameValidation.isChecking && (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-500 border-t-transparent"></div>
+                        <span className="text-sm text-yellow-600">Checking availability...</span>
+                      </>
+                    )}
+                    {!usernameValidation.isChecking && usernameValidation.isValid && (
+                      <>
+                        <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                          <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-sm text-green-600">Username is available</span>
+                      </>
+                    )}
+                    {!usernameValidation.isChecking && !usernameValidation.isValid && usernameValidation.message && (
+                      <>
+                        <div className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center">
+                          <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-sm text-red-600">{usernameValidation.message}</span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Email */}
@@ -314,8 +529,9 @@ export default function EditProfilePage() {
               <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Sexual Identity</label>
                 <select
+                  name="gender"
                   value={formData.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
                 >
                   <option value="">Male</option>
@@ -330,8 +546,9 @@ export default function EditProfilePage() {
               <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Sexual preferences</label>
                 <select
+                  name="sexual_preferences"
                   value={formData.sexual_preferences}
-                  onChange={(e) => handleInputChange('sexual_preferences', e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
                 >
                   <option value="">Female</option>
@@ -346,8 +563,9 @@ export default function EditProfilePage() {
               <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Racial preferences</label>
                 <select
+                  name="racial_preferences"
                   value={formData.racial_preferences}
-                  onChange={(e) => handleInputChange('racial_preferences', e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
                 >
                   <option value="">Asian</option>
@@ -363,8 +581,9 @@ export default function EditProfilePage() {
               <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Meeting interests</label>
                 <select
+                  name="meeting_interests"
                   value={formData.meeting_interests}
-                  onChange={(e) => handleInputChange('meeting_interests', e.target.value)}
+                  onChange={handleInputChange}
                   className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
                 >
                   <option value="">Friends</option>
@@ -382,7 +601,10 @@ export default function EditProfilePage() {
               <input
                 type="text"
                 value={formData.interests.join(', ')}
-                onChange={(e) => handleInputChange('interests', e.target.value.split(', ').filter(item => item.trim() !== ''))}
+                onChange={(e) => {
+                  const interests = e.target.value.split(', ').filter(item => item.trim() !== '');
+                  setFormData(prev => ({ ...prev, interests }));
+                }}
                 className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
                 placeholder="Photography, Cooking, Gym, Music..."
               />
@@ -394,8 +616,9 @@ export default function EditProfilePage() {
                 About me (150 Characters)
               </label>
               <textarea
+                name="bio"
                 value={formData.bio}
-                onChange={(e) => handleInputChange('bio', e.target.value)}
+                onChange={handleInputChange}
                 maxLength={150}
                 rows={4}
                 className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent resize-none text-sm md:text-base"
@@ -427,7 +650,7 @@ export default function EditProfilePage() {
                         onClick={() => {
                           const newPhotos = [...formData.photos];
                           newPhotos.splice(index, 1);
-                          handleInputChange('photos', newPhotos);
+                          setFormData(prev => ({ ...prev, photos: newPhotos }));
                         }}
                         className="absolute -top-1 md:-top-2 -right-1 md:-right-2 w-6 md:w-7 h-6 md:h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-xs md:text-sm hover:bg-red-600 shadow-lg"
                       >
