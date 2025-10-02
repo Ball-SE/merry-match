@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { Trash2, Edit, GripVertical } from 'lucide-react';
 import { PackageListProps } from '../../types/admin';
 
@@ -27,10 +28,9 @@ const PackageList: React.FC<PackageListProps> = ({
     }
   };
 
-  // Format price from cents to baht
-  const formatPrice = (priceCents: number) => {
-    const amount = priceCents / 100;
-    return `฿${amount.toFixed(2)}`;
+  // Format price in baht (no conversion needed)
+  const formatPrice = (price: number) => {
+    return `฿${price.toFixed(2)}`;
   };
 
   // Filter packages based on search term
@@ -101,16 +101,16 @@ const PackageList: React.FC<PackageListProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center justify-center">
-                    <img 
-                      src={pkg.icon} 
-                      alt={pkg.name}
-                      className="w-12 h-12 object-contain rounded-lg bg-pink-50 p-1"
-                      onError={(e) => {
-                        // Fallback if image fails to load
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<span class="text-2xl">📦</span>';
-                      }}
-                    />
+                    <div className="w-12 h-12 relative rounded-lg bg-pink-50 p-1 overflow-hidden">
+                      <Image 
+                        src={pkg.icon} 
+                        alt={pkg.name}
+                        width={48}
+                        height={48}
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -120,7 +120,7 @@ const PackageList: React.FC<PackageListProps> = ({
                   <div className="text-sm text-gray-900">{pkg.dailySwipeLimit}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 font-medium">{formatPrice(pkg.price_cents)}</div>
+                  <div className="text-sm text-gray-900 font-medium">{formatPrice(pkg.price)}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-[#424C6B]">{formatDate(pkg.createdDate)}</div>
