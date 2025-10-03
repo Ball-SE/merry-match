@@ -17,6 +17,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 
+  // ใช้ service-role (ถ้ามี) สำหรับงานลบแบบมี FK/RLS หลังจากตรวจสอบตัวตนแล้วเท่านั้น
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
+  const admin = serviceKey
+    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey)
+    : supabase;
+  if (!serviceKey) {
+    console.warn("[unmatch] SUPABASE_SERVICE_ROLE_KEY missing. Falling back to user-scoped client; RLS may block deletes.");
+  }
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return res.status(401).json({ success: false, message: "Invalid session" });
 
@@ -28,25 +37,77 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let count: number | null = null;
 
   if (otherUserId) {
-    // ลบด้วยคู่ user1_id,user2_id เพื่อกันปัญหา match_id เปลี่ยนไปหลัง rematch
+    console.log("[unmatch] using otherUserId path", { userId: user.id, otherUserId });
+    // หา match_id ก่อนเพื่อลบ messages ที่พึ่งพาอยู่
     const [a, b] = [user.id, otherUserId].sort();
-    const resp = await supabase
+    const { data: foundMatch, error: findErr } = await supabase
       .from("matches")
-      .delete({ count: "exact" })
-      .match({ user1_id: a, user2_id: b });
-    error = resp.error;
-    count = resp.count ?? null;
+      .select("id")
+      .match({ user1_id: a, user2_id: b })
+      .maybeSingle();
+    if (findErr) {
+      console.error("[unmatch] find match error(otherUserId)", findErr);
+      error = findErr as { message?: string };
+    } else if (!foundMatch) {
+      console.log("[unmatch] match not found(otherUserId)");
+      count = 0;
+    } else {
+      const matchIdToDelete = foundMatch.id as string;
+      // ลบ messages ก่อนเพื่อไม่ให้ FK ขวาง
+      const delMsgResp = await admin
+        .from("messages")
+        .delete({ count: "exact" })
+        .eq("match_id", matchIdToDelete);
+      if (delMsgResp.error) {
+        console.error("[unmatch] delete messages error", delMsgResp.error);
+        error = delMsgResp.error;
+      } else {
+        console.log("[unmatch] delete messages count", delMsgResp.count);
+        const resp = await admin
+          .from("matches")
+          .delete({ count: "exact" })
+          .eq("id", matchIdToDelete);
+        if (resp.error) console.error("[unmatch] delete error(otherUserId)", resp.error);
+        console.log("[unmatch] delete count(otherUserId)", resp.count);
+        error = resp.error;
+        count = resp.count ?? null;
+      }
+    }
   } else if (matchId) {
-    const resp = await supabase
-      .from("matches")
+    console.log("[unmatch] using matchId path", { userId: user.id, matchId });
+    // ลบ messages ก่อนเพื่อไม่ให้ FK ขวาง (ใช้ service-role)
+    const delMsgResp = await admin
+      .from("messages")
       .delete({ count: "exact" })
-      .eq("id", matchId)
-      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-    error = resp.error;
-    count = resp.count ?? null;
+      .eq("match_id", matchId);
+    if (delMsgResp.error) {
+      console.error("[unmatch] delete messages error", delMsgResp.error);
+      error = delMsgResp.error;
+    } else {
+      console.log("[unmatch] delete messages count", delMsgResp.count);
+      const resp = await admin
+        .from("matches")
+        .delete({ count: "exact" })
+        .eq("id", matchId)
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+      if (resp.error) console.error("[unmatch] delete error(matchId)", resp.error);
+      console.log("[unmatch] delete count(matchId)", resp.count);
+      error = resp.error;
+      count = resp.count ?? null;
+    }
   }
 
-  if (error) return res.status(500).json({ success: false, message: error.message });
+  if (error) {
+    console.error("[unmatch] final error", error);
+    const msg = error.message || "Unknown";
+    if (/row-level security/i.test(msg)) {
+      return res.status(403).json({ success: false, message: msg });
+    }
+    if (/invalid input syntax for type uuid/i.test(msg)) {
+      return res.status(400).json({ success: false, message: msg });
+    }
+    return res.status(500).json({ success: false, message: msg });
+  }
   if (!count) return res.status(404).json({ success: false, message: "Match not found or not owned by user" });
 
   return res.status(200).json({ success: true, message: "Unmatched successfully" });
