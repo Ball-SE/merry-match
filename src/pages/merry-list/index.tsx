@@ -41,37 +41,63 @@ type Swipe = {
     meeting_interests: string | null;
 }
 
+type User = {
+    id: string | number;
+    name: string;
+}
+
+type Package = {
+    name: string;
+    daily_swipe_limit: string | number;
+}
+
+type Subscription = {
+    id: string | number;
+    user: User;
+    package: Package;
+}
+
 type MatchListResponse = { data: Match[] };
 type SwipeListResponse = { data: Swipe[] };
+type SubscriptionResponse = { success: boolean; subscription: Subscription | null };
 
 function MerryList () {
 
     const [matchList, setMatchList] = useState<Match[]>([]);
     const [swipeList, setSwipeList] = useState<Swipe[]>([]);
+    const [subscriptionData, setSubscriptionData] = useState<Subscription[]>([]);
 
     const [timeLeft, setTimeLeft] = useState("");
 
     const [unmatchedIds, setUnmatchedIds] = useState<(string | number)[]>([]);
 
+    function formatLocation(loc: unknown): string {
+        if (!loc || typeof loc !== "object") return "";
+        const maybe = loc as { city?: unknown; location?: unknown };
+        const city = typeof maybe.city === "string" ? maybe.city : "";
+        const area = typeof maybe.location === "string" ? maybe.location : "";
+        return [city, area].filter(Boolean).join(", ");
+    }
+
     async function toggleMatch(matchId: string | number, isCurrentlyMatched: boolean, otherUserId?: string) {
         try {
             const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+            const token = session?.access_token;
 
-      if (!token) {
-        console.warn("No token found, cannot toggle match.");
-        return;
-      }
+        if (!token) {
+            console.warn("No token found, cannot toggle match.");
+            return;
+        }
 
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
 
-      if (isCurrentlyMatched) {
+        if (isCurrentlyMatched) {
         // ยิง API unmatch
-        await axios.post(
-          `${origin}/api/unmatch`,
-          { matchId, otherUserId },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+            await axios.post(
+            `${origin}/api/unmatch`,
+            { matchId, otherUserId },
+            { headers: { Authorization: `Bearer ${token}` } }
+            );
         // อัปเดต state local
         setUnmatchedIds((prev) => [...prev, matchId]);
       } else {
@@ -123,12 +149,19 @@ function MerryList () {
                     `/api/swipeList`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                const resultSubscription = await axios.get<SubscriptionResponse>(
+                    `/api/subscriptions/get`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                )
 
                 const matches = (resultMatch.data.data ?? []).filter(Boolean);
                 const swipes = (resultSwipe.data.data ?? []).filter(Boolean);
+                const subscription = resultSubscription.data.subscription;
 
                 setMatchList(matches)
                 setSwipeList(swipes)
+                setSubscriptionData(subscription ? [subscription] : []);
+                console.log("subscription from API:", subscription);
                 
                 // นับเวลาถอยหลังถึงเที่ยงคืน
                 const updateCountdown = () => {
@@ -190,7 +223,7 @@ function MerryList () {
             </div>
             <div className="lg:relative lg:bottom-20">
                 <div className="flex flex-row-reverse gap-3 mt-8">
-                    <p className="text-[#FF1659]">2/20</p>
+                    <p className="text-[#FF1659]">{subscriptionData[0]?.merry_limit ?? 0}/{subscriptionData[0]?.package?.daily_swipe_limit ?? 0}</p>
                     <p className="text-[#646D89]">Merry limit today</p>
                 </div>
                     <p className="text-end text-[#9AA1B9] text-xs">Reset in {timeLeft}...</p>
@@ -259,7 +292,7 @@ function MerryList () {
                                     <p className="ml-2 font-bold text-[#646D89] text-lg">{match.age}</p>
                                     <MapPin color="white" fill="#FFB1C8" size={15}
                                     className="ml-1" />
-                                    <p className="text-[#646D89]">{match.location?.city}, {match.location?.location}</p>
+                                    <p className="text-[#646D89]">{formatLocation(match.location)}</p>
                                 </div>
                                 <div className="flex flex-cols gap-8 mt-1 lg:relative lg:bottom-3">
                                     <div>
@@ -300,12 +333,9 @@ function MerryList () {
                                     <button className="flex items-center px-3 pr-4.5 p-1 border-1 border-gray-300 rounded-2xl cursor-not-allowed">
                                         <p className="ml-2 text-gray-600 ">Not Match yet</p>
                                     </button>
-                                    <div className="flex justify-between items-center w-25 mt-6">
+                                    <div className="flex justify-end items-center w-25 mt-6">
                                         <button className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <Eye color="white" fill ="#646D89" size={28}/>
-                                        </button>
-                                        <button className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039]">
-                                            <Heart color = "white" fill="white" size={20}/>
                                         </button>
                                     </div>
                                 </div>
@@ -316,20 +346,20 @@ function MerryList () {
                                     <p className="ml-2 font-bold text-[#646D89] text-lg">{swipe.age}</p>
                                     <MapPin color="white" fill="#FFB1C8" size={15}
                                     className="ml-1" />
-                                    <p className="text-[#646D89]">{swipe.location?.city}, {swipe.location?.location}</p>
+                                    <p className="text-[#646D89]">{formatLocation(swipe.location)}</p>
                                 </div>
                                 <div className="flex flex-cols gap-8 mt-1 lg:relative lg:bottom-3">
                                     <div>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Sexual identities</p>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Sexual preferences</p>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Racial preferences</p>
-                                        <p className="text-sm leading-5.5 lg:leading-8.5">Meeting interests</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Sexual identities</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Sexual preferences</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Racial preferences</p>
+                                        <p className="text-sm leading-7 lg:leading-8.5">Meeting interests</p>
                                     </div>
                                     <div>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{swipe.gender}</p>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{swipe.sexual_preferences}</p>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{swipe.racial_preferences}</p>
-                                        <p className="text-[#646D89] text-sm leading-5.5 lg:leading-8.5">{swipe.meeting_interests}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{swipe.gender}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{swipe.sexual_preferences}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{swipe.racial_preferences}</p>
+                                        <p className="text-[#646D89] text-sm leading-7 lg:leading-8.5">{swipe.meeting_interests}</p>
                                     </div>
                                 </div>
                             </div>
