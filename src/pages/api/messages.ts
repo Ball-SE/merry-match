@@ -6,8 +6,8 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === 'GET') {
-    // ดึงข้อความจาก match_id
-    const { match_id } = req.query;
+    // ดึงข้อความจาก match_id พร้อม pagination
+    const { match_id, limit = '20', before_message_id } = req.query;
     
     if (!match_id) {
       return res.status(400).json({ error: 'match_id is required' });
@@ -27,9 +27,9 @@ export default async function handler(
         { global: { headers: { Authorization: `Bearer ${token}` } } }
       );
 
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (error || !user) {
+      if (userError || !user) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
@@ -45,8 +45,8 @@ export default async function handler(
         return res.status(403).json({ error: 'Access denied to this match' });
       }
 
-      // ดึงข้อความทั้งหมดของ match นี้
-      const { data: messages, error: messagesError } = await supabase
+      // ถ้ามี before_message_id ให้หาข้อความก่อนหน้านั้น
+      let query = supabase
         .from('messages')
         .select(`
           *,
@@ -63,15 +63,46 @@ export default async function handler(
             username
           )
         `)
-        .eq('match_id', match_id)
-        .order('created_at', { ascending: true });
+        .eq('match_id', match_id);
+
+      // ถ้ามี before_message_id ให้ดึงข้อความที่เก่ากว่า
+      if (before_message_id && typeof before_message_id === 'string') {
+        // หา created_at ของ message ที่ระบุ
+        const { data: beforeMessage } = await supabase
+          .from('messages')
+          .select('created_at')
+          .eq('id', before_message_id)
+          .single();
+
+        if (beforeMessage) {
+          query = query.lt('created_at', beforeMessage.created_at);
+        }
+      }
+
+      // Order และ limit (เรียงจากใหม่ไปเก่า แล้วจะกลับทีหลัง)
+      const parsedLimit = parseInt(limit as string, 10);
+      query = query.order('created_at', { ascending: false }).limit(parsedLimit);
+
+      const { data: messages, error: messagesError } = await query;
 
       if (messagesError) {
         console.error('Error fetching messages:', messagesError);
         return res.status(500).json({ error: 'Failed to fetch messages' });
       }
 
-      return res.status(200).json({ messages });
+      // เรียงข้อความกลับเป็นเก่าไปใหม่
+      const sortedMessages = (messages || []).reverse();
+
+      // ตรวจสอบว่ายังมีข้อความเก่าไหม
+      const hasMore = messages && messages.length === parsedLimit;
+
+      return res.status(200).json({ 
+        messages: sortedMessages,
+        pagination: {
+          hasMore,
+          limit: parsedLimit
+        }
+      });
     } catch (error) {
       console.error('Error in messages API:', error);
       return res.status(500).json({ error: 'Internal server error' });

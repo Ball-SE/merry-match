@@ -73,6 +73,13 @@ export const useChat = (matchId: string): UseChatReturn => {
     getSession();
   }, []);
 
+  // Reset messages เมื่อเปลี่ยน matchId
+  useEffect(() => {
+    setMessages([]);
+    setMatch(null);
+    setUnreadCount(0);
+  }, [matchId]);
+
   // ดึงข้อมูล match
   const fetchMatch = useCallback(async () => {
     if (!session?.access_token) return;
@@ -94,12 +101,13 @@ export const useChat = (matchId: string): UseChatReturn => {
     }
   }, [matchId, session?.access_token]);
 
-  // ดึงข้อความทั้งหมด
+  // ดึงข้อความล่าสุด 20 ข้อความ
   const fetchMessages = useCallback(async () => {
     if (!session?.access_token) return;
 
     try {
-      const response = await fetch(`/api/messages?match_id=${matchId}`, {
+      // โหลดแค่ 20 ข้อความล่าสุด
+      const response = await fetch(`/api/messages?match_id=${matchId}&limit=20`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

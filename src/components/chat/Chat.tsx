@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { LuPaperclip, LuSend } from 'react-icons/lu';
+import { LuPaperclip, LuSend, LuLoader } from 'react-icons/lu';
 import { Heart } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { supabase } from '@/lib/supabase/supabaseClient';
@@ -9,19 +9,95 @@ interface ChatProps {
   matchId: string;
 }
 
+interface Message {
+  id: string;
+  match_id: string;
+  sender_id: string;
+  receiver_id: string;
+  message_text: string;
+  created_at: string;
+  is_read: boolean;
+}
+
 const Chat: React.FC<ChatProps> = ({ matchId }) => {
   const [user, setUser] = useState<{ id: string; user_metadata?: { avatar_url?: string } } | null>(null);
   const { messages, match, loading, error, sendMessage } = useChat(matchId);
   const [newMessage, setNewMessage] = useState('');
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [oldestMessageId, setOldestMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const previousScrollHeight = useRef<number>(0);
+  const isLoadingRef = useRef(false);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Reset state เมื่อเปลี่ยน matchId
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    console.log('🔄 Resetting for new matchId:', matchId);
+    setAllMessages([]);
+    setHasMore(true);
+    setOldestMessageId(null);
+    setLoadingMore(false);
+    isLoadingRef.current = false;
+    
+    // Reset scroll position หลังจาก DOM render
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        console.log('📍 Scroll position reset to bottom');
+      }
+    }, 100);
+  }, [matchId]);
+
+  // อัปเดต allMessages เมื่อ messages จาก hook เปลี่ยน
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      // กรองเฉพาะข้อความที่เป็นของ match นี้
+      const messagesForThisMatch = messages.filter((m: Message) => m.match_id === matchId);
+      
+      // ตรวจสอบว่ามีข้อความใหม่หรือไม่
+      const newMessageIds = messagesForThisMatch.map((m: Message) => m.id);
+      const existingIds = allMessages.map(m => m.id);
+      
+      // ถ้ามีข้อความใหม่ที่ไม่อยู่ใน allMessages ให้เพิ่มเข้าไป
+      const hasNewMessages = newMessageIds.some((id: string) => !existingIds.includes(id));
+      
+      if (hasNewMessages || allMessages.length === 0) {
+        // รวมข้อความเก่ากับใหม่ โดยไม่ให้ซ้ำกัน
+        const combined = [...allMessages];
+        messagesForThisMatch.forEach((msg: Message) => {
+          if (!combined.find(m => m.id === msg.id)) {
+            combined.push(msg);
+          }
+        });
+        
+        // เรียงตามเวลา
+        combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setAllMessages(combined);
+        
+        // Scroll to bottom เมื่อมีข้อความใหม่
+        setTimeout(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+            console.log('📍 Auto scrolled to bottom after loading messages');
+          }
+        }, 150);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, matchId]);
+
+  // ตั้งค่า oldestMessageId เมื่อ allMessages เปลี่ยน
+  useEffect(() => {
+    if (allMessages.length > 0) {
+      const sorted = [...allMessages].sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      const newOldestId = sorted[0]?.id || null;
+      setOldestMessageId(newOldestId);
+    }
+  }, [allMessages]);
 
   // ดึงข้อมูล user
   useEffect(() => {
@@ -34,6 +110,107 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
     getUser();
   }, []);
 
+  // โหลดข้อความเก่าเพิ่มเติม
+  const loadMoreMessages = useCallback(async () => {
+    if (loadingMore || !hasMore || !oldestMessageId) {
+      return;
+    }
+
+    setLoadingMore(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        setLoadingMore(false);
+        return;
+      }
+
+      // เก็บ scroll position ปัจจุบัน
+      if (messagesContainerRef.current) {
+        previousScrollHeight.current = messagesContainerRef.current.scrollHeight;
+      }
+
+      const response = await fetch(
+        `/api/messages?match_id=${matchId}&limit=20&before_message_id=${oldestMessageId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const newMessages: Message[] = data.messages || [];
+        
+        if (newMessages.length > 0) {
+          // เพิ่มข้อความเก่าเข้าไปข้างหน้า
+          const combined = [...newMessages, ...allMessages];
+          
+          // เรียงตามเวลา
+          combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          
+          setAllMessages(combined);
+          setHasMore(data.pagination?.hasMore || false);
+
+          // คืน scroll position
+          setTimeout(() => {
+            if (messagesContainerRef.current) {
+              const newScrollHeight = messagesContainerRef.current.scrollHeight;
+              const scrollDiff = newScrollHeight - previousScrollHeight.current;
+              messagesContainerRef.current.scrollTop = scrollDiff;
+            }
+          }, 100);
+        } else {
+          setHasMore(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, oldestMessageId, matchId, allMessages]);
+
+  // ตรวจสอบ scroll position เพื่อโหลดข้อความเก่า
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    
+    // ป้องกันการเรียกซ้ำๆ
+    if (isLoadingRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+
+    console.log('Scroll event:', { 
+      scrollTop, 
+      scrollHeight, 
+      clientHeight,
+      hasMore, 
+      loadingMore, 
+      messagesCount: allMessages.length 
+    });
+
+    // ถ้า scroll ถึงด้านบน (scrollTop น้อยกว่า 200px)
+    if (scrollTop < 200 && hasMore && !loadingMore && allMessages.length > 0) {
+      console.log('✅ Triggering loadMoreMessages');
+      isLoadingRef.current = true;
+      loadMoreMessages().finally(() => {
+        // รอ 500ms ก่อนให้เรียกใหม่ได้
+        setTimeout(() => {
+          isLoadingRef.current = false;
+        }, 500);
+      });
+    }
+  }, [hasMore, loadingMore, loadMoreMessages, allMessages.length]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
 
   const handleSendMessage = async () => {
     if (newMessage.trim()) {
@@ -78,7 +255,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#160404] relative">
+    <div className="h-screen flex flex-col bg-[#160404] relative overflow-hidden overflow-x-hidden">
         {/* Match Notification Modal */}
         <div className="absolute inset-0 z-50 flex items-start justify-center pt-8 md:pt-16 pointer-events-none">
             <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
@@ -110,8 +287,33 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
         </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-12 pb-4 space-y-3 md:space-y-4 flex flex-col justify-end">
-        {messages.map((message) => {
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 min-h-0 overflow-y-auto px-4 py-6 md:px-12 pb-4 space-y-3 md:space-y-4 scrollbar-hide"
+        style={{
+          scrollbarWidth: 'none', /* Firefox */
+          msOverflowStyle: 'none', /* IE and Edge */
+        }}
+      >
+        {/* Loading indicator ด้านบน */}
+        {loadingMore && (
+          <div className="flex justify-center py-3">
+            <div className="flex items-center gap-2 text-gray-400">
+              <LuLoader className="animate-spin" size={20} />
+              <span className="text-sm">Loading earlier messages...</span>
+            </div>
+          </div>
+        )}
+
+        {/* แสดงข้อความเมื่อไม่มีข้อความเก่าแล้ว */}
+        {!hasMore && allMessages.length > 0 && (
+          <div className="flex justify-center py-3">
+            <span className="text-xs text-gray-500">No more messages</span>
+          </div>
+        )}
+
+        {/* Messages */}
+        {allMessages.map((message) => {
           const isCurrentUser = message.sender_id === user?.id;
           
           return (
@@ -149,6 +351,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
             </div>
           );
         })}
+        
         <div ref={messagesEndRef} />
       </div>          
 
