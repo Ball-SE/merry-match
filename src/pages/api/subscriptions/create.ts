@@ -1,6 +1,6 @@
-// src/pages/api/subscriptions/create.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { stripe } from '@/lib/stripe/stripeServer';
 
 export default async function handler(
   req: NextApiRequest,
@@ -32,6 +32,34 @@ export default async function handler(
     }
 
     const { packageId, paymentIntentId, amount } = req.body;
+    
+    // ตรวจสอบว่ามี customer แล้วหรือยัง
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id, email, name')
+      .eq('id', user.id)
+      .single();
+
+    let stripeCustomerId = profile?.stripe_customer_id;
+
+    if (!stripeCustomerId) {
+      // สร้าง customer ใหม่
+      const customer = await stripe.customers.create({
+        email: profile?.email || user.email,
+        name: profile?.name,
+        metadata: {
+          supabase_user_id: user.id
+        }
+      });
+      
+      stripeCustomerId = customer.id;
+
+      // บันทึก customer id ใน profile
+      await supabase
+        .from('profiles')
+        .update({ stripe_customer_id: stripeCustomerId })
+        .eq('id', user.id);
+    }
 
     // บันทึก subscription ใน table subscriptions ที่มีอยู่แล้ว
     const { data: subscription, error: subscriptionError } = await supabase
@@ -40,7 +68,7 @@ export default async function handler(
         user_id: user.id,
         package_id: packageId,
         stripe_subscription_id: paymentIntentId, // ใช้ payment intent id แทน subscription id
-        stripe_customer_id: null, // จะอัปเดตภายหลังถ้าต้องการ
+        stripe_customer_id: stripeCustomerId, // จะอัปเดตภายหลังถ้าต้องการ
         status: 'active',
         current_period_start: new Date().toISOString(),
         current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days

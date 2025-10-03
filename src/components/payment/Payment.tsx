@@ -32,7 +32,8 @@ function PaymentForm() {
         packagePrice,
         packageCurrency,
         packageInterval,
-        packageDetails
+        packageDetails,
+        packageIcon
     } = router.query;
 
     const features = packageDetails ? JSON.parse(packageDetails as string) : [];
@@ -135,6 +136,7 @@ function PaymentForm() {
                         packageCurrency: packageCurrency,
                         packageInterval: packageInterval,
                         packageFeatures: JSON.stringify(features),
+                        packageIcon: packageIcon,
                         startDate: startDate,
                         nextBilling: nextBilling
                     }

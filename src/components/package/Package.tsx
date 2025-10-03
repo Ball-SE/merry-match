@@ -104,7 +104,8 @@ export default function Package() {
                 packagePrice: pkg.price,
                 packageCurrency: pkg.currency,
                 packageInterval: pkg.billing_interval,
-                packageDetails: JSON.stringify(pkg.details)
+                packageDetails: JSON.stringify(pkg.details),
+                packageIcon: pkg.icon
             }
         });
     };
@@ -138,7 +139,7 @@ export default function Package() {
                 // Mobile Layout - Grid แบบเดิม
                 <div className="grid grid-cols-1 gap-8 max-w-7xl mx-auto mb-10">
                     {sortedPackages.map((pkg) => (
-                        <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative">
+                        <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative flex flex-col">
                         <div className="text-left mb-6">
                             <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
                                 {renderIcon(pkg.icon)}
@@ -152,7 +153,7 @@ export default function Package() {
                             </p>
                         </div>
                         
-                        <div className="space-y-4 mb-8">
+                        <div className="space-y-4 mb-8 flex-grow">
                             {pkg.details.map((detail, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
@@ -161,13 +162,15 @@ export default function Package() {
                             ))}
                         </div>
 
-                        <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
-                        
-                        <button 
-                            onClick={() => handleChoosePackage(pkg)}
-                            className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
-                            Choose Package
+                        <div className="mt-auto">
+                            <div className="border-t-[1px] border-[#E4E6ED] mb-5"></div>
+                            
+                            <button 
+                                onClick={() => handleChoosePackage(pkg)}
+                                className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
+                                Choose Package
                             </button>
+                        </div>
                         </div>
                     ))}
                 </div>
@@ -215,7 +218,7 @@ export default function Package() {
                     >
                         <div className="flex gap-4 transition-transform duration-300 ease-in-out">
                             {sortedPackages.map((pkg) => (
-                                <div key={pkg.id} className="bg-white rounded-3xl p-6 border-2 border-gray-100 relative flex-shrink-0 w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
+                                <div key={pkg.id} className="bg-white rounded-3xl p-6 border-2 border-gray-100 relative flex-shrink-0 w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.75rem)] flex flex-col">
                                     <div className="text-left mb-6">
                                         <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
                                             {renderIcon(pkg.icon)}
@@ -229,7 +232,7 @@ export default function Package() {
                                         </p>
                                     </div>
                                     
-                                    <div className="space-y-4 mb-8">
+                                    <div className="space-y-4 mb-8 flex-grow">
                                         {pkg.details.map((detail, index) => (
                                             <div key={index} className="flex items-center gap-2">
                                                 <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
@@ -238,13 +241,15 @@ export default function Package() {
                                         ))}
                                     </div>
 
-                                    <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
-                                    
-                                    <button 
-                                        onClick={() => handleChoosePackage(pkg)}
-                                        className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
-                                        Choose Package
-                                    </button>
+                                    <div className="mt-auto">
+                                        <div className="border-t-[1px] border-[#E4E6ED] mb-5"></div>
+                                        
+                                        <button 
+                                            onClick={() => handleChoosePackage(pkg)}
+                                            className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
+                                            Choose Package
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

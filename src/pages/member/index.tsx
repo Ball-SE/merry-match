@@ -1,9 +1,9 @@
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
-import PaymentSuccess from "@/components/payment/PaymentSuccess";
+import Member from "@/components/payment/Member";
 import { useAuth } from '@/hooks/useAuth';
 
-function PaymentSuccessPage() {
+function MemberPage() {
     const { isLoggedIn } = useAuth('/login');
 
     if (isLoggedIn === null) {
@@ -18,11 +18,11 @@ function PaymentSuccessPage() {
         <div className="min-h-screen flex flex-col">
             <NavBar />
             <div className="flex-grow">
-                <PaymentSuccess />
+                <Member />
             </div>
             <Footer />
         </div>
     );
 }
 
-export default PaymentSuccessPage;
+export default MemberPage;
