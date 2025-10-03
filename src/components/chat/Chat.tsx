@@ -110,7 +110,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
         </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto px-2 py-6 md:px-8 pb-4 space-y-3 md:space-y-4 flex flex-col justify-end">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-12 pb-4 space-y-3 md:space-y-4 flex flex-col justify-end">
         {messages.map((message) => {
           const isCurrentUser = message.sender_id === user?.id;
           
@@ -132,14 +132,14 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
               )}
               
               <div
-                className={`max-w-[70%] md:max-w-xs lg:max-w-md px-3 md:px-6 py-4 rounded-3xl ${
+                className={`max-w-[50%] px-3 md:px-6 py-4 rounded-3xl ${
                   isCurrentUser
                     ? 'bg-[#7D2262] text-white rounded-br-none'
                     : 'bg-[#EFC4E2] text-black rounded-bl-none'
                 }`}
               >
-                <p className="text-xs md:text-sm break-words">{message.message_text}</p>
-                <p className="text-xs opacity-70 mt-1">
+                <p className="text-xs md:text-sm break-all">{message.message_text}</p>
+                <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                   {new Date(message.created_at).toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
@@ -153,7 +153,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
       </div>          
 
       {/* Message Input */}
-      <div className="bg-[#160404] p-2 border-t border-[#424C6B] md:px-8 md:py-6">
+      <div className="bg-[#160404] p-2 border-t border-[#424C6B] px-4 md:px-12 md:py-6">
         <div className="flex items-center gap-2 md:gap-3">
           <button className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors">
             <LuPaperclip size={18} className="md:w-5 md:h-5" />
