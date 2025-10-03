@@ -56,6 +56,7 @@ type Subscription = {
     id: string | number;
     user: User;
     package: Package;
+    merry_limit: string | number;
 }
 
 type MatchListResponse = { data: Match[] };
