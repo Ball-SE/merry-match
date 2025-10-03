@@ -55,14 +55,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-        // ✅ แปลง data ให้ return โปรไฟล์ “อีกฝั่ง” พร้อมแนบ match_id และ other_user_id
+        // ✅ แปลง data ให้ return โปรไฟล์ "อีกฝั่ง" พร้อมแนบ match_id และ other_user_id
         const transformed = rows
         .map((match: MatchRow) => {
           const isUser1 = match.user1_id === user.id;
           const otherProfile = isUser1 ? match.user2 : match.user1;
           const otherUserId = isUser1 ? match.user2_id : match.user1_id;
           if (!otherProfile) return null;
-          return { ...otherProfile, match_id: match.id, other_user_id: otherUserId } as ProfileRow & { match_id: string; other_user_id: string };
+          const result = { ...otherProfile, match_id: match.id, other_user_id: otherUserId } as ProfileRow & { match_id: string; other_user_id: string };
+          return result;
         }).filter((p): p is ProfileRow & { match_id: string; other_user_id: string } => Boolean(p));
     
         // 🔹 ลบ swipe ของคู่ที่ match แล้ว (ถ้ามี)
