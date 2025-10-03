@@ -10,7 +10,6 @@ function ChatPage() {
     const { isLoggedIn } = useAuth('/login');
     const [showChat, setShowChat] = useState(false);
     const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
-    const [selectedMatchName, setSelectedMatchName] = useState<string>('');
 
     if (isLoggedIn === null) {
         return <div>Loading...</div>;
@@ -36,7 +35,7 @@ function ChatPage() {
                             >
                                 <LuArrowLeft size={20} className="text-gray-600" />
                             </button>
-                            <h1 className="text-lg font-semibold text-gray-900">{selectedMatchName || 'Chat'}</h1>
+                            <h1 className="text-lg font-semibold text-gray-900">Daeny</h1>
                         </div>
                     </div>
                 )}
@@ -45,9 +44,8 @@ function ChatPage() {
                     {/* Desktop Sidebar */}
                     <div className="hidden md:block md:basis-1/4 lg:basis-1/5 overflow-auto bg-[#F6F7FC] ">
                         <div className="w-full p-4 h-full">
-                            <MatchingLeft onChatSelect={(matchId: string, matchName: string) => {
+                            <MatchingLeft onChatSelect={(matchId: string) => {
                                 setSelectedMatchId(matchId);
-                                setSelectedMatchName(matchName);
                             }} />
                         </div>
                     </div>
@@ -58,9 +56,8 @@ function ChatPage() {
                             /* Mobile MatchingLeft - Full screen */
                             <div className="flex-1 overflow-auto bg-[#F6F7FC]">
                                 <div className="p-4 w-full">
-                                    <MatchingLeft onChatSelect={(matchId: string, matchName: string) => {
+                                    <MatchingLeft onChatSelect={(matchId: string) => {
                                         setSelectedMatchId(matchId);
-                                        setSelectedMatchName(matchName);
                                         setShowChat(true);
                                     }} />
                                 </div>
