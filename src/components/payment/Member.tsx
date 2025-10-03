@@ -1,25 +1,17 @@
 import { useUserSubscription } from "@/hooks/useUserSubscription";
+import { useBillingHistory } from "@/hooks/useBillingHistory";
+import { usePaymentMethod } from "@/hooks/usePaymentMethod";
 import Image from "next/image";
 import { useState } from "react";
-
-interface BillingHistory {
-    date: string;
-    package: string;
-    amount: string;
-}
+import { supabase } from "@/lib/supabase/supabaseClient";
 
 function Member() {
-    const { subscription, loading, hasActiveSubscription } = useUserSubscription();
+    const { subscription, loading: subLoading, hasActiveSubscription, refetch: refetchSubscription } = useUserSubscription();
+    const { billingHistory, loading: historyLoading } = useBillingHistory();
+    const { paymentMethod, loading: pmLoading } = usePaymentMethod();
     const [showCancelModal, setShowCancelModal] = useState(false);
-
-    // Mock billing history - ในอนาคตจะดึงจาก API
-    const billingHistory: BillingHistory[] = [
-        { date: "01/08/2022", package: "Premium", amount: "THB 149.00" },
-        { date: "01/07/2022", package: "Premium", amount: "THB 149.00" },
-        { date: "01/06/2022", package: "Basic", amount: "THB 59.00" },
-        { date: "01/05/2022", package: "Basic", amount: "THB 59.00" },
-        { date: "01/04/2022", package: "Basic", amount: "THB 59.00" },
-    ];
+    const [cancelling, setCancelling] = useState(false);
+    const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
     const formatDate = (dateString: string): string => {
         const date = new Date(dateString);
@@ -31,9 +23,55 @@ function Member() {
 
     const nextBillingDate = subscription?.current_period_end 
         ? formatDate(subscription.current_period_end)
-        : "01/09/2022";
+        : "-";
 
-    if (loading) {
+    // ฟังก์ชัน Cancel Subscription
+    const handleCancelSubscription = async () => {
+        try {
+            setCancelling(true);
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) {
+                throw new Error('Not authenticated');
+            }
+
+            // แก้ path จาก /api/subscriptions/cancel เป็น /api/billing/cancle
+            const response = await fetch('/api/billing/cancle', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to cancel subscription');
+            }
+
+            setAlert({ type: 'success', message: 'Subscription cancelled successfully!' });
+            setShowCancelModal(false);
+            
+            // รอ 1.5 วินาทีแล้ว refresh ข้อมูล
+            setTimeout(() => {
+                refetchSubscription();
+                setAlert(null);
+            }, 1500);
+
+        } catch (error) {
+            console.error('Error cancelling subscription:', error);
+            setAlert({ 
+                type: 'error', 
+                message: error instanceof Error ? error.message : 'Failed to cancel subscription' 
+            });
+        } finally {
+            setCancelling(false);
+        }
+    };
+
+    // แสดง loading ถ้ายังโหลดข้อมูลไม่เสร็จ
+    if (subLoading || historyLoading || pmLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-xl text-gray-600">Loading...</div>
@@ -41,8 +79,45 @@ function Member() {
         );
     }
 
+    // แปลงชื่อ brand ให้เป็น capitalize
+    const getBrandName = (brand: string) => {
+        return brand.charAt(0).toUpperCase() + brand.slice(1).toLowerCase();
+    };
+
+    // แปลงชื่อ brand เป็น icon path
+    const getBrandIcon = (brand: string) => {
+        const brandLower = brand.toLowerCase();
+        if (brandLower === 'visa') return '/assets/visa.png';
+        if (brandLower === 'mastercard') return '/assets/mastercard.png';
+        return '/assets/visa.png'; // default
+    };
+
     return (
         <div className="bg-[#FCFCFE] min-h-screen py-12 px-4 sm:px-8 lg:px-24">
+            {/* Alert Notification */}
+            {alert && (
+                <div className="fixed top-4 right-4 z-50 animate-slide-in">
+                    <div className={`rounded-lg p-4 shadow-lg ${
+                        alert.type === 'success' 
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-red-500 text-white'
+                    }`}>
+                        <div className="flex items-center gap-2">
+                            {alert.type === 'success' ? (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            ) : (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            )}
+                            <span className="font-medium">{alert.message}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
@@ -86,7 +161,7 @@ function Member() {
 
                                 <div className="flex flex-row items-center gap-2">
                                     <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
-                                    <span className="text-white text-sm">Merry’ more than a daily limited</span>
+                                    <span className="text-white text-sm">Merry&apos; more than a daily limited</span>
                                 </div>
 
                                 {/* Features and Status */}
@@ -109,7 +184,6 @@ function Member() {
                                         <span className="bg-[#F3E4DD] text-[#B8653E] px-4 py-1.5 rounded-full text-sm font-semibold">
                                             Active
                                         </span>
-                                        
                                     </div>
                                 </div>
                             </div>
@@ -119,7 +193,7 @@ function Member() {
                             <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 justify-end items-end">
                                 <button 
                                     onClick={() => setShowCancelModal(true)}
-                                    className="text-white text-sm  hover:text-gray-200 transition-colors"
+                                    className="text-white text-sm hover:text-gray-200 transition-colors underline"
                                 >
                                     Cancel Package
                                 </button>
@@ -139,30 +213,45 @@ function Member() {
                     <h3 className="text-2xl font-semibold text-[#2A2E3F] mb-4">
                         Payment Method
                     </h3>
-                    <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-[#F6F7FC] rounded-lg flex items-center justify-center">
-                                    <Image 
-                                        src="/assets/visa.png" 
-                                        alt="Visa" 
-                                        width={40} 
-                                        height={40}
-                                    />
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-gray-800">Visa ending *9899</p>
-                                    <p className="text-sm text-gray-500">Expire 04/2025</p>
+                    {paymentMethod ? (
+                        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-[#F6F7FC] rounded-lg flex items-center justify-center">
+                                        <Image 
+                                            src={getBrandIcon(paymentMethod.brand)} 
+                                            alt={getBrandName(paymentMethod.brand)} 
+                                            width={40} 
+                                            height={40}
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-800">
+                                            {getBrandName(paymentMethod.brand)} ending *{paymentMethod.last4}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            Expire {paymentMethod.expMonth.toString().padStart(2, '0')}/{paymentMethod.expYear}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
+                            <div className="border-t-[1px] border-[#E4E6ED] mb-5 mt-5"></div>
+                            <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 justify-end items-end">
+                                <button 
+                                    onClick={() => setAlert({ type: 'error', message: 'Edit payment method feature coming soon!' })}
+                                    className="text-[#C70039] font-semibold hover:text-[#A00030] transition-colors"
+                                >
+                                    Edit Payment Method
+                                </button>
+                            </div>
                         </div>
-                        <div className="border-t-[1px] border-[#E4E6ED] mb-5 mt-5"></div>
-                        <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 justify-end items-end">
-                            <button className="text-[#C70039] font-semibold hover:text-[#A00030] transition-colors">
-                                Edit Payment Method
-                            </button>
+                    ) : (
+                        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+                            <p className="text-gray-600 text-center">
+                                No payment method on file.
+                            </p>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Billing History */}
@@ -176,24 +265,35 @@ function Member() {
                         </div>
 
                         {/* Table */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <tbody className="">
-                                    {billingHistory.map((item, index) => (
-                                        <tr key={index} className="even:bg-[#F6F7FC] rounded-lg">
-                                            <td className="py-4 px-2 text-[#646D89]">{item.date}</td>
-                                            <td className="py-4 px-2 text-[#646D89]">{item.package}</td>
-                                            <td className="py-4 px-2 text-right font-semibold text-[#191C77]">
-                                                {item.amount}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        {billingHistory.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <tbody className="">
+                                        {billingHistory.map((item) => (
+                                            <tr key={item.id} className="even:bg-[#F6F7FC] rounded-lg">
+                                                <td className="py-4 px-2 text-[#646D89]">
+                                                    {formatDate(item.date)}
+                                                </td>
+                                                <td className="py-4 px-2 text-[#646D89]">{item.package}</td>
+                                                <td className="py-4 px-2 text-right font-semibold text-[#191C77]">
+                                                    THB {item.amount.toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-gray-600 text-center py-4">
+                                No billing history available.
+                            </p>
+                        )}
 
                         <div className="mt-6 flex justify-end">
-                            <button className="text-[#C70039] font-semibold hover:text-[#A00030] transition-colors">
+                            <button 
+                                onClick={() => setAlert({ type: 'error', message: 'PDF export feature coming soon!' })}
+                                className="text-[#C70039] font-semibold hover:text-[#A00030] transition-colors"
+                            >
                                 Request PDF
                             </button>
                         </div>
@@ -214,18 +314,17 @@ function Member() {
                         <div className="flex gap-4">
                             <button 
                                 onClick={() => setShowCancelModal(false)}
-                                className="flex-1 button-ghost text-[#C70039] cursor-pointer"
+                                disabled={cancelling}
+                                className="flex-1 px-6 py-3 border-2 border-[#C70039] text-[#C70039] rounded-full font-semibold hover:bg-[#C70039] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Keep Membership
                             </button>
                             <button 
-                                onClick={() => {
-                                    // TODO: Implement cancel logic
-                                    setShowCancelModal(false);
-                                }}
-                                className="flex-1 button-primary bg-[#C70039] cursor-pointer"
+                                onClick={handleCancelSubscription}
+                                disabled={cancelling}
+                                className="flex-1 px-6 py-3 bg-[#C70039] text-white rounded-full font-semibold hover:bg-[#A00030] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Confirm Cancel
+                                {cancelling ? 'Cancelling...' : 'Confirm Cancel'}
                             </button>
                         </div>
                     </div>

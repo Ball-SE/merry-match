@@ -32,6 +32,51 @@ export default async function handler(
     }
 
     const { packageId, paymentIntentId, amount } = req.body;
+
+    // ตรวจสอบราคาของ package ที่จะสมัคร และดึง daily_swipe_limit
+    const { data: newPackage, error: packageError } = await supabase
+      .from('packages')
+      .select('price, daily_swipe_limit')
+      .eq('id', packageId)
+      .single();
+
+    if (packageError || !newPackage) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    // ตรวจสอบว่า user มี subscription ที่ active อยู่หรือไม่
+    const { data: currentSubscription } = await supabase
+      .from('subscriptions')
+      .select(`
+        *,
+        packages (
+          price
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // ถ้ามี subscription ปัจจุบัน ให้ตรวจสอบว่าไม่ใช่การ downgrade
+    if (currentSubscription && currentSubscription.packages) {
+      const currentPrice = currentSubscription.packages.price;
+      const newPrice = newPackage.price;
+
+      if (newPrice < currentPrice) {
+        return res.status(400).json({ 
+          error: 'Cannot downgrade to a lower-priced package',
+          message: 'Please cancel your current subscription before subscribing to a lower-priced package'
+        });
+      }
+
+      // ถ้าเป็นการ upgrade ให้ยกเลิก subscription เก่าก่อน
+      await supabase
+        .from('subscriptions')
+        .update({ status: 'cancelled' })
+        .eq('id', currentSubscription.id);
+    }
     
     // ตรวจสอบว่ามี customer แล้วหรือยัง
     const { data: profile } = await supabase
@@ -67,11 +112,12 @@ export default async function handler(
       .insert({
         user_id: user.id,
         package_id: packageId,
-        stripe_subscription_id: paymentIntentId, // ใช้ payment intent id แทน subscription id
-        stripe_customer_id: stripeCustomerId, // จะอัปเดตภายหลังถ้าต้องการ
+        stripe_subscription_id: paymentIntentId,
+        stripe_customer_id: stripeCustomerId,
         status: 'active',
         current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+        current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        merry_limit: newPackage.daily_swipe_limit, // เพิ่มบรรทัดนี้
       })
       .select()
       .single();
@@ -81,19 +127,18 @@ export default async function handler(
       throw subscriptionError;
     }
 
-    // บันทึก payment history ใน table payments ที่มีอยู่แล้ว
+    // บันทึก payment history
     const { error: paymentError } = await supabase
       .from('payments')
       .insert({
         user_id: user.id,
         stripe_payment_intent_id: paymentIntentId,
-        amount_cents: amount * 100, // convert to cents
+        amount_cents: amount * 100,
         status: 'succeeded'
       });
 
     if (paymentError) {
       console.error('Payment error:', paymentError);
-      // ไม่ throw error เพราะ subscription สำเร็จแล้ว
     }
 
     res.status(200).json({ success: true, subscription });
