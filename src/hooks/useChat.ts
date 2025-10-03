@@ -73,35 +73,18 @@ export const useChat = (matchId: string): UseChatReturn => {
     getSession();
   }, []);
 
+  // Track ว่าโหลดข้อมูลไปแล้วหรือยัง
+  const hasLoadedRef = useRef(false);
+
   // Reset messages เมื่อเปลี่ยน matchId
   useEffect(() => {
     setMessages([]);
     setMatch(null);
     setUnreadCount(0);
+    hasLoadedRef.current = false; // Reset flag เมื่อเปลี่ยน match
   }, [matchId]);
 
-  // ดึงข้อมูล match
-  const fetchMatch = useCallback(async () => {
-    if (!session?.access_token) return;
-
-    try {
-      const response = await fetch(`/api/matches/${matchId}`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch match");
-      }
-      const data = await response.json();
-      setMatch(data.match);
-    } catch (err) {
-      console.error("Error fetching match:", err);
-      setError("Failed to load match");
-    }
-  }, [matchId, session?.access_token]);
-
-  // ดึงข้อความล่าสุด 20 ข้อความ
+  // ดึงข้อความล่าสุด 20 ข้อความ (ใช้สำหรับ polling)
   const fetchMessages = useCallback(async () => {
     if (!session?.access_token) return;
 
@@ -317,16 +300,65 @@ export const useChat = (matchId: string): UseChatReturn => {
   // โหลดข้อมูลเริ่มต้น
   useEffect(() => {
     const loadData = async () => {
+      // รอให้ session พร้อมก่อน
+      if (!session?.access_token || !matchId) {
+        console.log('⏳ Waiting for session and matchId...');
+        return;
+      }
+
+      // ป้องกันการโหลดซ้ำ
+      if (hasLoadedRef.current) {
+        console.log('⚠️ Data already loaded, skipping');
+        return;
+      }
+
+      console.log('📥 Loading match and messages data...');
       setLoading(true);
       setError(null);
+      hasLoadedRef.current = true;
 
-      await Promise.all([fetchMatch(), fetchMessages()]);
+      try {
+        // Fetch match
+        const matchResponse = await fetch(`/api/matches/${matchId}`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        if (matchResponse.ok) {
+          const matchData = await matchResponse.json();
+          setMatch(matchData.match);
+        }
+
+        // Fetch messages
+        const messagesResponse = await fetch(`/api/messages?match_id=${matchId}&limit=20`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        if (messagesResponse.ok) {
+          const messagesData = await messagesResponse.json();
+          setMessages(messagesData.messages || []);
+          
+          // นับข้อความที่ยังไม่ได้อ่าน
+          const unread =
+            messagesData.messages?.filter(
+              (msg: Message) =>
+                !msg.is_read && msg.receiver_id === session.user?.id
+            ).length || 0;
+          setUnreadCount(unread);
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load data');
+      }
 
       setLoading(false);
+      console.log('✅ Data loaded successfully');
     };
 
     loadData();
-  }, [fetchMatch, fetchMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, session?.access_token]);
 
   // ทำเครื่องหมายข้อความที่ยังไม่ได้อ่านเมื่อ component mount
   useEffect(() => {

@@ -31,6 +31,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
+  const isInitialScrollRef = useRef(false); // ป้องกัน auto-load หลัง mount
 
   // Reset state เมื่อเปลี่ยน matchId
   useEffect(() => {
@@ -40,14 +41,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
     setOldestMessageId(null);
     setLoadingMore(false);
     isLoadingRef.current = false;
-    
-    // Reset scroll position หลังจาก DOM render
-    setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        console.log('📍 Scroll position reset to bottom');
-      }
-    }, 100);
+    isInitialScrollRef.current = false; // Reset flag สำหรับ chat ใหม่
   }, [matchId]);
 
   // อัปเดต allMessages เมื่อ messages จาก hook เปลี่ยน
@@ -79,10 +73,18 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
         // Scroll to bottom เมื่อมีข้อความใหม่
         setTimeout(() => {
           if (messagesContainerRef.current) {
+            // ใช้ instant scroll เพื่อไม่ให้ trigger scroll event
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
             console.log('📍 Auto scrolled to bottom after loading messages');
+            
+            // ตั้ง flag เพื่อป้องกัน auto-load ในช่วงสั้นๆหลัง scroll
+            isInitialScrollRef.current = true;
+            setTimeout(() => {
+              isInitialScrollRef.current = false;
+              console.log('🟢 Initial scroll completed, load-more enabled');
+            }, 300); // ลดเวลาเหลือ 300ms
           }
-        }, 150);
+        }, 100); // ลดเวลา delay
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,10 +114,14 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
 
   // โหลดข้อความเก่าเพิ่มเติม
   const loadMoreMessages = useCallback(async () => {
+    console.log('📥 loadMoreMessages called', { loadingMore, hasMore, oldestMessageId });
+    
     if (loadingMore || !hasMore || !oldestMessageId) {
+      console.log('❌ Skipped:', { loadingMore, hasMore, oldestMessageId });
       return;
     }
 
+    console.log('🚀 Starting to load more messages...');
     setLoadingMore(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -144,6 +150,8 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
         const data = await response.json();
         const newMessages: Message[] = data.messages || [];
         
+        console.log('📦 Received messages:', newMessages.length, 'hasMore:', data.pagination?.hasMore);
+        
         if (newMessages.length > 0) {
           // เพิ่มข้อความเก่าเข้าไปข้างหน้า
           const combined = [...newMessages, ...allMessages];
@@ -153,6 +161,8 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
           
           setAllMessages(combined);
           setHasMore(data.pagination?.hasMore || false);
+          
+          console.log('✅ Messages updated, total:', combined.length);
 
           // คืน scroll position
           setTimeout(() => {
@@ -160,14 +170,36 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
               const newScrollHeight = messagesContainerRef.current.scrollHeight;
               const scrollDiff = newScrollHeight - previousScrollHeight.current;
               messagesContainerRef.current.scrollTop = scrollDiff;
+              console.log('📍 Scroll position restored:', scrollDiff);
+              
+              // Reset loading flag หลังจาก scroll position ถูกคืนค่าแล้ว
+              setTimeout(() => {
+                isLoadingRef.current = false;
+                console.log('🏁 Loading flag reset, ready for next load');
+              }, 200);
             }
           }, 100);
         } else {
+          console.log('⚠️ No more messages');
           setHasMore(false);
+          // Reset flag เมื่อไม่มีข้อความแล้ว
+          setTimeout(() => {
+            isLoadingRef.current = false;
+          }, 100);
         }
+      } else {
+        console.error('❌ API error:', response.status);
+        // Reset flag เมื่อเกิด error
+        setTimeout(() => {
+          isLoadingRef.current = false;
+        }, 100);
       }
     } catch (error) {
       console.error('Error loading more messages:', error);
+      // Reset flag เมื่อเกิด error
+      setTimeout(() => {
+        isLoadingRef.current = false;
+      }, 100);
     } finally {
       setLoadingMore(false);
     }
@@ -177,8 +209,17 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
   const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return;
     
+    // ป้องกันการ load ข้อความในช่วงที่กำลัง auto-scroll หลัง mount
+    if (isInitialScrollRef.current) {
+      console.log('🔒 Initial scroll in progress, skip load-more');
+      return;
+    }
+    
     // ป้องกันการเรียกซ้ำๆ
-    if (isLoadingRef.current) return;
+    if (isLoadingRef.current) {
+      console.log('⏸️ Already loading, skip');
+      return;
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
 
@@ -195,12 +236,10 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
     if (scrollTop < 200 && hasMore && !loadingMore && allMessages.length > 0) {
       console.log('✅ Triggering loadMoreMessages');
       isLoadingRef.current = true;
-      loadMoreMessages().finally(() => {
-        // รอ 500ms ก่อนให้เรียกใหม่ได้
-        setTimeout(() => {
-          isLoadingRef.current = false;
-        }, 500);
-      });
+      
+      // Call loadMoreMessages
+      // Flag จะถูก reset ภายใน loadMoreMessages หลังจาก scroll position ถูกคืนค่าแล้ว
+      loadMoreMessages();
     }
   }, [hasMore, loadingMore, loadMoreMessages, allMessages.length]);
 
