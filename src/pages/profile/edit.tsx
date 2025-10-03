@@ -4,6 +4,7 @@ import { Loader2, AlertCircle, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
+import { validateEditProfile, validateUsername } from '@/middleware/edit-profile-validation';
 
 interface UserProfile {
   id: string;
@@ -29,18 +30,22 @@ export default function EditProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     date_of_birth: '',
-    location: '',
-    city: '',
+    location: 'Thailand',
+    city: 'Bangkok',
     username: '',
-    gender: '',
-    sexual_preferences: '',
-    racial_preferences: '',
-    meeting_interests: '',
+    email: '',
+    gender: 'Male',
+    sexual_preferences: 'Female',
+    racial_preferences: 'Asian',
+    meeting_interests: 'Friends',
     bio: '',
     interests: [] as string[],
     photos: [] as string[]
@@ -86,13 +91,14 @@ export default function EditProfilePage() {
         setFormData({
           name: profileData.name || '',
           date_of_birth: profileData.date_of_birth || '',
-          location: profileData.location || '',
-          city: profileData.city || '',
+          location: profileData.location || 'Thailand',
+          city: profileData.city || 'Bangkok',
           username: profileData.username || '',
-          gender: profileData.gender || '',
-          sexual_preferences: profileData.sexual_preferences || '',
-          racial_preferences: profileData.racial_preferences || '',
-          meeting_interests: profileData.meeting_interests || '',
+          email: profileData.email || '',
+          gender: profileData.gender || 'Male',
+          sexual_preferences: profileData.sexual_preferences || 'Female',
+          racial_preferences: profileData.racial_preferences || 'Asian',
+          meeting_interests: profileData.meeting_interests || 'Friends',
           bio: profileData.bio || '',
           interests: filteredInterests,
           photos: profileData.photos || []
@@ -115,18 +121,99 @@ export default function EditProfilePage() {
       ...prev,
       [field]: value
     }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Real-time validation for specific fields
+  const validateField = async (field: string, value: string) => {
+    if (field === 'username' && value.length >= 6) {
+      const validation = await validateUsername(value, profile?.username);
+      if (!validation.isValid) {
+        setFieldErrors(prev => ({ ...prev, [field]: validation.message || '' }));
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    }
   };
 
 
   // Handle save
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
+    setSuccess(null);
+    setValidationErrors({});
+    
     try {
-      // TODO: Implement save logic
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      router.push('/profile');
-    } catch {
-      setError('Failed to save profile');
+      // Validate form data
+      const validation = validateEditProfile(formData);
+      
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors);
+        setSaving(false);
+        return;
+      }
+
+      // Additional username validation if changed
+      if (formData.username !== profile?.username) {
+        const usernameValidation = await validateUsername(formData.username, profile?.username);
+        if (!usernameValidation.isValid) {
+          setValidationErrors({ username: usernameValidation.message || 'Username validation failed' });
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Get session for API call
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // Call API to update profile
+      const response = await fetch('/api/profile/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        console.error('❌ API Error:', result);
+        throw new Error(result.message || 'Failed to update profile');
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      setSuccess('Profile updated successfully!');
+      
+      // Update local profile state
+      setProfile(result.data);
+      
+      // Redirect to profile page after 2 seconds
+      setTimeout(() => {
+        router.push('/profile');
+      }, 2000);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save profile';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -201,9 +288,46 @@ export default function EditProfilePage() {
             </div>
           </div>
 
-          {/* Form Content */}
-          <div className="p-4 md:p-12">
-            <div className="max-w-4xl mx-auto">
+        {/* Form Content */}
+        <div className="p-4 md:p-12">
+          <div className="max-w-4xl mx-auto">
+          
+          {/* Global Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5" />
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>{success}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Validation Errors Summary */}
+          {Object.keys(validationErrors).length > 0 && (
+            <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-semibold">Please fix the following errors:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1">
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <li key={field} className="text-sm">{message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           
           {/* Basic Information */}
           <div className="mb-8 md:mb-10">
@@ -217,9 +341,16 @@ export default function EditProfilePage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                    validationErrors.name || fieldErrors.name 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  }`}
                   placeholder="At least 2 character"
                 />
+                {(validationErrors.name || fieldErrors.name) && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.name || fieldErrors.name}</p>
+                )}
               </div>
 
               {/* Date of birth */}
@@ -229,8 +360,15 @@ export default function EditProfilePage() {
                   type="date"
                   value={formData.date_of_birth}
                   onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                    validationErrors.date_of_birth || fieldErrors.date_of_birth 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  }`}
                 />
+                {(validationErrors.date_of_birth || fieldErrors.date_of_birth) && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.date_of_birth || fieldErrors.date_of_birth}</p>
+                )}
               </div>
 
               {/* Location */}
@@ -241,7 +379,6 @@ export default function EditProfilePage() {
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
                 >
-                  <option value="">Thailand</option>
                   <option value="Thailand">Thailand</option>
                   <option value="Bangkok">Bangkok</option>
                   <option value="Chiang Mai">Chiang Mai</option>
@@ -257,7 +394,6 @@ export default function EditProfilePage() {
                   onChange={(e) => handleInputChange('city', e.target.value)}
                   className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
                 >
-                  <option value="">Bangkok</option>
                   <option value="Bangkok">Bangkok</option>
                   <option value="Chiang Mai">Chiang Mai</option>
                   <option value="Phuket">Phuket</option>
@@ -266,14 +402,36 @@ export default function EditProfilePage() {
               </div>
 
               {/* Username */}
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Username</label>
                 <input
                   type="text"
                   value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
+                  onChange={(e) => {
+                    handleInputChange('username', e.target.value);
+                    validateField('username', e.target.value);
+                  }}
+                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                    validationErrors.username || fieldErrors.username 
+                      ? 'border-red-500' 
+                      : 'border-gray-300'
+                  }`}
                   placeholder="At least 6 character"
+                />
+                {(validationErrors.username || fieldErrors.username) && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.username || fieldErrors.username}</p>
+                )}
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Email</label>
+                <input
+                  type="email"
+                  value={profile?.email || ''}
+                  disabled
+                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 text-sm md:text-base cursor-not-allowed"
+                  placeholder="Email cannot be changed"
                 />
               </div>
             </div>
@@ -372,12 +530,21 @@ export default function EditProfilePage() {
                 onChange={(e) => handleInputChange('bio', e.target.value)}
                 maxLength={150}
                 rows={4}
-                className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent resize-none text-sm md:text-base"
+                className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent resize-none text-sm md:text-base ${
+                  validationErrors.bio || fieldErrors.bio 
+                    ? 'border-red-500' 
+                    : 'border-gray-300'
+                }`}
                 placeholder="I really looking for new..."
               />
-              <p className="text-xs md:text-sm text-gray-500 mt-1 md:mt-2">
-                {formData.bio.length}/150 characters
-              </p>
+              <div className="flex justify-between items-center mt-1 md:mt-2">
+                <p className="text-xs md:text-sm text-gray-500">
+                  {formData.bio.length}/150 characters
+                </p>
+                {(validationErrors.bio || fieldErrors.bio) && (
+                  <p className="text-xs md:text-sm text-red-600">{validationErrors.bio || fieldErrors.bio}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -385,6 +552,9 @@ export default function EditProfilePage() {
           <div className="mb-8 md:mb-10">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">Profile pictures</h2>
             <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">Upload at least 2 photos</p>
+            {(validationErrors.photos || fieldErrors.photos) && (
+              <p className="text-sm text-red-600 mb-4">{validationErrors.photos || fieldErrors.photos}</p>
+            )}
             
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
               {[0, 1, 2, 3, 4].map((index) => (

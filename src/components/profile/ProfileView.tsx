@@ -133,7 +133,7 @@ export default function ProfileView({ className = '' }: ProfileViewProps) {
   
   const handleClose = () => {
     if (!actionState.loading) {
-      router.push('/');
+      router.push('/profile/edit');
     }
   };
   
@@ -230,17 +230,6 @@ export default function ProfileView({ className = '' }: ProfileViewProps) {
         
         {/* Action Buttons */}
         <div className="absolute top-6 right-6 z-50 flex gap-3">
-          <button 
-            onClick={() => router.push('/profile/edit')}
-            disabled={actionState.loading}
-            className={`px-4 py-2 bg-[#C70039] text-white rounded-lg shadow-lg transition-colors ${
-              actionState.loading 
-                ? 'opacity-50 cursor-not-allowed' 
-                : 'hover:bg-[#950028] cursor-pointer'
-            }`}
-          >
-            Edit Profile
-          </button>
           <button 
             onClick={handleClose}
             disabled={actionState.loading}
