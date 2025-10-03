@@ -28,7 +28,7 @@ function UserProfileNavbar() {
                     <RiHeartFill className="text-pink-400" />
                     <span>Merry list</span>
                 </Link>
-                <Link href="/package" className="w-full text-[#646D89] flex flex-row items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50">
+                <Link href="/member" className="w-full text-[#646D89] flex flex-row items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50">
                     <RiBox3Fill className="text-pink-400" />
                     <span>Merry Membership</span>
                 </Link>

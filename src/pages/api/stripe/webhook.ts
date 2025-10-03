@@ -28,6 +28,37 @@ export default async function handler(
     );
 
     switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object;
+        console.log('Checkout completed:', session.id);
+        
+        // ดึง customer_id และ subscription_id
+        const customerId = session.customer as string;
+        const subscriptionId = session.subscription as string;
+        const userId = session.metadata?.userId;
+
+        if (userId && customerId) {
+          // บันทึก stripe_customer_id ลงใน profiles
+          await supabase
+            .from('profiles')
+            .update({ stripe_customer_id: customerId })
+            .eq('id', userId);
+
+          // อัปเดต subscription ด้วย stripe_subscription_id
+          if (subscriptionId) {
+            await supabase
+              .from('subscriptions')
+              .update({ 
+                stripe_subscription_id: subscriptionId,
+                stripe_customer_id: customerId,
+                status: 'active'
+              })
+              .eq('user_id', userId)
+              .eq('status', 'active');
+          }
+        }
+        break;
+
       case 'payment_intent.succeeded':
         const paymentIntent = event.data.object;
         console.log('Payment succeeded:', paymentIntent.id);

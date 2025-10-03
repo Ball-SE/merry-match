@@ -159,30 +159,31 @@ function Member() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-row items-center gap-2">
-                                    <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
-                                    <span className="text-white text-sm">Merry&apos; more than a daily limited</span>
-                                </div>
-
-                                {/* Features and Status */}
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-                                    <div className="space-y-2">
+                                <div className="space-y-2">
                                         {subscription.package?.details?.slice(0, 2).map((detail, index) => (
                                             <div key={index} className="flex items-center gap-2">
                                                 <Image 
                                                     src="/assets/checkbox-circle.png" 
                                                     alt="Check" 
-                                                    width={18} 
-                                                    height={18}
+                                                    width={30} 
+                                                    height={30}
                                                 />
                                                 <span className="text-white text-sm">{detail}</span>
                                             </div>
                                         ))}
                                     </div>
 
+                                {/* Features and Status */}
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
                                     <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 items-center">
-                                        <span className="bg-[#F3E4DD] text-[#B8653E] px-4 py-1.5 rounded-full text-sm font-semibold">
-                                            Active
+                                        <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
+                                            subscription.status === 'active' 
+                                                ? 'bg-[#F3E4DD] text-[#B8653E]' 
+                                                : subscription.status === 'cancelled'
+                                                ? 'bg-red-100 text-red-600'
+                                                : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)}
                                         </span>
                                     </div>
                                 </div>
