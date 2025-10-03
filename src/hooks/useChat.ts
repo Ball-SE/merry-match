@@ -124,66 +124,33 @@ export const useChat = (matchId: string): UseChatReturn => {
   }, [matchId, session?.access_token, session?.user?.id]);
 
   // ส่งข้อความ
-  const sendMessage = useCallback(
-    async (messageText: string) => {
-      if (!match || !session?.user?.id || !session?.access_token) return;
+  const sendMessage = useCallback(async (messageText: string) => {
+    if (!match || !session?.user?.id || !session?.access_token) return;
 
-      console.log("Sending message:", {
-        matchId,
-        messageText,
-        receiverId: match.other_user.id,
-        senderId: session.user.id,
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          match_id: matchId,
+          message_text: messageText,
+          receiver_id: match.other_user.id,
+        }),
       });
 
-      try {
-        const response = await fetch("/api/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            match_id: matchId,
-            message_text: messageText,
-            receiver_id: match.other_user.id,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("Failed to send message:", {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData,
-          });
-          throw new Error(
-            errorData.error || `Failed to send message: ${response.status}`
-          );
-        }
-
-        const result = await response.json();
-        console.log("Message sent successfully:", result);
-
-        // เพิ่มข้อความใหม่เข้า state ทันที (optimistic update)
-        if (result.message) {
-          setMessages((prev) => {
-            // ตรวจสอบว่ามีข้อความนี้อยู่แล้วหรือไม่ (เผื่อ realtime เพิ่มก่อน)
-            const messageExists = prev.some(
-              (msg) => msg.id === result.message.id
-            );
-            if (messageExists) {
-              return prev;
-            }
-            return [...prev, result.message];
-          });
-        }
-      } catch (err) {
-        console.error("Error sending message:", err);
-        setError("Failed to send message");
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
-    },
-    [match, matchId, session?.user?.id, session?.access_token]
-  );
+
+      // ข้อความจะถูกเพิ่มผ่าน realtime subscription
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message');
+    }
+  }, [match, matchId, session?.user?.id, session?.access_token]);
 
   // ทำเครื่องหมายว่าอ่านแล้ว
   const markAsRead = useCallback(
@@ -224,20 +191,7 @@ export const useChat = (matchId: string): UseChatReturn => {
 
   // ตั้งค่า realtime subscription
   useEffect(() => {
-    if (!matchId || !session?.user?.id || !session?.access_token) {
-      console.log("Missing required data for realtime:", {
-        matchId,
-        userId: session?.user?.id,
-        hasToken: !!session?.access_token,
-      });
-      return;
-    }
-
-    console.log("Setting up realtime with:", {
-      matchId,
-      userId: session.user.id,
-      token: session.access_token.substring(0, 20) + "...",
-    });
+    if (!matchId || !session?.user?.id || !session?.access_token) return;
 
     // สร้าง supabase client ด้วย user context
     const supabase = createClient(
@@ -251,7 +205,6 @@ export const useChat = (matchId: string): UseChatReturn => {
     );
 
     // สร้าง channel สำหรับ match นี้
-    console.log("Setting up realtime subscription for match:", matchId);
     const channel = supabase
       .channel(`match-${matchId}`)
       .on(
@@ -263,20 +216,11 @@ export const useChat = (matchId: string): UseChatReturn => {
           filter: `match_id=eq.${matchId}`,
         },
         (payload) => {
-          console.log("Realtime INSERT payload:", payload);
           const newMessage = payload.new as Message;
-
-          // เพิ่มข้อความใหม่ (ตรวจสอบไม่ให้ซ้ำ)
-          setMessages((prev) => {
-            const messageExists = prev.some((msg) => msg.id === newMessage.id);
-            if (messageExists) {
-              console.log("Message already exists, skipping:", newMessage.id);
-              return prev;
-            }
-            console.log("Adding new message from realtime:", newMessage);
-            return [...prev, newMessage];
-          });
-
+          
+          // เพิ่มข้อความใหม่
+          setMessages(prev => [...prev, newMessage]);
+          
           // ถ้าเป็นข้อความที่ส่งมาหาเรา ให้เพิ่มจำนวน unread
           if (newMessage.receiver_id === session.user.id) {
             setUnreadCount((prev) => prev + 1);
@@ -302,18 +246,7 @@ export const useChat = (matchId: string): UseChatReturn => {
           );
         }
       )
-      .subscribe((status) => {
-        console.log("Realtime subscription status:", status);
-        if (status === "SUBSCRIBED") {
-          console.log("Successfully subscribed to realtime channel");
-        } else if (status === "CHANNEL_ERROR") {
-          console.error("Channel error occurred");
-        } else if (status === "TIMED_OUT") {
-          console.error("Subscription timed out");
-        } else if (status === "CLOSED") {
-          console.log("Channel closed");
-        }
-      });
+      .subscribe();
 
     channelRef.current = channel;
 
