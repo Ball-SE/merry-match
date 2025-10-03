@@ -9,10 +9,11 @@ type Match = {
     id: string | number;
     name?: string;
     photo_url: string | string[] | null;
+    match_id?: string;
 };
 
 interface MatchingLeftProps {
-    onChatSelect?: () => void;
+    onChatSelect?: (matchId: string, matchName: string) => void;
 }
 
 function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
@@ -202,12 +203,18 @@ function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
                                 <div key={match.id} 
                                      className="flex flex-row gap-2 sm:gap-3 items-center cursor-pointer hover:bg-[#f9f9f9] p-2 sm:p-3 rounded-lg transition-colors mx-1 hover:border-1 hover:border-[#A62D82]"
                                      onClick={() => {
-                                         if (onChatSelect) {
-                                             onChatSelect();
-                                         } else {
-                                             router.push(`/chat`);
-                                         }
-                                     }}
+                                        if (onChatSelect && match.match_id && match.name) {
+                                            onChatSelect(match.match_id, match.name);
+                                        } else if (match.match_id) {
+                                            // Navigate to chat page with matchId parameter
+                                            router.push({
+                                                pathname: '/chat',
+                                                query: { matchId: match.match_id, matchName: match.name || 'Chat' }
+                                            });
+                                        } else {
+                                            router.push('/chat');
+                                        }
+                                    }}
                                      >
                                     <div className="w-[40px] h-[40px] sm:w-[50px] sm:h-[50px] relative overflow-hidden rounded-full flex-shrink-0">
                                         <Image 

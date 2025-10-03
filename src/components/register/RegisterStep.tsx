@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
   validateBasicInfo,
   validateIdentitiesAndInterests,
@@ -247,8 +248,8 @@ function Step1({
               onBlur={() => handleBlur("city")}
               disabled={!formData.location}
               className={`${getInputClassName("city")} ${!formData.location
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : ""
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : ""
                 }`}
               style={{
                 appearance: "none",
@@ -725,8 +726,6 @@ const Step3 = React.forwardRef<
 >(({ formData, photos, setPhotos }, ref) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<boolean[]>(Array(5).fill(false));
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // เก็บรูปเป็น File objects แทน URL
@@ -735,6 +734,21 @@ const Step3 = React.forwardRef<
   );
   const [photoPreviews, setPhotoPreviews] = useState<string[]>(
     Array(5).fill("")
+  );
+
+  // สร้าง array ของ items สำหรับ Reorder
+  const [photoItems, setPhotoItems] = useState<Array<{
+    id: string;
+    file: File | null;
+    preview: string;
+    index: number;
+  }>>(
+    Array.from({ length: 5 }, (_, i) => ({
+      id: `photo-${i}`,
+      file: null,
+      preview: "",
+      index: i,
+    }))
   );
 
   const folderRef = useRef(
@@ -748,33 +762,71 @@ const Step3 = React.forwardRef<
       : `temp-user-${Date.now()}`
   );
 
-  // Drag & Drop handlers
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
+  // ฟังก์ชันสำหรับจัดเรียงรูปให้ติดกัน
+  const compactPhotos = (files: (File | null)[], previews: string[]) => {
+    const compactedFiles = Array(5).fill(null);
+    const compactedPreviews = Array(5).fill("");
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverIndex(null);
-  };
+    let writeIndex = 0;
 
-  const handleDrop = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(null);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      onFiles(files, index);
+    for (let i = 0; i < files.length; i++) {
+      if (files[i] !== null) {
+        compactedFiles[writeIndex] = files[i];
+        compactedPreviews[writeIndex] = previews[i];
+        writeIndex++;
+      }
     }
+
+    return { compactedFiles, compactedPreviews };
+  };
+
+  // ฟังก์ชันสำหรับอัปเดต photoItems ตาม photoFiles
+  const updatePhotoItems = (files: (File | null)[], previews: string[]) => {
+    setPhotoItems(prev =>
+      prev.map((item, index) => ({
+        ...item,
+        file: files[index],
+        preview: previews[index],
+      }))
+    );
   };
 
   const validateCurrentPhotos = () => {
-    // นับจำนวนรูปที่มี
     const photoCount = photoFiles.filter((file) => file !== null).length;
     const validation = validatePhotos(Array(photoCount).fill("temp"));
     setErrors(validation.errors);
   };
+
+  // useEffect สำหรับจัดเรียงใหม่หลัง 1.5 วินาที
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // ตรวจสอบว่ามีช่องว่างหรือไม่
+      const hasEmptySlots = photoFiles.some((file, index) => {
+        if (file === null) return false;
+        // ตรวจสอบว่ามีช่องว่างก่อนหน้านี้หรือไม่
+        for (let i = 0; i < index; i++) {
+          if (photoFiles[i] === null) return true;
+        }
+        return false;
+      });
+
+      if (hasEmptySlots) {
+        // จัดเรียงรูปให้ติดกัน
+        const { compactedFiles, compactedPreviews } = compactPhotos(photoFiles, photoPreviews);
+
+        setPhotoFiles(compactedFiles);
+        setPhotoPreviews(compactedPreviews);
+        updatePhotoItems(compactedFiles, compactedPreviews);
+
+        const remainingPhotos = compactedFiles.filter((f) => f !== null);
+        setPhotos(Array(remainingPhotos.length).fill("temp"));
+
+        validateCurrentPhotos();
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [photoFiles, photoPreviews]); // ทำงานเมื่อ photoFiles หรือ photoPreviews เปลี่ยน
 
   const onFiles = async (files: FileList | null, index: number) => {
     if (!files || files.length === 0) return;
@@ -782,7 +834,7 @@ const Step3 = React.forwardRef<
     let file = files[0];
     setUploadError(null);
 
-    // ตรวจสอบขนาดไฟล์ (10MB = 10 * 1024 * 1024 bytes)
+    // ตรวจสอบขนาดไฟล์ (10MB)
     if (file.size > 10 * 1024 * 1024) {
       setUploadError("File size cannot exceed 10MB");
       return;
@@ -815,26 +867,23 @@ const Step3 = React.forwardRef<
     });
 
     try {
-      // สร้าง preview URL
       const previewUrl = URL.createObjectURL(file);
 
-      // เก็บไฟล์และ preview
+      // สร้าง arrays ใหม่
       const newPhotoFiles = [...photoFiles];
       const newPhotoPreviews = [...photoPreviews];
 
+      // ใส่รูปในตำแหน่งที่เลือก
       newPhotoFiles[index] = file;
       newPhotoPreviews[index] = previewUrl;
 
+      // อัปเดต state ทันที (useEffect จะจัดการการจัดเรียงใหม่)
       setPhotoFiles(newPhotoFiles);
       setPhotoPreviews(newPhotoPreviews);
-
-      // อัปเดต photos array สำหรับ validation
-      // const newPhotos = [...photos];
-      // newPhotos[index] = previewUrl; // ใช้ preview URL ชั่วคราว
-      // setPhotos(newPhotos);
+      updatePhotoItems(newPhotoFiles, newPhotoPreviews);
 
       const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
-      setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
+      setPhotos(Array(remainingPhotos.length).fill("temp"));
 
       validateCurrentPhotos();
     } catch (error: unknown) {
@@ -855,93 +904,45 @@ const Step3 = React.forwardRef<
       URL.revokeObjectURL(photoPreviews[idx]);
     }
 
+    // สร้าง arrays ใหม่
     const newPhotoFiles = [...photoFiles];
     const newPhotoPreviews = [...photoPreviews];
-    const newPhotos = [...photos];
 
+    // ลบรูปในตำแหน่งที่เลือก
     newPhotoFiles[idx] = null;
     newPhotoPreviews[idx] = "";
-    newPhotos[idx] = "";
 
+    // อัปเดต state ทันที (useEffect จะจัดการการจัดเรียงใหม่)
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
-    setPhotos(newPhotos);
+    updatePhotoItems(newPhotoFiles, newPhotoPreviews);
 
-    // อัปเดต formData.photos ด้วยจำนวนรูปที่เหลือ
     const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
-    setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
-
+    setPhotos(Array(remainingPhotos.length).fill("temp"));
 
     validateCurrentPhotos();
   };
 
-  const handleImageDragStart = (e: React.DragEvent, index: number) => {
-    if (!photoFiles[index]) return; // ไม่ให้ลากถ้าไม่มีรูป
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", index.toString());
-  };
+  // จัดการการเรียงลำดับใหม่ (drag & drop)
+  const handleReorder = (newOrder: typeof photoItems) => {
+    // สร้าง arrays ใหม่จากลำดับที่ลาก
+    const newPhotoFiles = newOrder.map(item => item.file);
+    const newPhotoPreviews = newOrder.map(item => item.preview);
 
-  const handleImageDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverIndex(index);
-  };
-
-  const handleImageDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleImageDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    const dragIndex = parseInt(e.dataTransfer.getData("text/html"));
-
-    if (dragIndex === dropIndex || !photoFiles[dragIndex]) return;
-
-    // สลับตำแหน่งรูปภาพในทุก array
-    const newPhotoFiles = [...photoFiles];
-    const newPhotoPreviews = [...photoPreviews];
-    const newPhotos = [...photos];
-
-    const draggedFile = newPhotoFiles[dragIndex];
-    const draggedPreview = newPhotoPreviews[dragIndex];
-    const draggedPhoto = newPhotos[dragIndex];
-
-    const droppedFile = newPhotoFiles[dropIndex];
-    const droppedPreview = newPhotoPreviews[dropIndex];
-    const droppedPhoto = newPhotos[dropIndex];
-
-    // สลับข้อมูล
-    newPhotoFiles[dragIndex] = droppedFile;
-    newPhotoFiles[dropIndex] = draggedFile;
-
-    newPhotoPreviews[dragIndex] = droppedPreview;
-    newPhotoPreviews[dropIndex] = draggedPreview;
-
-    newPhotos[dragIndex] = droppedPhoto;
-    newPhotos[dropIndex] = draggedPhoto;
-
+    // อัปเดต state ทันที
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
-    setPhotos(newPhotos);
+    setPhotoItems(newOrder);
 
-    // อัปเดต formData.photos ด้วยจำนวนรูปที่เหลือ
     const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
-    setPhotos(Array(remainingPhotos.length).fill("temp")); // ใช้ "temp" เป็น placeholder
+    setPhotos(Array(remainingPhotos.length).fill("temp"));
 
-    setDraggedIndex(null);
-    setDragOverIndex(null);
     validateCurrentPhotos();
   };
 
-  const handleImageDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  // ฟังก์ชันสำหรับ upload รูปไป Supabase (เรียกเมื่อกด confirm)
+  // ฟังก์ชันสำหรับ upload รูปไป Supabase
   const uploadPhotosToSupabase = async (): Promise<string[]> => {
-    console.log("uploadPhotosToSupabase called"); // เพิ่ม debug log
+    console.log("uploadPhotosToSupabase called");
     const uploadedUrls: string[] = [];
 
     for (let i = 0; i < photoFiles.length; i++) {
@@ -983,119 +984,160 @@ const Step3 = React.forwardRef<
         one.
       </p>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-        {[0, 1, 2, 3, 4].map((i) => {
-          const file = photoFiles[i];
-          const previewUrl = photoPreviews[i];
-          const isUploading = uploading[i];
-          const isDragOver = dragOverIndex === i;
-          const isDragging = draggedIndex === i;
+      <Reorder.Group
+        axis="x"
+        values={photoItems}
+        onReorder={handleReorder}
+        className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5"
+      >
+        <AnimatePresence>
+          {photoItems.map((item, i) => {
+            const isUploading = uploading[i];
+            const hasFile = item.file !== null;
+            const isMainPhoto = i === 0 && hasFile;
 
-          return (
-            <div
-              key={i}
-              className="relative"
-              onDragOver={(e) => {
-                // Handle both file drag and image drag
-                if (e.dataTransfer.types.includes("text/html")) {
-                  handleImageDragOver(e, i);
-                } else {
-                  handleDragOver(e, i);
-                }
-              }}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => {
-                // Handle both file drop and image drop
-                if (e.dataTransfer.types.includes("text/html")) {
-                  handleImageDrop(e, i);
-                } else {
-                  handleDrop(e, i);
-                }
-              }}
-            >
-              <div
-                className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${isDragOver
-                    ? "border-2 border-[#A62D82] bg-[#C70039]/10 scale-105"
-                    : isDragging
-                      ? "opacity-50 scale-95"
-                      : photoFiles.filter((f) => f !== null).length < 2 && i < 2
-                        ? "border-red-300"
-                        : "border-gray-300"
-                  }`}
+            return (
+              <Reorder.Item
+                key={item.id}
+                value={item}
+                as="div"
+                className="relative"
+                dragListener={hasFile} // ให้ลากได้เฉพาะเมื่อมีรูป
+                whileDrag={{
+                  scale: 1.05,
+                  rotate: 2,
+                  zIndex: 1000,
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+                }}
+                whileHover={hasFile ? { scale: 1.02 } : {}}
+                transition={{
+                  type: "spring",
+                  damping: 25,
+                  stiffness: 300,
+                }}
               >
-                {isUploading ? (
-                  <div className="text-center">
-                    <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#A62D82]"></div>
-                    <span className="text-xs text-gray-500">Processing...</span>
-                  </div>
-                ) : previewUrl ? (
-                  <div className="relative h-full w-full">
-                    <img
-                      src={previewUrl}
-                      alt={`photo-${i}`}
-                      className="h-full w-full rounded-xl object-cover cursor-move"
-                      draggable={true}
-                      onDragStart={(e) => handleImageDragStart(e, i)}
-                      onDragEnd={handleImageDragEnd}
-                    />
-
-                    {/* Main photo indicator */}
-                    {i === 0 && (
-                      <div className="absolute top-2 left-2 bg-[#A62D82] text-white text-xs px-2 py-1 rounded">
-                        Main
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center flex flex-col">
-                    <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full text-[#A62D82]">
-                      +
-                    </div>
-                    <span className="text-sm font-medium text-[#A62D82]">
-                      {i === 0 ? "Main photo" : "Upload photo"}
-                    </span>
-                    {isDragOver && (
-                      <span className="text-md font-bold text-[#C70039]">
-                        Drop here!
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {!file && !isUploading ? (
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  onChange={(e) => onFiles(e.target.files, i)}
-                />
-              ) : file && !isUploading ? (
-                <button
-                  onClick={() => remove(i)}
-                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C70039] text-white hover:bg-[#950028]"
+                <motion.div
+                  className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${photoFiles.filter((f) => f !== null).length < 2 && i < 2
+                      ? "border-red-300"
+                      : "border-gray-300"
+                    }`}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  layout // เพิ่ม layout animation
                 >
-                  ×
-                </button>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+                  {isUploading ? (
+                    <motion.div
+                      className="text-center"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-[#A62D82]"></div>
+                      <span className="text-xs text-gray-500">Processing...</span>
+                    </motion.div>
+                  ) : item.preview ? (
+                    <motion.div
+                      className="relative h-full w-full"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                      layout // เพิ่ม layout animation
+                    >
+                      <img
+                        src={item.preview}
+                        alt={`photo-${i}`}
+                        className="h-full w-full rounded-xl object-cover cursor-grab active:cursor-grabbing"
+                        draggable={false}
+                      />
+
+                      {/* Main photo indicator */}
+                      {isMainPhoto && (
+                        <motion.div
+                          className="absolute top-2 left-2 bg-[#A62D82] text-white text-xs px-2 py-1 rounded"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.2, type: "spring" }}
+                        >
+                          Main
+                        </motion.div>
+                      )}
+
+                      {/* Delete button */}
+                      <motion.button
+                        onClick={() => remove(i)}
+                        className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C70039] text-white hover:bg-[#950028]"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.3, type: "spring" }}
+                      >
+                        ×
+                      </motion.button>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      className="text-center flex flex-col"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      whileHover={{ scale: 1.05 }}
+                      layout // เพิ่ม layout animation
+                    >
+                      <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full text-[#A62D82]">
+                        +
+                      </div>
+                      <span className="text-sm font-medium text-[#A62D82]">
+                        {i === 0 ? "Main photo" : "Upload photo"}
+                      </span>
+                    </motion.div>
+                  )}
+                </motion.div>
+
+                {/* File input overlay */}
+                {!hasFile && !isUploading && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    onChange={(e) => onFiles(e.target.files, i)}
+                  />
+                )}
+              </Reorder.Item>
+            );
+          })}
+        </AnimatePresence>
+      </Reorder.Group>
 
       {uploadError && (
-        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <motion.div
+          className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
           {uploadError}
-        </div>
+        </motion.div>
       )}
 
       {errors.photos && (
-        <p className="mt-4 text-sm text-red-500">{errors.photos}</p>
+        <motion.p
+          className="mt-4 text-sm text-red-500"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {errors.photos}
+        </motion.p>
       )}
 
-      <div className="mt-4 text-sm text-gray-500">
+      <motion.div
+        className="mt-4 text-sm text-gray-500"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
         {photoFiles.filter((f) => f !== null).length}/5 photos ready
-      </div>
+      </motion.div>
     </div>
   );
 });

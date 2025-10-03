@@ -1,21 +1,6 @@
 import { useRouter } from "next/router";
-import { BsBoxFill } from "react-icons/bs";
 import { FaCheckCircle } from "react-icons/fa";
-// import { supabase } from '@/lib/supabase/supabaseClient';
-// import { useState, useEffect } from "react";
-
-// interface SubscriptionData {
-//     id: string;
-//     user_id: string;
-//     package_id: string;
-//     stripe_subscription_id: string | null;
-//     stripe_customer_id: string | null;
-//     status: string;
-//     current_period_start: string;
-//     current_period_end: string;
-//     cancel_at_period_end: boolean;
-//     created_at: string;
-// }
+import Image from "next/image";
 
 interface PaymentSuccessProps {
     packageName?: string;
@@ -23,13 +8,43 @@ interface PaymentSuccessProps {
     packageCurrency?: string;
     packageInterval?: string;
     packageFeatures?: string[];
+    packageIcon?: string;
     startDate?: string;
     nextBilling?: string;
 }
 
+const renderIcon = (icon: string) => {
+    // ถ้าไม่มี icon หรือเป็นค่าว่าง ให้ใช้ default icon
+    if (!icon) {
+        return (
+            <Image 
+                src="/assets/star.png"
+                alt="Package icon"
+                width={32}
+                height={32}
+                className="object-contain"
+            />
+        );
+    }
+
+    return (
+        <Image 
+            src={icon}
+            alt="Package icon"
+            width={32}
+            height={32}
+            className="object-contain"
+            onError={(e) => {
+                // ถ้าโหลดรูปไม่ได้ ให้ใช้ default icon
+                const target = e.target as HTMLImageElement;
+                target.src = '/assets/star.png';
+            }}
+        />
+    );
+};
+
 function PaymentSuccess(props: PaymentSuccessProps = {}) {
     const router = useRouter();
-    // const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
 
     // รับข้อมูลจาก props หรือ URL query parameters
     const {
@@ -38,6 +53,7 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
         packageCurrency: queryPackageCurrency,
         packageInterval: queryPackageInterval,
         packageFeatures: queryPackageFeatures,
+        packageIcon: queryPackageIcon,
         startDate: queryStartDate,
         nextBilling: queryNextBilling
     } = router.query;
@@ -47,6 +63,7 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
     const packagePrice = props.packagePrice || parseFloat(queryPackagePrice as string) || 149.00;
     const packageCurrency = props.packageCurrency || (queryPackageCurrency as string) || "THB";
     const packageInterval = props.packageInterval || (queryPackageInterval as string) || "month";
+    const packageIcon = props.packageIcon || (queryPackageIcon as string) || "";
     const packageFeatures = props.packageFeatures || 
         (queryPackageFeatures ? JSON.parse(queryPackageFeatures as string) : [
             "Merry more than a daily limited",
@@ -69,62 +86,40 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
     };
 
     const handleCheckMembership = () => {
-        router.push('/package');
+        router.push('/member');
     };
 
-     // ดึงข้อมูล subscription ล่าสุดจาก database
-    //  useEffect(() => {
-    //     const fetchLatestSubscription = async () => {
-    //         const { data: { session } } = await supabase.auth.getSession();
-    //         if (!session) return;
-
-    //         const { data, error } = await supabase
-    //             .from('subscriptions')
-    //             .select('*')
-    //             .eq('user_id', session.user.id)
-    //             .order('created_at', { ascending: false })
-    //             .limit(1)
-    //             .single();
-
-    //         if (data && !error) {
-    //             setSubscriptionData(data);
-    //         }
-    //     };
-
-    //     fetchLatestSubscription();
-    // }, []);
-
     return (
-        <div className=" bg-[#FCFCFE] py-8 sm:py-12 lg:py-20">
-            <div className=" mx-auto px-4 sm:px-6 lg:px-8 flex flex-row items-center justify-center">
+        <div className="bg-[#FCFCFE] py-8 sm:py-12 lg:py-20 ">
+            <div className="mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-start lg:items-center justify-center gap-8 lg:gap-12 max-w-7xl">
                 {/* Success Icon และ Message */}
-                <div className={`max-w-3xl mb-8 sm:mb-12 transition-all duration-1000`}>
-                    <div className="flex justify-left mb-4 sm:mb-6">
+                <div className={`w-full lg:max-w-2xl order-1 lg:order-1`}>
+                    <div className="flex justify-start mb-4 sm:mb-6">
                         <div className="relative">
-                                <FaCheckCircle className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-[#EFC4E2]" />
+                            <FaCheckCircle className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 text-[#EFC4E2]" />
                         </div>
                     </div>
                     
-                    <div className="space-y-2 sm:space-y-4">
-                        <h1 className="text-2xl sm:text-lg font-SemiBold text-[#7B4429] mb-2">
+                    <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
+                        <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-[#7B4429]">
                             PAYMENT SUCCESS
                         </h1>
-                        <h2 className="text-xl sm:text-5xl font-ExtraBold text-[#A62D82] mb-2 sm:mb-4">
+                        <h2 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold text-[#A62D82] leading-tight">
                             Welcome Merry Membership! Thank you for joining us
                         </h2>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 justify-left mt-8 sm:mt-12 px-4 transition-all duration-1000 delay-500`}>
+                    {/* Action Buttons - Desktop only */}
+                    <div className="hidden lg:flex flex-row gap-3 sm:gap-4">
                         <button
                             onClick={handleBackToHome}
-                            className="button-ghost text-[#C70039] border-2 border-[#C70039] hover:bg-[#C70039] hover:text-white transition-all duration-300 w-full sm:w-auto sm:min-w-[160px] py-3 sm:py-2 cursor-pointer"
+                            className="button-ghost text-[#95002B] bg-[#FFE1EA] w-full sm:w-auto sm:min-w-[160px] py-3 px-6 cursor-pointer rounded-full font-bold hover:bg-[#FFD1DD] transition-colors"
                         >
                             Back to Home
                         </button>
                         <button
                             onClick={handleCheckMembership}
-                            className="button-primary bg-gradient-to-r from-[#C70039] to-[#FF1744] hover:from-[#A00030] hover:to-[#D01040] transition-all duration-300 w-full sm:w-auto sm:min-w-[160px] shadow-lg py-3 sm:py-2 cursor-pointer"
+                            className="button-primary bg-[#C70039] text-white w-full sm:w-auto sm:min-w-[160px] py-3 px-6 cursor-pointer rounded-full font-bold hover:bg-[#A0002E] transition-colors"
                         >
                             Check Membership
                         </button>
@@ -132,58 +127,67 @@ function PaymentSuccess(props: PaymentSuccessProps = {}) {
                 </div>
 
                 {/* Package Details Card */}
-                <div className={`transition-all duration-1000 delay-300`}>
-                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border-2 border-[#E4E6ED] overflow-hidden max-w-sm sm:max-w-md mx-auto">
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-[#C70039] to-[#FF1744] px-6 sm:px-8 py-4 sm:py-6 text-white">
-                            <div className="flex items-center gap-3 mb-2">
-                                <BsBoxFill className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                <h3 className="text-lg sm:text-xl font-semibold">Merry Membership</h3>
-                            </div>
-                        </div>
-
+                <div className={`w-full lg:w-auto order-2 lg:order-2`}>
+                    <div className="bg-gradient-to-r from-[#742138] to-[#A878BF] rounded-2xl sm:rounded-3xl shadow-xl border-2 border-[#E4E6ED] overflow-hidden max-w-sm mx-auto lg:mx-0">
                         {/* Package Info */}
                         <div className="p-6 sm:p-8">
-                            <div className="text-center mb-6">
-                                <div className="inline-block bg-gradient-to-r from-[#C70039] to-[#FF1744] text-white px-4 sm:px-6 py-2 rounded-full text-base sm:text-lg font-semibold mb-4">
+                            {/* Icon */}
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
+                                {renderIcon(packageIcon)}
+                            </div>
+
+                            <div className="text-left mb-6">
+                                <h3 className="text-white text-2xl sm:text-[32px] font-bold mb-2">
                                     {packageName}
-                                </div>
-                                <div className="text-2xl sm:text-3xl font-bold text-[#2A2E3F] mb-2">
-                                    {packageCurrency} {(packagePrice / 100).toFixed(2)}
-                                </div>
-                                <div className="text-sm text-[#646C80]">
-                                    /{packageInterval === 'month' ? 'Month' : packageInterval}
+                                </h3>
+                                <div className="text-lg sm:text-xl font-semibold text-[#F4EBF2]">
+                                    {packageCurrency} {packagePrice.toFixed(2)}
+                                    <span className="text-sm sm:text-base font-normal text-[#F4EBF2]">
+                                        /{packageInterval === 'month' ? 'Month' : packageInterval}
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Features */}
                             <div className="space-y-3 mb-6">
                                 {packageFeatures.map((feature: string, index: number) => (
-                                    <div key={index} className="flex items-center gap-3">
-                                        <div className="w-2 h-2 bg-[#C70039] rounded-full flex-shrink-0"></div>
-                                        <span className="text-[#424C6B] text-sm">{feature}</span>
+                                    <div key={index} className="flex items-start gap-2">
+                                        <Image src="/assets/checkbox-circle.png" alt="Feature" width={20} height={20} className="mt-0.5 flex-shrink-0"/>
+                                        <span className="text-[#F4EBF2] text-sm sm:text-base">{feature}</span>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Billing Info */}
-                            <div className="border-t border-gray-200 pt-6 space-y-3">
+                            <div className="border-t border-white/30 pt-6 space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-[#646C80]">Start Membership</span>
-                                    <span className="text-sm font-semibold text-[#2A2E3F]">{startDate}</span>
+                                    <span className="text-xs sm:text-sm text-[#F4EBF2]">Start Membership</span>
+                                    <span className="text-xs sm:text-sm font-semibold text-[#FFFFFF]">{startDate}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-[#646C80]">Next billing</span>
-                                    <span className="text-sm font-semibold text-[#2A2E3F]">{nextBilling}</span>
+                                    <span className="text-xs sm:text-sm text-[#F4EBF2]">Next billing</span>
+                                    <span className="text-xs sm:text-sm font-semibold text-[#FFFFFF]">{nextBilling}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                
-
-                
+                {/* Action Buttons - Mobile only (below card) */}
+                <div className="flex lg:hidden flex-row gap-3 w-full order-3 lg:order-3">
+                    <button
+                        onClick={handleBackToHome}
+                        className="button-ghost text-[#95002B] bg-[#FFE1EA] flex-1 py-3 px-6 cursor-pointer rounded-full font-bold hover:bg-[#FFD1DD] transition-colors"
+                    >
+                        Back to Home
+                    </button>
+                    <button
+                        onClick={handleCheckMembership}
+                        className="button-primary bg-[#C70039] text-white flex-1 py-3 px-6 cursor-pointer rounded-full font-bold hover:bg-[#A0002E] transition-colors"
+                    >
+                        Check Membership
+                    </button>
+                </div>
             </div>
         </div>
     );

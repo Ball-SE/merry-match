@@ -106,6 +106,25 @@ export default async function handler(
       });
     }
 
+    // 3) สร้าง subscription เริ่มต้นด้วย status 'disabled'
+    const { error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        package_id: null, // หรือ package_id ของ free package ถ้ามี
+        stripe_subscription_id: null,
+        stripe_customer_id: null,
+        status: 'disabled',
+        current_period_start: null,
+        current_period_end: null,
+        merry_limit: 10, // ใช้ค่า default จาก schema
+      });
+
+    if (subscriptionError) {
+      console.error("Subscription Error:", subscriptionError);
+      // ไม่ throw error เพราะ profile สำเร็จแล้ว
+    }
+
     // ส่งผลลัพธ์สำเร็จกลับ
     return res.status(201).json({
       success: true,
