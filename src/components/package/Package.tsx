@@ -2,6 +2,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState, useRef, useEffect } from "react";
 import { usePackages } from '@/hooks/usePackages';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
 
 // แสดง icon จาก database โดยตรง
 const renderIcon = (icon: string) => {
@@ -37,12 +38,24 @@ const renderIcon = (icon: string) => {
 export default function Package() {
     const router = useRouter();
     const { packages, loading, error } = usePackages();
+    const { subscription, loading: subLoading } = useUserSubscription();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [cardsPerView, setCardsPerView] = useState(3);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // เรียง packages ตามราคาจากน้อยไปมาก
     const sortedPackages = packages.sort((a, b) => a.price - b.price);
+
+    // ราคาของ package ปัจจุบันที่ user สมัครอยู่
+    const currentPackagePrice = subscription?.package?.price || 0;
+
+    // ฟังก์ชันตรวจสอบว่า package สามารถเลือกได้หรือไม่
+    const canSelectPackage = (packagePrice: number) => {
+        // ถ้าไม่มี subscription ปัจจุบัน สามารถเลือกได้ทุก package
+        if (!subscription) return true;
+        // ถ้ามี subscription แล้ว สามารถเลือกได้เฉพาะ package ที่ราคาสูงกว่าหรือเท่ากับ
+        return packagePrice >= currentPackagePrice;
+    };
     
     // จำนวนการ์ดที่จะแสดงในแต่ละหน้าจอ
     const getCardsPerView = () => {
@@ -95,6 +108,12 @@ export default function Package() {
     };
 
     const handleChoosePackage = (pkg: typeof packages[number]) => {
+        // ตรวจสอบก่อนว่า package นี้เลือกได้หรือไม่
+        if (!canSelectPackage(pkg.price)) {
+            alert('You cannot downgrade to a lower-priced package. Please cancel your current subscription first.');
+            return;
+        }
+
         // ส่งข้อมูล package ผ่าน query parameters
         router.push({
             pathname: '/payment',
@@ -104,12 +123,13 @@ export default function Package() {
                 packagePrice: pkg.price,
                 packageCurrency: pkg.currency,
                 packageInterval: pkg.billing_interval,
-                packageDetails: JSON.stringify(pkg.details)
+                packageDetails: JSON.stringify(pkg.details),
+                packageIcon: pkg.icon
             }
         });
     };
 
-    if (loading) {
+    if (loading || subLoading) {
         return <div>Loading...</div>;
     }
 
@@ -137,8 +157,20 @@ export default function Package() {
             {isMobile ? (
                 // Mobile Layout - Grid แบบเดิม
                 <div className="grid grid-cols-1 gap-8 max-w-7xl mx-auto mb-10">
-                    {sortedPackages.map((pkg) => (
-                        <div key={pkg.id} className="bg-white rounded-3xl p-8 shadow-lg border-2 border-gray-100 relative">
+                    {sortedPackages.map((pkg) => {
+                        const isCurrentPackage = subscription?.package_id === pkg.id;
+                        const canSelect = canSelectPackage(pkg.price);
+                        const isDowngrade = !canSelect && subscription;
+
+                        return (
+                        <div key={pkg.id} className={`bg-white rounded-3xl p-8 shadow-lg border-2 relative flex flex-col ${
+                            isCurrentPackage ? 'border-[#C70039]' : 'border-gray-100'
+                        }`}>
+                        {isCurrentPackage && (
+                            <div className="absolute top-4 right-4 bg-[#C70039] text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                Current Plan
+                            </div>
+                        )}
                         <div className="text-left mb-6">
                             <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
                                 {renderIcon(pkg.icon)}
@@ -152,7 +184,7 @@ export default function Package() {
                             </p>
                         </div>
                         
-                        <div className="space-y-4 mb-8">
+                        <div className="space-y-4 mb-8 flex-grow">
                             {pkg.details.map((detail, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                     <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
@@ -161,15 +193,30 @@ export default function Package() {
                             ))}
                         </div>
 
-                        <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
-                        
-                        <button 
-                            onClick={() => handleChoosePackage(pkg)}
-                            className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
-                            Choose Package
+                        <div className="mt-auto">
+                            <div className="border-t-[1px] border-[#E4E6ED] mb-5"></div>
+                            
+                            {isDowngrade && (
+                                <p className="text-sm text-red-500 mb-3 text-center">
+                                    Cannot downgrade to lower-priced package
+                                </p>
+                            )}
+                            
+                            <button 
+                                onClick={() => handleChoosePackage(pkg)}
+                                disabled={!canSelect || isCurrentPackage}
+                                className={`w-full font-semibold py-3 px-6 rounded-full transition-colors ${
+                                    isCurrentPackage
+                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        : !canSelect
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        : 'bg-pink-100 hover:bg-pink-200 text-pink-600 cursor-pointer'
+                                }`}>
+                                {isCurrentPackage ? 'Current Package' : 'Choose Package'}
                             </button>
                         </div>
-                    ))}
+                        </div>
+                    )})}
                 </div>
             ) : (
                 // Desktop/Tablet Layout - Carousel
@@ -214,8 +261,20 @@ export default function Package() {
                         className={`overflow-hidden ${showArrows ? 'mx-16' : 'mx-4'}`}
                     >
                         <div className="flex gap-4 transition-transform duration-300 ease-in-out">
-                            {sortedPackages.map((pkg) => (
-                                <div key={pkg.id} className="bg-white rounded-3xl p-6 border-2 border-gray-100 relative flex-shrink-0 w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
+                            {sortedPackages.map((pkg) => {
+                                const isCurrentPackage = subscription?.package_id === pkg.id;
+                                const canSelect = canSelectPackage(pkg.price);
+                                const isDowngrade = !canSelect && subscription;
+
+                                return (
+                                <div key={pkg.id} className={`bg-white rounded-3xl p-6 border-2 relative flex-shrink-0 w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.75rem)] flex flex-col ${
+                                    isCurrentPackage ? 'border-[#C70039]' : 'border-gray-100'
+                                }`}>
+                                    {isCurrentPackage && (
+                                        <div className="absolute top-4 right-4 bg-[#C70039] text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                            Current Plan
+                                        </div>
+                                    )}
                                     <div className="text-left mb-6">
                                         <div className="w-16 h-16 mb-4 bg-[#F6F7FC] rounded-xl flex items-center justify-center">
                                             {renderIcon(pkg.icon)}
@@ -229,7 +288,7 @@ export default function Package() {
                                         </p>
                                     </div>
                                     
-                                    <div className="space-y-4 mb-8">
+                                    <div className="space-y-4 mb-8 flex-grow">
                                         {pkg.details.map((detail, index) => (
                                             <div key={index} className="flex items-center gap-2">
                                                 <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
@@ -238,15 +297,30 @@ export default function Package() {
                                         ))}
                                     </div>
 
-                                    <div className="border-t-[1px] border-[#E4E6ED] mt-5 mb-5"></div>
-                                    
-                                    <button 
-                                        onClick={() => handleChoosePackage(pkg)}
-                                        className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-semibold py-3 px-6 rounded-full transition-colors cursor-pointer">
-                                        Choose Package
-                                    </button>
+                                    <div className="mt-auto">
+                                        <div className="border-t-[1px] border-[#E4E6ED] mb-5"></div>
+                                        
+                                        {isDowngrade && (
+                                            <p className="text-sm text-red-500 mb-3 text-center">
+                                                Cannot downgrade
+                                            </p>
+                                        )}
+                                        
+                                        <button 
+                                            onClick={() => handleChoosePackage(pkg)}
+                                            disabled={!canSelect || isCurrentPackage}
+                                            className={`w-full font-semibold py-3 px-6 rounded-full transition-colors ${
+                                                isCurrentPackage
+                                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                    : !canSelect
+                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-pink-100 hover:bg-pink-200 text-pink-600 cursor-pointer'
+                                            }`}>
+                                            {isCurrentPackage ? 'Current Package' : 'Choose Package'}
+                                        </button>
+                                    </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
                 </div>

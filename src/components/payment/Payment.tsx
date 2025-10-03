@@ -5,6 +5,7 @@ import PackageDetailsCard from "./PackageDetailsCard";
 import { supabase } from '@/lib/supabase/supabaseClient';
 import Image from "next/image";
 import { stripePromise } from '@/lib/devtool';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
 
 
 function formatDateUTC(dateString: string): string {
@@ -24,6 +25,7 @@ function PaymentForm() {
     const [loading, setLoading] = useState(false);
     const [cardOwnerName, setCardOwnerName] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const { subscription } = useUserSubscription();
 
     // รับข้อมูล package จาก query parameters
     const {
@@ -32,39 +34,20 @@ function PaymentForm() {
         packagePrice,
         packageCurrency,
         packageInterval,
-        packageDetails
+        packageDetails,
+        packageIcon
     } = router.query;
 
     const features = packageDetails ? JSON.parse(packageDetails as string) : [];
     const price = packagePrice ? parseFloat(packagePrice as string) : 0;
 
-    // // สร้าง Payment Intent เมื่อ component load
-    // useEffect(() => {
-    //     if (price > 0 && packageId) {
-    //         createPaymentIntent();
-    //     }
-    // }, [price, packageId]);
-
-    // const createPaymentIntent = async () => {
-    //     try {
-    //         const response = await fetch('/api/stripe/create-payment-intent', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify({
-    //                 amount: price,
-    //                 currency: packageCurrency || 'thb',
-    //                 packageId: packageId
-    //             }),
-    //         });
-
-    //         const data = await response.json();
-    //         setClientSecret(data.clientSecret);
-    //     } catch (error) {
-    //         console.error('Error creating payment intent:', error);
-    //     }
-    // };
+    // ตรวจสอบว่าเป็นการ downgrade หรือไม่
+    useEffect(() => {
+        if (subscription && price < (subscription.package?.price || 0)) {
+            alert('You cannot downgrade to a lower-priced package. Please cancel your current subscription first.');
+            router.back();
+        }
+    }, [subscription, price, router]);
 
     const handleCancel = () => {
         window.history.back();
@@ -135,6 +118,7 @@ function PaymentForm() {
                         packageCurrency: packageCurrency,
                         packageInterval: packageInterval,
                         packageFeatures: JSON.stringify(features),
+                        packageIcon: packageIcon,
                         startDate: startDate,
                         nextBilling: nextBilling
                     }

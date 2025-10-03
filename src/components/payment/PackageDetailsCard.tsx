@@ -46,7 +46,7 @@ function PackageDetailsCard({
                             Price ({interval === 'month' ? 'Monthly' : interval})
                         </span>
                         <span className="text-xl font-semibold text-[#200009]">
-                            {currency} {(price / 100).toFixed(2)}
+                            {currency} {price.toFixed(2)}
                         </span>
                     </div>
                 </div>
