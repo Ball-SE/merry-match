@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
-interface Message {
+type Message = {
   id: string;
   match_id: string;
   sender_id: string;
@@ -24,7 +24,7 @@ interface Message {
   };
 }
 
-interface Match {
+type Match = {
   id: string;
   matched_at: string;
   status: string;
@@ -36,7 +36,7 @@ interface Match {
   };
 }
 
-interface UseChatReturn {
+type UseChatReturn = {
   messages: Message[];
   match: Match | null;
   loading: boolean;
@@ -46,7 +46,7 @@ interface UseChatReturn {
   unreadCount: number;
 }
 
-export const useChat = (matchId: string): UseChatReturn => {
+export function useChat(matchId: string): UseChatReturn {
   const [messages, setMessages] = useState<Message[]>([]);
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
@@ -383,4 +383,4 @@ export const useChat = (matchId: string): UseChatReturn => {
     markAsRead,
     unreadCount,
   };
-};
+}

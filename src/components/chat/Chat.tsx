@@ -1,15 +1,15 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { LuPaperclip, LuSend, LuLoader } from 'react-icons/lu';
 import { Heart } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { supabase } from '@/lib/supabase/supabaseClient';
 
-interface ChatProps {
+type ChatProps = {
   matchId: string;
 }
 
-interface Message {
+type Message = {
   id: string;
   match_id: string;
   sender_id: string;
@@ -19,7 +19,7 @@ interface Message {
   is_read: boolean;
 }
 
-const Chat: React.FC<ChatProps> = ({ matchId }) => {
+function Chat({ matchId }: ChatProps) {
   const [user, setUser] = useState<{ id: string; user_metadata?: { avatar_url?: string } } | null>(null);
   const { messages, match, loading, error, sendMessage } = useChat(matchId);
   const [newMessage, setNewMessage] = useState('');
@@ -422,6 +422,6 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
       </div>
     </div>
   );
-};
+}
 
 export default Chat;
