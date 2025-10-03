@@ -3,14 +3,28 @@ import NavBar from "@/components/NavBar";
 import Chat from "@/components/chat/Chat";
 import { useAuth } from '@/hooks/useAuth';
 import { MatchingProvider } from "@/context/MatchingContext";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LuArrowLeft } from 'react-icons/lu';
+import { useRouter } from 'next/router';
 
 function ChatPage() {
     const { isLoggedIn } = useAuth('/login');
+    const router = useRouter();
     const [showChat, setShowChat] = useState(false);
     const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
     const [selectedMatchName, setSelectedMatchName] = useState<string>('');
+
+    // Handle initial navigation from matching page
+    useEffect(() => {
+        if (router.isReady) {
+            const { matchId, matchName } = router.query;
+            if (matchId && typeof matchId === 'string') {
+                setSelectedMatchId(matchId);
+                setSelectedMatchName(matchName as string || 'Chat');
+                setShowChat(true); // Auto-open chat on mobile
+            }
+        }
+    }, [router.isReady, router.query]);
 
     if (isLoggedIn === null) {
         return <div>Loading...</div>;
@@ -53,7 +67,7 @@ function ChatPage() {
                     </div>
 
                     {/* Mobile Layout */}
-                    <div className="md:hidden flex-1 flex flex-col">
+                    <div className="md:hidden flex-1 flex flex-col overflow-x-hidden">
                         {!showChat ? (
                             /* Mobile MatchingLeft - Full screen */
                             <div className="flex-1 overflow-auto bg-[#F6F7FC]">
