@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { LuPaperclip, LuSend, LuLoader } from 'react-icons/lu';
+import { LuPaperclip, LuSend, LuLoader, LuX } from 'react-icons/lu';
 import { Heart } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { uploadChatPhoto } from '@/lib/supabase/uploadPhotoUtils';
 
 type ChatProps = {
   matchId: string;
@@ -14,7 +15,9 @@ type Message = {
   match_id: string;
   sender_id: string;
   receiver_id: string;
-  message_text: string;
+  message_text: string | null;
+  message_type?: 'text' | 'image';
+  media_url?: string | null;
   created_at: string;
   is_read: boolean;
 }
@@ -32,6 +35,12 @@ function Chat({ matchId }: ChatProps) {
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
   const isInitialScrollRef = useRef(false); // ป้องกัน auto-load หลัง mount
+  
+  // States สำหรับการส่งรูปภาพ
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset state เมื่อเปลี่ยน matchId
   useEffect(() => {
@@ -251,10 +260,75 @@ function Chat({ matchId }: ChatProps) {
     }
   }, [handleScroll]);
 
+  // จัดการเลือกรูปภาพ
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ตรวจสอบ file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
+      return;
+    }
+
+    // ตรวจสอบ file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('File size too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setSelectedImage(file);
+    
+    // สร้าง preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ยกเลิกการเลือกรูปภาพ
+  const handleCancelImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // ส่งข้อความ
   const handleSendMessage = async () => {
-    if (newMessage.trim()) {
+    // ถ้ามีรูปที่เลือกไว้ ให้ส่งรูป
+    if (selectedImage && user?.id) {
+      setUploadingImage(true);
       try {
-        await sendMessage(newMessage);
+        // อัปโหลดรูปไปที่ Supabase Storage
+        const result = await uploadChatPhoto(selectedImage, user.id);
+        
+        if (!result.success || !result.url) {
+          alert(result.error || 'Failed to upload image');
+          return;
+        }
+
+        // ส่งข้อความพร้อมรูปภาพ
+        await sendMessage(newMessage.trim() || '', 'image', result.url);
+        
+        // รีเซ็ต state
+        setNewMessage('');
+        handleCancelImage();
+      } catch (error) {
+        console.error('Error uploading/sending image:', error);
+        alert('Failed to send image. Please try again.');
+      } finally {
+        setUploadingImage(false);
+      }
+    }
+    // ถ้าไม่มีรูป แต่มีข้อความ ให้ส่งข้อความปกติ
+    else if (newMessage.trim()) {
+      try {
+        await sendMessage(newMessage, 'text');
         setNewMessage('');
       } catch (error) {
         console.error('Error sending message:', error);
@@ -430,7 +504,25 @@ function Chat({ matchId }: ChatProps) {
                       : 'bg-[#EFC4E2] text-black rounded-bl-none'
                   }`}
                 >
-                  <p className="text-xs md:text-sm break-all">{message.message_text}</p>
+                  {/* แสดงรูปภาพถ้าเป็น message type image */}
+                  {message.message_type === 'image' && message.media_url && (
+                    <div className="mb-2">
+                      <Image
+                        src={message.media_url}
+                        alt="Shared image"
+                        width={300}
+                        height={300}
+                        className="rounded-xl max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(message.media_url || '', '_blank')}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* แสดงข้อความ (caption) ถ้ามี */}
+                  {message.message_text && (
+                    <p className="text-xs md:text-sm break-words">{message.message_text}</p>
+                  )}
+                  
                   <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                     {new Date(message.created_at).toLocaleTimeString([], { 
                       hour: '2-digit', 
@@ -447,28 +539,78 @@ function Chat({ matchId }: ChatProps) {
       </div>          
 
       {/* Message Input */}
-      <div className="bg-[#160404] p-2 border-t border-[#424C6B] px-4 md:px-12 md:py-6">
+      <div className="bg-[#160404] border-t border-[#424C6B] px-4 md:px-12 py-4 md:py-6">
+        {/* Image Preview */}
+        {imagePreview && (
+          <div className="mb-3 relative inline-block">
+            <div className="relative">
+              <Image
+                src={imagePreview}
+                alt="Preview"
+                width={200}
+                height={200}
+                className="rounded-xl max-h-40 w-auto object-cover"
+              />
+              <button
+                onClick={handleCancelImage}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                disabled={uploadingImage}
+              >
+                <LuX size={16} />
+              </button>
+            </div>
+            {uploadingImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
+                <LuLoader className="animate-spin text-white" size={24} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Input Area */}
         <div className="flex items-center gap-2 md:gap-3">
-          <button className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          
+          {/* Paperclip Button */}
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingImage}
+            className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <LuPaperclip size={18} className="md:w-5 md:h-5" />
           </button>
           
+          {/* Text Input */}
           <div className="flex-1">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Messege here..."
-              className="w-full text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
+              placeholder={selectedImage ? "Add a caption (optional)..." : "Message here..."}
+              disabled={uploadingImage}
+              className="w-full bg-transparent text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
             />
           </div>
           
+          {/* Send Button */}
           <button
             onClick={handleSendMessage}
+            disabled={(!newMessage.trim() && !selectedImage) || uploadingImage}
             className="w-8 h-8 md:w-10 md:h-10 bg-[#C70039] rounded-full flex items-center justify-center hover:bg-[#C2185B] transition-colors"
           >
-            <LuSend size={16} className="text-white md:w-[18px] md:h-[18px]" />
+            {uploadingImage ? (
+              <LuLoader className="animate-spin text-white" size={16} />
+            ) : (
+              <LuSend size={16} className="text-white md:w-[18px] md:h-[18px]" />
+            )}
           </button>
         </div>
       </div>

@@ -111,10 +111,21 @@ export default async function handler(
 
   if (req.method === 'POST') {
     // ส่งข้อความใหม่
-    const { match_id, message_text, receiver_id } = req.body;
+    const { match_id, message_text, receiver_id, message_type = 'text', media_url } = req.body;
 
-    if (!match_id || !message_text || !receiver_id) {
+    // Validate required fields based on message type
+    if (!match_id || !receiver_id) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // สำหรับข้อความแบบ text ต้องมี message_text
+    // สำหรับข้อความแบบ image ต้องมี media_url
+    if (message_type === 'text' && !message_text) {
+      return res.status(400).json({ error: 'message_text is required for text messages' });
+    }
+
+    if (message_type === 'image' && !media_url) {
+      return res.status(400).json({ error: 'media_url is required for image messages' });
     }
 
     try {
@@ -155,15 +166,36 @@ export default async function handler(
       }
 
       // สร้างข้อความใหม่
+      const messageData: {
+        match_id: string;
+        sender_id: string;
+        receiver_id: string;
+        is_read: boolean;
+        message_type: string;
+        message_text?: string;
+        media_url?: string;
+      } = {
+        match_id,
+        sender_id: user.id,
+        receiver_id,
+        is_read: false,
+        message_type
+      };
+
+      // Add message_text หรือ media_url ตาม message_type
+      if (message_type === 'text') {
+        messageData.message_text = message_text;
+      } else if (message_type === 'image') {
+        messageData.media_url = media_url;
+        // สามารถมี caption เป็น message_text ได้
+        if (message_text) {
+          messageData.message_text = message_text;
+        }
+      }
+
       const { data: newMessage, error: insertError } = await supabase
         .from('messages')
-        .insert({
-          match_id,
-          sender_id: user.id,
-          receiver_id,
-          message_text,
-          is_read: false
-        })
+        .insert(messageData)
         .select(`
           *,
           sender:profiles!messages_sender_id_fkey(

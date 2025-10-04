@@ -7,7 +7,9 @@ type Message = {
   match_id: string;
   sender_id: string;
   receiver_id: string;
-  message_text: string;
+  message_text: string | null;
+  message_type?: 'text' | 'image';
+  media_url?: string | null;
   created_at: string;
   is_read: boolean;
   sender?: {
@@ -41,7 +43,7 @@ type UseChatReturn = {
   match: Match | null;
   loading: boolean;
   error: string | null;
-  sendMessage: (messageText: string) => Promise<void>;
+  sendMessage: (messageText: string, messageType?: 'text' | 'image', mediaUrl?: string) => Promise<void>;
   markAsRead: (messageIds: string[]) => Promise<void>;
   unreadCount: number;
 }
@@ -115,28 +117,52 @@ export function useChat(matchId: string): UseChatReturn {
   }, [matchId, session?.access_token, session?.user?.id]);
 
   // ส่งข้อความ
-  const sendMessage = useCallback(async (messageText: string) => {
+  const sendMessage = useCallback(async (
+    messageText: string, 
+    messageType: 'text' | 'image' = 'text', 
+    mediaUrl?: string
+  ) => {
     if (!match || !session?.user?.id || !session?.access_token) return;
 
     console.log('Sending message:', {
       matchId,
       messageText,
+      messageType,
+      mediaUrl,
       receiverId: match.other_user.id,
       senderId: session.user.id
     });
 
     try {
+      const body: {
+        match_id: string;
+        receiver_id: string;
+        message_type: string;
+        message_text?: string;
+        media_url?: string;
+      } = {
+        match_id: matchId,
+        receiver_id: match.other_user.id,
+        message_type: messageType
+      };
+
+      // เพิ่ม message_text ถ้ามี
+      if (messageText && messageText.trim()) {
+        body.message_text = messageText;
+      }
+
+      // เพิ่ม media_url สำหรับข้อความแบบรูปภาพ
+      if (messageType === 'image' && mediaUrl) {
+        body.media_url = mediaUrl;
+      }
+
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({
-          match_id: matchId,
-          message_text: messageText,
-          receiver_id: match.other_user.id,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -150,6 +176,7 @@ export function useChat(matchId: string): UseChatReturn {
     } catch (err) {
       console.error('Error sending message:', err);
       setError('Failed to send message');
+      throw err; // Re-throw เพื่อให้ component จัดการได้
     }
   }, [match, matchId, session?.user?.id, session?.access_token]);
 
