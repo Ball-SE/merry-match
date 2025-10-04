@@ -333,7 +333,7 @@ function Chat({ matchId }: ChatProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#160404] relative overflow-hidden overflow-x-hidden">
+    <div className="h-full min-h-0 flex flex-col bg-[#160404] relative overflow-hidden">
         {/* Match Notification Modal */}
         <div className="absolute inset-0 z-50 flex items-start justify-center pt-8 md:pt-16 pointer-events-none">
             <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
