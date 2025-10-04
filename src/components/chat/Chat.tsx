@@ -269,6 +269,45 @@ function Chat({ matchId }: ChatProps) {
     }
   };
 
+  // ฟังก์ชันสำหรับ format วันที่เป็นภาษาอังกฤษ (สากล)
+  const formatDateDivider = (dateString: string) => {
+    const messageDate = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Reset time to compare only dates
+    messageDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    yesterday.setHours(0, 0, 0, 0);
+
+    if (messageDate.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (messageDate.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    } else {
+      // Format: DD/MM/YYYY
+      return messageDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+  };
+
+  // ฟังก์ชันเช็คว่าข้อความควรแสดง date divider หรือไม่
+  const shouldShowDateDivider = (currentMessage: Message, previousMessage: Message | null) => {
+    if (!previousMessage) return true;
+
+    const currentDate = new Date(currentMessage.created_at);
+    const previousDate = new Date(previousMessage.created_at);
+
+    currentDate.setHours(0, 0, 0, 0);
+    previousDate.setHours(0, 0, 0, 0);
+
+    return currentDate.getTime() !== previousDate.getTime();
+  };
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center bg-[#160404]">
@@ -352,40 +391,53 @@ function Chat({ matchId }: ChatProps) {
         )}
 
         {/* Messages */}
-        {allMessages.map((message) => {
+        {allMessages.map((message, index) => {
           const isCurrentUser = message.sender_id === user?.id;
+          const previousMessage = index > 0 ? allMessages[index - 1] : null;
+          const showDateDivider = shouldShowDateDivider(message, previousMessage);
           
           return (
-            <div
-              key={message.id}
-              className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
-            >
-              {!isCurrentUser && (
-                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
-                  <Image
-                    src={match.other_user.photo_url || "/assets/user.jpg"}
-                    alt="Other User Avatar"
-                    width={32}
-                    height={32}
-                    className="w-full h-full object-cover"
-                  />
+            <div key={message.id}>
+              {/* Date Divider */}
+              {showDateDivider && (
+                <div className="flex items-center justify-center my-4 md:my-6">
+                  <div className="bg-[#2A2439] text-white text-xs md:text-sm px-4 py-2 rounded-full">
+                    {formatDateDivider(message.created_at)}
+                  </div>
                 </div>
               )}
-              
+
+              {/* Message */}
               <div
-                className={`max-w-[50%] px-3 md:px-6 py-4 rounded-3xl ${
-                  isCurrentUser
-                    ? 'bg-[#7D2262] text-white rounded-br-none'
-                    : 'bg-[#EFC4E2] text-black rounded-bl-none'
-                }`}
+                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
               >
-                <p className="text-xs md:text-sm break-all">{message.message_text}</p>
-                <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                  {new Date(message.created_at).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
+                {!isCurrentUser && (
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
+                    <Image
+                      src={match.other_user.photo_url || "/assets/user.jpg"}
+                      alt="Other User Avatar"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                
+                <div
+                  className={`max-w-[50%] px-3 md:px-6 py-4 rounded-3xl ${
+                    isCurrentUser
+                      ? 'bg-[#7D2262] text-white rounded-br-none'
+                      : 'bg-[#EFC4E2] text-black rounded-bl-none'
+                  }`}
+                >
+                  <p className="text-xs md:text-sm break-all">{message.message_text}</p>
+                  <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                    {new Date(message.created_at).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </p>
+                </div>
               </div>
             </div>
           );
