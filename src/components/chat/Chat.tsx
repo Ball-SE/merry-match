@@ -300,7 +300,7 @@ function Chat({ matchId }: ChatProps) {
 
   // ส่งข้อความ
   const handleSendMessage = async () => {
-    // ถ้ามีรูปที่เลือกไว้ ให้ส่งรูป
+    // ถ้ามีรูปที่เลือกไว้ ให้ส่งรูปอย่างเดียว (ไม่มี caption)
     if (selectedImage && user?.id) {
       setUploadingImage(true);
       try {
@@ -312,11 +312,10 @@ function Chat({ matchId }: ChatProps) {
           return;
         }
 
-        // ส่งข้อความพร้อมรูปภาพ
-        await sendMessage(newMessage.trim() || '', 'image', result.url);
+        // ส่งเฉพาะรูปภาพ (ไม่มี caption)
+        await sendMessage('', 'image', result.url);
         
         // รีเซ็ต state
-        setNewMessage('');
         handleCancelImage();
       } catch (error) {
         console.error('Error uploading/sending image:', error);
@@ -505,8 +504,8 @@ function Chat({ matchId }: ChatProps) {
                   }`}
                 >
                   {/* แสดงรูปภาพถ้าเป็น message type image */}
-                  {message.message_type === 'image' && message.media_url && (
-                    <div className="mb-2">
+                  {message.message_type === 'image' && message.media_url ? (
+                    <>
                       <Image
                         src={message.media_url}
                         alt="Shared image"
@@ -515,20 +514,25 @@ function Chat({ matchId }: ChatProps) {
                         className="rounded-xl max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => window.open(message.media_url || '', '_blank')}
                       />
-                    </div>
+                      <p className={`text-xs opacity-70 mt-2 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                        {new Date(message.created_at).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                    </>
+                  ) : (
+                    /* แสดงข้อความธรรมดา */
+                    <>
+                      <p className="text-xs md:text-sm break-words">{message.message_text}</p>
+                      <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                        {new Date(message.created_at).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                    </>
                   )}
-                  
-                  {/* แสดงข้อความ (caption) ถ้ามี */}
-                  {message.message_text && (
-                    <p className="text-xs md:text-sm break-words">{message.message_text}</p>
-                  )}
-                  
-                  <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                    {new Date(message.created_at).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
                 </div>
               </div>
             </div>
@@ -581,24 +585,29 @@ function Chat({ matchId }: ChatProps) {
           {/* Paperclip Button */}
           <button 
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingImage}
-            className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={uploadingImage || selectedImage !== null}
+            className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors"
           >
             <LuPaperclip size={18} className="md:w-5 md:h-5" />
           </button>
           
-          {/* Text Input */}
-          <div className="flex-1">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={selectedImage ? "Add a caption (optional)..." : "Message here..."}
-              disabled={uploadingImage}
-              className="w-full bg-transparent text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
-            />
-          </div>
+          {/* Text Input - ซ่อนเมื่อมีรูปที่เลือก */}
+          {!selectedImage && (
+            <div className="flex-1">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Message here..."
+                disabled={uploadingImage}
+                className="w-full bg-transparent text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
+              />
+            </div>
+          )}
+          
+          {/* Spacer เมื่อมีรูป */}
+          {selectedImage && <div className="flex-1"></div>}
           
           {/* Send Button */}
           <button
