@@ -73,6 +73,17 @@ export default function EditProfilePage() {
     loadExistingPhotos(photos);
   }, [loadExistingPhotos]);
 
+  // อัปเดต formData.photos เมื่อ photoPreviews เปลี่ยนแปลง
+  useEffect(() => {
+    // สร้าง array ของรูปที่มี preview
+    const photosWithPreviews = photoPreviews.filter(preview => preview !== "");
+    
+    setFormData(prev => ({
+      ...prev,
+      photos: photosWithPreviews
+    }));
+  }, [photoPreviews]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -106,8 +117,8 @@ export default function EditProfilePage() {
         const formData = {
           name: profileData.name || '',
           date_of_birth: profileData.date_of_birth || '',
-          location: profileData.location || 'thailand',
-          city: profileData.city || 'bangkok',
+          location: profileData.location || 'Thailand',
+          city: profileData.city || 'Bangkok',
           username: profileData.username || '',
           email: profileData.email || '',
           gender: profileData.gender || 'Male',
@@ -193,37 +204,42 @@ export default function EditProfilePage() {
         return;
       }
 
+      // อัปโหลดรูปใหม่เท่านั้น (รูปที่มี blob URL)
       const processedPhotos = await Promise.all(
         formData.photos.map(async (photoUrl) => {
           if (photoUrl.startsWith('blob:')) {
-            try {
-              const photoIndex = photoPreviews.findIndex(preview => preview === photoUrl);
-              const file = photoFiles[photoIndex];
-              
-              if (file) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-                const filePath = `profiles/${session.user.id}/${fileName}`;
-                
-                const { error: uploadError } = await supabase.storage
-                  .from('photos')
-                  .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                  });
-                
-                if (uploadError) {
-                  throw new Error('Failed to upload photo');
-                }
-                
-                const { data: { publicUrl } } = supabase.storage
-                  .from('photos')
-                  .getPublicUrl(filePath);
-                
-                return publicUrl;
+            // หา file ที่ตรงกับ blob URL
+            let fileToUpload = null;
+            for (let i = 0; i < photoPreviews.length; i++) {
+              if (photoPreviews[i] === photoUrl && photoFiles[i] !== null) {
+                fileToUpload = photoFiles[i];
+                break;
               }
-            } catch {
-              throw new Error('Failed to upload photo');
+            }
+            
+            if (fileToUpload) {
+              const fileExt = fileToUpload.name.split('.').pop();
+              const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+              const filePath = `profiles/${session.user.id}/${fileName}`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from('profile-photos')
+                .upload(filePath, fileToUpload, {
+                  cacheControl: '3600',
+                  upsert: false
+                });
+              
+              if (uploadError) {
+                throw new Error('Failed to upload photo');
+              }
+              
+              const { data: { publicUrl } } = supabase.storage
+                .from('profile-photos')
+                .getPublicUrl(filePath);
+              
+              return publicUrl;
+            } else {
+              throw new Error('File not found for photo');
             }
           }
           

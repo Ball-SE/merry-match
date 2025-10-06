@@ -19,21 +19,6 @@ export function usePhotoManagement() {
     }))
   );
 
-  const compactPhotos = (files: (File | null)[], previews: string[]) => {
-    const compactedFiles = Array(5).fill(null);
-    const compactedPreviews = Array(5).fill("");
-    let writeIndex = 0;
-
-    for (let i = 0; i < files.length; i++) {
-      if (files[i] !== null) {
-        compactedFiles[writeIndex] = files[i];
-        compactedPreviews[writeIndex] = previews[i];
-        writeIndex++;
-      }
-    }
-
-    return { compactedFiles, compactedPreviews };
-  };
 
   const updatePhotoItems = (files: (File | null)[], previews: string[]) => {
     setPhotoItems(prev =>
@@ -69,6 +54,7 @@ export function usePhotoManagement() {
       const newPhotoFiles = [...photoFiles];
       const newPhotoPreviews = [...photoPreviews];
 
+      // ใส่รูปในตำแหน่งที่เลือกโดยตรง
       newPhotoFiles[index] = file;
       newPhotoPreviews[index] = previewUrl;
 
@@ -83,15 +69,34 @@ export function usePhotoManagement() {
   };
 
   const removePhoto = async (idx: number) => {
+    console.log('🗑️ Removing photo at index:', idx);
+    
+    // ตรวจสอบว่า index ถูกต้อง
+    if (idx < 0 || idx >= photoFiles.length) {
+      console.error('Invalid index for removePhoto:', idx);
+      return;
+    }
+
+    // ลบ blob URL เพื่อป้องกัน memory leak
     if (photoPreviews[idx] && photoPreviews[idx].startsWith('blob:')) {
       URL.revokeObjectURL(photoPreviews[idx]);
     }
 
-    const newPhotoFiles = [...photoFiles];
-    const newPhotoPreviews = [...photoPreviews];
+    // สร้าง array ใหม่โดยไม่รวมรูปที่ถูกลบ
+    const filteredFiles = photoFiles.filter((_, i) => i !== idx);
+    const filteredPreviews = photoPreviews.filter((_, i) => i !== idx);
 
-    newPhotoFiles[idx] = null;
-    newPhotoPreviews[idx] = "";
+    // สร้าง array ใหม่ที่มีขนาด 5 โดยเติม null/"" ในช่องว่างที่เหลือ
+    const newPhotoFiles = Array(5).fill(null);
+    const newPhotoPreviews = Array(5).fill("");
+
+    // นำรูปภาพที่เหลือมาใส่ในตำแหน่งแรกๆ โดยไม่มีช่องว่าง
+    filteredFiles.forEach((file, i) => {
+      newPhotoFiles[i] = file;
+    });
+    filteredPreviews.forEach((preview, i) => {
+      newPhotoPreviews[i] = preview;
+    });
 
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
@@ -101,12 +106,20 @@ export function usePhotoManagement() {
   };
 
   const handleReorder = (newOrder: PhotoItem[]) => {
-    const newPhotoFiles = newOrder.map(item => item.file);
-    const newPhotoPreviews = newOrder.map(item => item.preview);
+    console.log('🔄 Reordering photos:', newOrder.map(item => ({ id: item.id, index: item.index })));
+    
+    // อัปเดต index ของ PhotoItem ตามลำดับใหม่
+    const updatedOrder = newOrder.map((item, index) => ({
+      ...item,
+      index: index
+    }));
+
+    const newPhotoFiles = updatedOrder.map(item => item.file);
+    const newPhotoPreviews = updatedOrder.map(item => item.preview);
 
     setPhotoFiles(newPhotoFiles);
     setPhotoPreviews(newPhotoPreviews);
-    setPhotoItems(newOrder);
+    setPhotoItems(updatedOrder);
 
     return newPhotoPreviews.filter((preview) => preview !== "");
   };
@@ -127,26 +140,6 @@ export function usePhotoManagement() {
     updatePhotoItems(newPhotoFiles, newPhotoPreviews);
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const hasEmptySlots = photoFiles.some((file, index) => {
-        if (file === null) return false;
-        for (let i = 0; i < index; i++) {
-          if (photoFiles[i] === null) return true;
-        }
-        return false;
-      });
-
-      if (hasEmptySlots) {
-        const { compactedFiles, compactedPreviews } = compactPhotos(photoFiles, photoPreviews);
-        setPhotoFiles(compactedFiles);
-        setPhotoPreviews(compactedPreviews);
-        updatePhotoItems(compactedFiles, compactedPreviews);
-      }
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [photoFiles, photoPreviews]);
 
   return {
     photoFiles,
