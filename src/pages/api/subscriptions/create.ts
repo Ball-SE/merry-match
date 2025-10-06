@@ -33,12 +33,12 @@ export default async function handler(
 
     const { packageId, paymentIntentId, amount } = req.body;
 
-    // ตรวจสอบราคาของ package ที่จะสมัคร และดึง daily_swipe_limit
-    const { data: newPackage, error: packageError } = await supabase
-      .from('packages')
-      .select('price, daily_swipe_limit')
-      .eq('id', packageId)
-      .single();
+     // ตรวจสอบราคาของ package ที่จะสมัคร และดึง daily_swipe_limit
+     const { data: newPackage, error: packageError } = await supabase
+     .from('packages')
+     .select('price, daily_swipe_limit, name')
+     .eq('id', packageId)
+     .single();
 
     if (packageError || !newPackage) {
       return res.status(404).json({ error: 'Package not found' });
@@ -106,6 +106,52 @@ export default async function handler(
         .eq('id', user.id);
     }
 
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment not completed' });
+    }
+
+    // ดึง payment method จาก PaymentIntent
+    const paymentMethodId = paymentIntent.payment_method as string;
+    
+    if (paymentMethodId) {
+      // Attach payment method กับ customer
+      try {
+        await stripe.paymentMethods.attach(paymentMethodId, {
+          customer: stripeCustomerId,
+        });
+    
+        // ตั้งเป็น default payment method
+        await stripe.customers.update(stripeCustomerId, {
+          invoice_settings: {
+            default_payment_method: paymentMethodId,
+          },
+        });
+    
+        console.log('✅ Payment method attached successfully:', paymentMethodId);
+      } catch (attachError: unknown) {
+        // ถ้า payment method attach อยู่แล้วให้ทำการ update default เท่านั้น
+        if (attachError instanceof Error && (attachError.message === 'resource_already_exists' || 
+            attachError.message.includes('already been attached'))) {
+          console.log('⚠️ Payment method already attached, updating as default');
+          
+          // แค่ update default payment method
+          await stripe.customers.update(stripeCustomerId, {
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+        } else {
+          // Error อื่นๆ ให้ log และ throw ออกมา
+          console.error('❌ Error attaching payment method:', attachError);
+          throw new Error(`Failed to attach payment method: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);
+        }
+      }
+    } else {
+      console.warn('⚠️ No payment method found in PaymentIntent');
+    }
+
     // บันทึก subscription ใน table subscriptions ที่มีอยู่แล้ว
     const { data: subscription, error: subscriptionError } = await supabase
       .from('subscriptions')
@@ -117,11 +163,10 @@ export default async function handler(
         status: 'active',
         current_period_start: new Date().toISOString(),
         current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        merry_limit: newPackage.daily_swipe_limit, // เพิ่มบรรทัดนี้
+        merry_limit: newPackage.daily_swipe_limit,
       })
       .select()
       .single();
-
     if (subscriptionError) {
       console.error('Subscription error:', subscriptionError);
       throw subscriptionError;

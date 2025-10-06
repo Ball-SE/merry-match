@@ -47,6 +47,7 @@ export default async function handler(
       amount: amount * 100,
       currency,
       payment_method_types: ['card'],
+      setup_future_usage: 'off_session', //บอก Stripe ว่าเราต้องการใช้ payment method นี้อีกในอนาคต
       metadata: {
         packageId: packageId.toString(),
         packageName: packageData.name,

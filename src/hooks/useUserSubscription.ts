@@ -8,6 +8,8 @@ interface UserSubscription {
   status: string;
   current_period_start: string;
   current_period_end: string;
+  cancel_at_period_end?: boolean;
+  cancel_at?: string | null;
   package: {
     id: number;
     name: string;
@@ -26,10 +28,10 @@ export const useUserSubscription = () => {
     try {
       setLoading(true);
       setError(null);
-
+  
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-
+  
       const { data, error: fetchError } = await supabase
         .from('subscriptions')
         .select(`
@@ -47,12 +49,22 @@ export const useUserSubscription = () => {
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
-
+  
       if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows
         throw fetchError;
       }
-
-      setSubscription(data);
+  
+      // แปลง packages เป็น package
+      if (data) {
+        const transformedData = {
+          ...data,
+          package: Array.isArray(data.packages) ? data.packages[0] : data.packages
+        };
+        delete transformedData.packages;
+        setSubscription(transformedData as UserSubscription);
+      } else {
+        setSubscription(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch subscription');
     } finally {

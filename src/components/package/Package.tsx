@@ -300,12 +300,6 @@ export default function Package() {
                                     <div className="mt-auto">
                                         <div className="border-t-[1px] border-[#E4E6ED] mb-5"></div>
                                         
-                                        {isDowngrade && (
-                                            <p className="text-sm text-red-500 mb-3 text-center">
-                                                Cannot downgrade
-                                            </p>
-                                        )}
-                                        
                                         <button 
                                             onClick={() => handleChoosePackage(pkg)}
                                             disabled={!canSelect || isCurrentPackage}

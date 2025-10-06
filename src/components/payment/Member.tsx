@@ -1,6 +1,5 @@
 import { useUserSubscription } from "@/hooks/useUserSubscription";
 import { useBillingHistory } from "@/hooks/useBillingHistory";
-import { usePaymentMethod } from "@/hooks/usePaymentMethod";
 import Image from "next/image";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/supabaseClient";
@@ -8,7 +7,6 @@ import { supabase } from "@/lib/supabase/supabaseClient";
 function Member() {
     const { subscription, loading: subLoading, hasActiveSubscription, refetch: refetchSubscription } = useUserSubscription();
     const { billingHistory, loading: historyLoading } = useBillingHistory();
-    const { paymentMethod, loading: pmLoading } = usePaymentMethod();
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -25,6 +23,52 @@ function Member() {
         ? formatDate(subscription.current_period_end)
         : "-";
 
+        const handleRequestPDF = async (subscriptionId: number) => {
+            try {
+                setAlert({ type: 'success', message: 'Generating receipt PDF...' });
+        
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.access_token) {
+                    throw new Error('Not authenticated');
+                }
+        
+                const response = await fetch('/api/receipt-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ subscriptionId }),
+                });
+        
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(result.error || 'Failed to generate receipt PDF');
+                }
+        
+                // แปลง response เป็น blob และดาวน์โหลด
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `receipt-${subscriptionId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                setAlert({ type: 'success', message: 'Receipt PDF downloaded!' });
+        
+            } catch (error) {
+                console.error('Error requesting PDF:', error);
+                setAlert({ 
+                    type: 'error', 
+                    message: error instanceof Error ? error.message : 'Failed to generate receipt' 
+                });
+            }
+        };
+        
+
     // ฟังก์ชัน Cancel Subscription
     const handleCancelSubscription = async () => {
         try {
@@ -35,7 +79,6 @@ function Member() {
                 throw new Error('Not authenticated');
             }
 
-            // แก้ path จาก /api/subscriptions/cancel เป็น /api/billing/cancle
             const response = await fetch('/api/billing/cancle', {
                 method: 'POST',
                 headers: {
@@ -71,26 +114,13 @@ function Member() {
     };
 
     // แสดง loading ถ้ายังโหลดข้อมูลไม่เสร็จ
-    if (subLoading || historyLoading || pmLoading) {
+    if (subLoading || historyLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-xl text-gray-600">Loading...</div>
             </div>
         );
     }
-
-    // แปลงชื่อ brand ให้เป็น capitalize
-    const getBrandName = (brand: string) => {
-        return brand.charAt(0).toUpperCase() + brand.slice(1).toLowerCase();
-    };
-
-    // แปลงชื่อ brand เป็น icon path
-    const getBrandIcon = (brand: string) => {
-        const brandLower = brand.toLowerCase();
-        if (brandLower === 'visa') return '/assets/visa.png';
-        if (brandLower === 'mastercard') return '/assets/mastercard.png';
-        return '/assets/visa.png'; // default
-    };
 
     return (
         <div className="bg-[#FCFCFE] min-h-screen py-12 px-4 sm:px-8 lg:px-24">
@@ -159,30 +189,32 @@ function Member() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-row items-center gap-2">
-                                    <Image src="/assets/checkbox-circle.png" alt="Feature" width={30} height={30} />
-                                    <span className="text-white text-sm">Merry&apos; more than a daily limited</span>
-                                </div>
-
-                                {/* Features and Status */}
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-                                    <div className="space-y-2">
+                                <div className="space-y-2">
                                         {subscription.package?.details?.slice(0, 2).map((detail, index) => (
                                             <div key={index} className="flex items-center gap-2">
                                                 <Image 
                                                     src="/assets/checkbox-circle.png" 
                                                     alt="Check" 
-                                                    width={18} 
-                                                    height={18}
+                                                    width={30} 
+                                                    height={30}
                                                 />
                                                 <span className="text-white text-sm">{detail}</span>
                                             </div>
                                         ))}
                                     </div>
 
+                                {/* Features and Status */}
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
                                     <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 items-center">
-                                        <span className="bg-[#F3E4DD] text-[#B8653E] px-4 py-1.5 rounded-full text-sm font-semibold">
-                                            Active
+                                        <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
+                                            subscription.cancel_at_period_end || subscription.status === 'cancelled' || subscription.status === 'active' 
+                                                ? 'bg-[#F3E4DD] text-[#B8653E]' 
+                                                : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {subscription.cancel_at_period_end || subscription.status === 'cancelled'
+                                                ? 'Inactive'
+                                                : subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)
+                                            }
                                         </span>
                                     </div>
                                 </div>
@@ -191,64 +223,24 @@ function Member() {
                             <div className="border-t-[1px] border-[#E4E6ED] mb-5 mt-5"></div>
 
                             <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 justify-end items-end">
-                                <button 
-                                    onClick={() => setShowCancelModal(true)}
-                                    className="text-white text-sm hover:text-gray-200 transition-colors underline"
-                                >
-                                    Cancel Package
-                                </button>
+                                {subscription.cancel_at_period_end ? (
+                                    <p className="text-white text-sm">
+                                        Your subscription will end on {formatDate(subscription.cancel_at || subscription.current_period_end)}
+                                    </p>
+                                ) : (
+                                    <button 
+                                        onClick={() => setShowCancelModal(true)}
+                                        className="text-white text-sm hover:text-gray-200 transition-colors underline"
+                                    >
+                                        Cancel Package
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ) : (
                         <div className="bg-gray-100 rounded-3xl shadow-lg p-6 sm:p-8">
                             <p className="text-gray-600 text-center">
                                 You don&apos;t have an active membership package.
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Payment Method */}
-                <div className="mb-10">
-                    <h3 className="text-2xl font-semibold text-[#2A2E3F] mb-4">
-                        Payment Method
-                    </h3>
-                    {paymentMethod ? (
-                        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-[#F6F7FC] rounded-lg flex items-center justify-center">
-                                        <Image 
-                                            src={getBrandIcon(paymentMethod.brand)} 
-                                            alt={getBrandName(paymentMethod.brand)} 
-                                            width={40} 
-                                            height={40}
-                                        />
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold text-gray-800">
-                                            {getBrandName(paymentMethod.brand)} ending *{paymentMethod.last4}
-                                        </p>
-                                        <p className="text-sm text-gray-500">
-                                            Expire {paymentMethod.expMonth.toString().padStart(2, '0')}/{paymentMethod.expYear}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="border-t-[1px] border-[#E4E6ED] mb-5 mt-5"></div>
-                            <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 justify-end items-end">
-                                <button 
-                                    onClick={() => setAlert({ type: 'error', message: 'Edit payment method feature coming soon!' })}
-                                    className="text-[#C70039] font-semibold hover:text-[#A00030] transition-colors"
-                                >
-                                    Edit Payment Method
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
-                            <p className="text-gray-600 text-center">
-                                No payment method on file.
                             </p>
                         </div>
                     )}
@@ -291,7 +283,14 @@ function Member() {
 
                         <div className="mt-6 flex justify-end">
                             <button 
-                                onClick={() => setAlert({ type: 'error', message: 'PDF export feature coming soon!' })}
+                                onClick={() => {
+                                    // ถ้ามี billing history อย่างน้อย 1 รายการ ให้ใช้รายการแรก (ล่าสุด)
+                                    if (billingHistory.length > 0) {
+                                        handleRequestPDF(billingHistory[0].id);
+                                    } else {
+                                        setAlert({ type: 'error', message: 'No billing history to export' });
+                                    }
+                                }}
                                 className="text-[#C70039] font-semibold hover:text-[#A00030] transition-colors"
                             >
                                 Request PDF
