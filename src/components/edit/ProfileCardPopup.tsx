@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Heart, X } from 'lucide-react';
 
 interface ProfileCardPopupProps {
   formData: {
@@ -20,6 +21,19 @@ interface ProfileCardPopupProps {
 }
 
 export default function ProfileCardPopup({ formData, profile, onClose }: ProfileCardPopupProps) {
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  const nextPhoto = () => {
+    if (formData.photos && formData.photos.length > 1) {
+      setCurrentPhotoIndex((prev) => (prev + 1) % formData.photos.length);
+    }
+  };
+
+  const prevPhoto = () => {
+    if (formData.photos && formData.photos.length > 1) {
+      setCurrentPhotoIndex((prev) => (prev - 1 + formData.photos.length) % formData.photos.length);
+    }
+  };
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div 
@@ -47,7 +61,7 @@ export default function ProfileCardPopup({ formData, profile, onClose }: Profile
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
-                    src={formData.photos[0]} 
+                    src={formData.photos[currentPhotoIndex]} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />
@@ -64,16 +78,40 @@ export default function ProfileCardPopup({ formData, profile, onClose }: Profile
             
             {formData.photos && formData.photos.length > 0 && (
               <div className="absolute bottom-20 left-[80px] text-gray-500 text-sm font-medium">
-                1/{formData.photos.length}
+                {currentPhotoIndex + 1}/{formData.photos.length}
               </div>
             )}
             
+            {/* กล่องปุ่ม Like/Pass - เหมือนหน้า preview */}
+            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex items-center gap-3">
+              <button 
+                onClick={onClose}
+                className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 bg-white hover:shadow-xl hover:scale-105 transition-all"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+              
+              <button 
+                onClick={onClose}
+                className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg border border-gray-200 bg-white hover:shadow-xl hover:scale-105 transition-all"
+              >
+                <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+              </button>
+            </div>
+            
+            {/* ปุ่มลูกศรเลื่อนรูป */}
             {formData.photos && formData.photos.length > 1 && (
               <div className="absolute bottom-18 left-1/2 transform translate-x-28 flex items-center">
-                <button className="w-8 h-8 flex items-center justify-center transition-all -mr-1 text-[#9AA1B9] hover:text-[#C70039]">
+                <button 
+                  onClick={prevPhoto}
+                  className="w-8 h-8 flex items-center justify-center transition-all -mr-1 text-[#9AA1B9] hover:text-[#C70039]"
+                >
                   <span className="text-sm">←</span>
                 </button>
-                <button className="w-8 h-8 flex items-center justify-center transition-all -ml-1 text-[#9AA1B9] hover:text-[#C70039]">
+                <button 
+                  onClick={nextPhoto}
+                  className="w-8 h-8 flex items-center justify-center transition-all -ml-1 text-[#9AA1B9] hover:text-[#C70039]"
+                >
                   <span className="text-sm">→</span>
                 </button>
               </div>
@@ -89,7 +127,7 @@ export default function ProfileCardPopup({ formData, profile, onClose }: Profile
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
                 <span className="text-gray-700 text-base">
-                  {formData.city || 'Bangkok'}, {formData.location || 'Thailand'}
+                  {formData.city ? formData.city.charAt(0).toUpperCase() + formData.city.slice(1) : 'Bangkok'}, {formData.location ? formData.location.charAt(0).toUpperCase() + formData.location.slice(1) : 'Thailand'}
                 </span>
               </div>
             </div>
