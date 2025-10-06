@@ -311,18 +311,18 @@ export function useChat(matchId: string): UseChatReturn {
   }, [matchId, session?.user?.id, session?.access_token]);
 
   // เพิ่ม polling เป็น fallback (ถ้า realtime ไม่ทำงาน)
-  useEffect(() => {
-    if (!matchId || !session?.access_token) return;
+  // useEffect(() => {
+  //   if (!matchId || !session?.access_token) return;
 
-    // Poll ทุก 5 วินาที เมื่อหน้าต่าง active
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        fetchMessages();
-      }
-    }, 5000);
+  //   // Poll ทุก 5 วินาที เมื่อหน้าต่าง active
+  //   const intervalId = setInterval(() => {
+  //     if (!document.hidden) {
+  //       fetchMessages();
+  //     }
+  //   }, 5000);
 
-    return () => clearInterval(intervalId);
-  }, [matchId, session?.access_token, fetchMessages]);
+  //   return () => clearInterval(intervalId);
+  // }, [matchId, session?.access_token, fetchMessages]);
 
   // โหลดข้อมูลเริ่มต้น
   useEffect(() => {
