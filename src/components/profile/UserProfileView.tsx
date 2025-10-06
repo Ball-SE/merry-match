@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
+import { supabase } from '@/lib/supabase/supabaseClient';
+
 
 interface UserProfile {
   id: string;
@@ -21,9 +23,18 @@ interface UserProfile {
 interface UserProfileViewProps {
   userId: string;
   className?: string;
+  onClose?: () => void; // เพิ่ม optional callback สำหรับปิด modal
+  onLike?: (userId: string) => void; // เพิ่ม callback สำหรับ like
+  onPass?: (userId: string) => void; // เพิ่ม callback สำหรับ pass
 }
 
-export default function UserProfileView({ userId, className = '' }: UserProfileViewProps) {
+export default function UserProfileView({ 
+  userId, 
+  className = '', 
+  onClose,
+  onLike,
+  onPass
+}: UserProfileViewProps) {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,8 +61,20 @@ export default function UserProfileView({ userId, className = '' }: UserProfileV
         setLoading(true);
         setError(null);
 
+         // ดึง token จาก Supabase session
+         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+         const headers: HeadersInit = {
+           'Content-Type': 'application/json'
+         };
+         
+         // เพิ่ม Authorization header ถ้ามี session
+         if (session?.access_token) {
+           headers['Authorization'] = `Bearer ${session.access_token}`;
+         }
+
         // เรียก API เพื่อดึงข้อมูล profile ของคนอื่น
-        const response = await fetch(`/api/profile/${userId}`);
+        const response = await fetch(`/api/profile/${userId}`, { headers });
         const result = await response.json();
 
         if (!response.ok) {
@@ -98,6 +121,18 @@ export default function UserProfileView({ userId, className = '' }: UserProfileV
   const handleAction = async (actionType: 'like' | 'pass') => {
     if (actionState.loading || !profile) return;
     
+    // ถ้ามี callback จาก parent ให้เรียกใช้
+    if (actionType === 'like' && onLike) {
+      onLike(userId);
+      return;
+    }
+    
+    if (actionType === 'pass' && onPass) {
+      onPass(userId);
+      return;
+    }
+    
+    // ถ้าไม่มี callback ใช้ logic เดิม (mock)
     setActionState({
       type: actionType,
       loading: true,
@@ -125,7 +160,7 @@ export default function UserProfileView({ userId, className = '' }: UserProfileV
       });
       
       setTimeout(() => {
-        router.push('/');
+        handleClose();
       }, 2000);
       
     } catch (error: unknown) {
@@ -144,7 +179,13 @@ export default function UserProfileView({ userId, className = '' }: UserProfileV
   
   const handleClose = () => {
     if (!actionState.loading) {
-      router.push('/');
+      // ถ้ามี onClose callback ให้เรียกใช้ (สำหรับ modal)
+      if (onClose) {
+        onClose();
+      } else {
+        // ถ้าไม่มี callback ให้ navigate (สำหรับ standalone page)
+        router.push('/');
+      }
     }
   };
   
