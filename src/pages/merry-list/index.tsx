@@ -61,6 +61,10 @@ type Subscription = {
     merry_limit: string | number;
 }
 
+interface MatchingLeftProps {
+    onChatSelect?: (matchId: string, matchName: string) => void;
+}
+
 type MatchListResponse = { data: Match[] };
 type SwipeListResponse = { data: Swipe[] };
 type SubscriptionResponse = { success: boolean; subscription: Subscription | null };
@@ -75,7 +79,7 @@ function isPremium(subscriptionData: Subscription[]): boolean {
     return packageName === "Premium";
 }
 
-function MerryList () {
+function MerryList ({ onChatSelect }: MatchingLeftProps) {
     const [matchList, setMatchList] = useState<Match[]>([]);
     const [swipeList, setSwipeList] = useState<Swipe[]>([]);
     const [AllSwipe, setAllSwipe] = useState<Swipe[]>([]);
@@ -244,8 +248,8 @@ function MerryList () {
         <NavBarUsers />
         <div className="mb-15 lg:flex lg:flex-col lg:items-center lg:mt-15">
         <div className="p-3 lg:w-300">
-            <p className="text-start text-xs leading-10 text-[#7B4429] font-semibold">MERRY LIST</p>
-            <p className="text-3xl font-bold text-[#A62D82]">Let&apos;s know each other with Merry!</p>
+            <p className="text-start text-s leading-10 text-[#7B4429] font-semibold">MERRY LIST</p>
+            <p className="text-4xl font-extrabold text-[#A62D82]">Let&apos;s know each other with Merry!</p>
             <div className="mt-15">
                 <div className="flex justify-between mx-8 items-center lg:justify-start lg:gap-20">
                     <div>
@@ -315,7 +319,21 @@ function MerryList () {
                                     </p>
                                     }
                                     <div className="flex justify-between items-center mt-6 w-40">
-                                        <button className="flex justify-between items-center cursor-pointer w-7 h-7">
+                                        <button className="flex justify-between items-center cursor-pointer w-7 h-7"
+                                        onClick={() => {
+                                            if (onChatSelect && match.match_id && match.name) {
+                                                onChatSelect(match.match_id, match.name);
+                                            } else if (match.match_id) {
+                                                // Navigate to chat page with matchId parameter
+                                                router.push({
+                                                    pathname: '/chat',
+                                                    query: { matchId: match.match_id, matchName: match.name || 'Chat' }
+                                                });
+                                            } else {
+                                                router.push('/chat');
+                                            }
+                                        }}
+                                        >
                                             <MessageCircleMore color="white" fill ="#646D89" size={22}/>
                                         </button>
                                         <button
@@ -431,10 +449,10 @@ function MerryList () {
                     <div className="text-center">
                         <Heart color="#ff1659" size={48} className="mx-auto mb-4" />
                         <h3 className="text-xl font-bold text-[#A62D82] mb-2">
-                            Upgrade to Premium
+                            Upgrade to Platinum
                         </h3>
                         <p className="text-[#646D89] mb-4">
-                            See who likes you with Premium package!
+                            See who likes you with Platinum package!
                         </p>
                         <p className="text-sm text-[#9AA1B9]">
                             Get access to your &quot;Merry to you&quot; list and see all the people who liked your profile.
