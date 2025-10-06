@@ -1,6 +1,6 @@
 import NavBarUsers from "@/components/NavBarUsers";  
 import Footer from "@/components/Footer";
-import UserProfileView from "@/components/profile/UserProfileView";
+import MerryProfileView from "@/components/profile/MerryProfileView";
 import { Heart } from 'lucide-react';
 import { MessageCircleMore } from 'lucide-react';
 import { Eye } from 'lucide-react';
@@ -11,6 +11,7 @@ import axios from "axios";
 import { supabase } from "@/lib/supabase/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 type ProfileLocation = {
     city?: string;
@@ -75,16 +76,18 @@ function isPremium(subscriptionData: Subscription[]): boolean {
 }
 
 function MerryList () {
-
     const [matchList, setMatchList] = useState<Match[]>([]);
     const [swipeList, setSwipeList] = useState<Swipe[]>([]);
     const [AllSwipe, setAllSwipe] = useState<Swipe[]>([]);
     const [subscriptionData, setSubscriptionData] = useState<Subscription[]>([]);
 
     const [timeLeft, setTimeLeft] = useState("");
-    const [openProfile, setOpenProfile] = useState<string | number | null>(null);
+    const [openProfile, setOpenProfile] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | number | null>(null);
 
     const [unmatchedIds, setUnmatchedIds] = useState<(string | number)[]>([]);
+
+    const router = useRouter();
 
     function formatLocation(loc: unknown): string {
         if (!loc || typeof loc !== "object") return "";
@@ -143,7 +146,28 @@ function MerryList () {
         }
     }
 
+    const handleProfile = (userId: string | number) => {
+        setSelectedUserId(userId);
+        setOpenProfile(true);
+    };
+    const closeProfile = () => setOpenProfile(false);
+
     useEffect(() => {
+        const handleRouteChange = () => {
+            setOpenProfile(false);
+        };
+        
+        if (router.events) {
+            router.events.on('routeChangeStart', handleRouteChange);
+            
+            return () => {
+                router.events.off('routeChangeStart', handleRouteChange);
+            };
+        }
+    }, [router]);
+
+    useEffect(() => {
+
         const fetchMatch = async() => {
             try {
                 // เช็คว่ามี session token หรือไม่
@@ -190,40 +214,30 @@ function MerryList () {
                 } else {
                     setSwipeList(swipes)
                 }
-                
-                // นับเวลาถอยหลังถึงเที่ยงคืน
-                const updateCountdown = () => {
-                    const now = new Date();
-              
-                    // กำหนดเป้าหมาย = เที่ยงคืนวันพรุ่งนี้
-                    const tomorrow = new Date();
-                    tomorrow.setDate(now.getDate() + 1);
-                    tomorrow.setHours(0, 0, 0, 0);
-              
-                    const diff = tomorrow.getTime() - now.getTime();
-              
-                    const hours = Math.floor(diff / (1000 * 60 * 60));
-              
-                    setTimeLeft(`${hours}h`);
-                  };
-              
-                  updateCountdown();
-                  const timer = setInterval(updateCountdown, 1000);
-              
-                  return () => clearInterval(timer);
                   
             } catch (error) {
                 console.error(error)
-            }
-        }
+            };
+        };
         fetchMatch()
     },[])
 
-    const handleProfile = (userId: string | number) => {
-        console.log('🔍 handleProfile called with userId:', userId, 'type:', typeof userId);
-        setOpenProfile(userId);
-    };
-    const closeProfile = () => setOpenProfile(null);
+    useEffect(() => {
+        const updateCountdown = () => {
+            const now = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(now.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            const diff = tomorrow.getTime() - now.getTime();
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            setTimeLeft(`${hours}h`);
+        };
+    
+        updateCountdown();
+        const timer = setInterval(updateCountdown, 1000);
+    
+        return () => clearInterval(timer);
+    }, []);
 
     return(
         <>
@@ -305,7 +319,7 @@ function MerryList () {
                                             <MessageCircleMore color="white" fill ="#646D89" size={22}/>
                                         </button>
                                         <button
-                                        onClick={() => handleProfile((match as Match & { other_user_id?: string }).other_user_id || match.id)}
+                                        onClick={() => handleProfile(match.id)}
                                         className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <Eye color="white" fill ="#646D89" size={28}/>
                                         </button>
@@ -345,14 +359,6 @@ function MerryList () {
                                     </div>
                                 </div>
                             </div>
-                            <UserProfileView
-                        userId={(() => {
-                            const userId = (match as Match & { other_user_id?: string }).other_user_id || match.id;
-                            console.log('🔍 Sending userId to UserProfileView:', userId, 'type:', typeof userId, 'for match:', match.name);
-                            return userId;
-                        })()}
-                        isOpen={openProfile === ((match as Match & { other_user_id?: string }).other_user_id || match.id)}
-                        />
                         </div>
                         <hr className="mt-8 lg:mt-0 lg:mb-8"/>
                     </div>
@@ -382,7 +388,9 @@ function MerryList () {
                                             <p className="ml-2 text-gray-600 ">Not Match yet</p>
                                         </button>
                                         <div className="flex justify-end items-center w-25 mt-6">
-                                            <button className="flex justify-between items-center cursor-pointer w-7 h-7">
+                                            <button 
+                                            onClick={() => handleProfile(swipe.id)}
+                                            className="flex justify-between items-center cursor-pointer w-7 h-7">
                                                 <Eye color="white" fill ="#646D89" size={28}/>
                                             </button>
                                         </div>
@@ -438,6 +446,12 @@ function MerryList () {
             
         </div>
         <Footer />
+        {openProfile && selectedUserId && (
+    <MerryProfileView 
+      userId={selectedUserId}
+      onClose={closeProfile}
+    />
+)}
         </>
     )
 }
