@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { FaHeart, FaEye, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
-import ProfileModal from "./ProfileModal";
+import UserProfileView from "@/components/profile/UserProfileView";
 import SwipeDeck, { Card } from "@/components/swipe/SwipeDeck";
 import { useMatchingProfiles } from "@/hooks/useMatchingProfiles";
 import { useMatchingContext } from "@/context/MatchingContext";
@@ -180,6 +180,18 @@ function MatchingCenter() {
 
   const handleProfile = () => setOpenProfile(true);
   const closeProfile = () => setOpenProfile(false);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setOpenProfile(false);
+    };
+
+    router.events?.on('routeChangeStart', handleRouteChange);
+
+    return () => {
+      router.events?.off('routeChangeStart', handleRouteChange);
+    };
+  }, [router]);
 
   const handleCurrentCardChange = (card: Card | null) => {
     // เช็คว่าเป็นการ์ดใหม่หรือไม่ ถ้าใช่ค่อยรีเซ็ต
@@ -397,15 +409,15 @@ function MatchingCenter() {
         </div>
       </div>
 
-      {/* Profile Modal */}
-      <ProfileModal 
-        isOpen={openProfile} 
-        onClose={closeProfile} 
-        currentCard={currentCard} 
-        profiles={profiles}
-        onLike={handleLike} 
-        onPass={handlePass} 
-      />
+      {/* User Profile View */}
+      {openProfile && currentCard && (
+        <UserProfileView 
+          userId={currentCard.id}
+          onClose={closeProfile}
+          onLike={() => handleLike(currentCard)}
+          onPass={() => handlePass(currentCard)}
+        />
+      )}
 
       {/* Limit Reached Modal */}
       {showLimitModal && (
