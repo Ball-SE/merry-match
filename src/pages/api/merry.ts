@@ -1,13 +1,17 @@
-// pages/api/merry.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
+import { createMatchNotification } from "@/lib/notification/notificationService";
 
 interface PackageData {
   daily_swipe_limit: number;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "POST")
+    return res.status(405).json({ error: "Method not allowed" });
 
   try {
     // 1) รับ Bearer token
@@ -23,13 +27,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     // 3) หา user จาก token
-    const { data: { user }, error: getUserErr } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: getUserErr,
+    } = await supabase.auth.getUser();
     if (getUserErr) return res.status(401).json({ error: getUserErr.message });
     if (!user) return res.status(401).json({ error: "Invalid token" });
 
     // 4) รับ body
-    const { swiped_id, action } = (typeof req.body === "string" ? JSON.parse(req.body) : req.body) as {
-      swiped_id?: string; action?: "like" | "pass";
+    const { swiped_id, action } = (
+      typeof req.body === "string" ? JSON.parse(req.body) : req.body
+    ) as {
+      swiped_id?: string;
+      action?: "like" | "pass";
     };
 
     if (!swiped_id || (action !== "like" && action !== "pass"))
@@ -39,8 +49,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 🆕 5) Check และ update merry_limit
     const { data: subData, error: subErr } = await supabase
-    .from("subscriptions")
-    .select(`
+      .from("subscriptions")
+      .select(
+        `
       id,
       merry_limit,
       updated_at,
@@ -48,12 +59,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       packages (
         daily_swipe_limit
       )
-    `)
-    .eq("user_id", user.id)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false }) 
-    .limit(1)
-    .maybeSingle();
+    `
+      )
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (subErr) return res.status(500).json({ error: subErr.message });
 
@@ -65,9 +77,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: freePackage } = await supabase
         .from("packages")
         .select("id, daily_swipe_limit")
-        .eq("price", 0)  // เปลี่ยนจาก .eq("name", "Free")
+        .eq("price", 0) // เปลี่ยนจาก .eq("name", "Free")
         .maybeSingle();
-      
+
       if (freePackage) {
         // สร้าง subscription ใหม่
         const { data: newSub, error: createErr } = await supabase
@@ -75,12 +87,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .insert({
             user_id: user.id,
             package_id: freePackage.id,
-            status: 'active',  // เปลี่ยนจาก 'disabled' เป็น 'active'
+            status: "active", // เปลี่ยนจาก 'disabled' เป็น 'active'
             merry_limit: freePackage.daily_swipe_limit || 10,
             current_period_start: new Date().toISOString(),
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            current_period_end: new Date(
+              Date.now() + 30 * 24 * 60 * 60 * 1000
+            ).toISOString(),
           })
-          .select(`
+          .select(
+            `
             id,
             merry_limit,
             updated_at,
@@ -88,41 +103,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             packages (
               daily_swipe_limit
             )
-          `)
+          `
+          )
           .single();
-        
+
         if (!createErr && newSub) {
           subscription = newSub; // ใช้ subscription ที่สร้างใหม่
         } else {
           console.error("Create subscription error:", createErr);
-          return res.status(403).json({ 
-            error: "Failed to create subscription", 
-            merry_limit: 0, 
-            daily_swipe_limit: 10 
+          return res.status(403).json({
+            error: "Failed to create subscription",
+            merry_limit: 0,
+            daily_swipe_limit: 10,
           });
         }
       } else {
         // ถ้าไม่มี Free package ในระบบ
-        return res.status(403).json({ 
-          error: "No package available", 
-          merry_limit: 0, 
-          daily_swipe_limit: 10 
+        return res.status(403).json({
+          error: "No package available",
+          merry_limit: 0,
+          daily_swipe_limit: 10,
         });
       }
     }
 
     // ดึงค่า limit ปัจจุบัน
     const currentLimit = subscription.merry_limit;
-    const dailyLimit = Array.isArray(subscription.packages) 
+    const dailyLimit = Array.isArray(subscription.packages)
       ? subscription.packages[0]?.daily_swipe_limit ?? 10
       : (subscription.packages as PackageData)?.daily_swipe_limit ?? 10;
 
     // Check ว่า limit เหลือไหม
     if (currentLimit <= 0) {
-      return res.status(403).json({ 
-        error: "Swipe limit reached", 
+      return res.status(403).json({
+        error: "Swipe limit reached",
         merry_limit: 0,
-        daily_swipe_limit: dailyLimit 
+        daily_swipe_limit: dailyLimit,
       });
     }
 
@@ -142,7 +158,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .update({ merry_limit: newLimit })
       .eq("id", subscription.id);
 
-    if (updateLimitErr) console.error("Update limit error:", updateLimitErr.message);
+    if (updateLimitErr)
+      console.error("Update limit error:", updateLimitErr.message);
 
     // 7) ดึงข้อมูล user ที่ถูก swipe
     const { data: swipedUser, error: swipedErr } = await supabase
@@ -150,7 +167,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select("*")
       .eq("id", swiped_id)
       .maybeSingle();
-    if (swipedErr) console.error("Error fetching swiped user:", swipedErr?.message);
+    if (swipedErr)
+      console.error("Error fetching swiped user:", swipedErr?.message);
 
     // 8) เช็ค like สวนกลับ
     let matched = false;
@@ -169,10 +187,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const [a, b] = [user.id, swiped_id].sort();
         const { error: matchErr } = await supabase
           .from("matches")
-          .upsert({ user1_id: a, user2_id: b }, { onConflict: "user1_id,user2_id", ignoreDuplicates: true });
+          .upsert(
+            { user1_id: a, user2_id: b },
+            { onConflict: "user1_id,user2_id", ignoreDuplicates: true }
+          );
         if (matchErr) console.error("match upsert:", matchErr.message);
         matched = true;
         matchUser = swipedUser;
+
+        // เพิ่ม: สร้าง notification สำหรับทั้งสองฝ่าย
+        await createMatchNotification(user.id, swiped_id, swipedUser);
+        await createMatchNotification(swiped_id, user.id, {
+          name: user.user_metadata?.name || user.email || "",
+          photo_url: user.user_metadata?.photo_url || ""
+        });
       }
     }
 
@@ -181,12 +209,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       match: matched,
       swipedUser,
       matchUser,
-      merry_limit: newLimit,  // 🆕 ส่ง limit ที่เหลือกลับไป
-      daily_swipe_limit: dailyLimit
+      merry_limit: newLimit, // 🆕 ส่ง limit ที่เหลือกลับไป
+      daily_swipe_limit: dailyLimit,
     });
   } catch (e: unknown) {
     console.error("merry API error:", e);
-    const message = e instanceof Error ? e.message : "server error"
-    return res.status(500).json({ error: message});
+    const message = e instanceof Error ? e.message : "server error";
+    return res.status(500).json({ error: message });
   }
 }
