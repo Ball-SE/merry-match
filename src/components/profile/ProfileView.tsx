@@ -238,6 +238,7 @@ export default function ProfileView({ className = '' }: ProfileViewProps) {
                 ? 'text-gray-400 cursor-not-allowed' 
                 : 'text-[#9AA1B9] hover:text-[#C70039] cursor-pointer'
             }`}
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>

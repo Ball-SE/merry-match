@@ -80,8 +80,8 @@ export const validateBasicInfo = (data: {
   }
 
   // Required fields (with default values, so these should always have values)
-  if (!data.location) errors.location = "Location is required";
-  if (!data.city) errors.city = "City is required";
+  if (!data.location || data.location === '') errors.location = "Location is required";
+  if (!data.city || data.city === '') errors.city = "City is required";
 
   return {
     isValid: Object.keys(errors).length === 0,
@@ -101,10 +101,10 @@ export const validateIdentitiesAndInterests = (data: {
   const errors: Record<string, string> = {};
 
   // Required fields (with default values, so these should always have values)
-  if (!data.gender) errors.gender = "Sexual identity is required";
-  if (!data.sexual_preferences) errors.sexual_preferences = "Sexual preference is required";
-  if (!data.racial_preferences) errors.racial_preferences = "Racial preference is required";
-  if (!data.meeting_interests) errors.meeting_interests = "Meeting interest is required";
+  if (!data.gender || data.gender === '') errors.gender = "Sexual identity is required";
+  if (!data.sexual_preferences || data.sexual_preferences === '') errors.sexual_preferences = "Sexual preference is required";
+  if (!data.racial_preferences || data.racial_preferences === '') errors.racial_preferences = "Racial preference is required";
+  if (!data.meeting_interests || data.meeting_interests === '') errors.meeting_interests = "Meeting interest is required";
 
   // Bio validation (optional but with character limit)
   if (data.bio && data.bio.length > 150) {
@@ -134,6 +134,23 @@ export const validatePhotos = (photos: string[]) => {
   // Maximum 5 photos allowed
   if (photos.length > 5) {
     errors.photos = "Maximum 5 photos allowed";
+  }
+
+  // Validate each photo URL (allow both regular URLs and blob URLs)
+  if (photos && photos.length > 0) {
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      if (photo) {
+        // Check if it's a valid URL or blob URL
+        const isValidUrl = photo.startsWith('blob:') || 
+          (photo.startsWith('http://') || photo.startsWith('https://'));
+        
+        if (!isValidUrl) {
+          errors.photos = "Invalid photo URL detected";
+          break;
+        }
+      }
+    }
   }
 
   return {
