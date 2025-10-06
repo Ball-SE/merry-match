@@ -36,7 +36,7 @@ function ChatPage() {
 
     return (
         <MatchingProvider>
-            <div className="h-screen flex flex-col">
+            <div className="h-screen flex flex-col min-h-0">
                 {/* NavBar - Always visible */}
                 <NavBar />
 
@@ -55,7 +55,7 @@ function ChatPage() {
                     </div>
                 )}
 
-                <div className="flex flex-1 w-full h-full relative">
+                <div className="flex flex-1 w-full h-full relative min-h-0 overflow-hidden">
                     {/* Desktop Sidebar */}
                     <div className="hidden md:block md:basis-1/4 lg:basis-1/5 overflow-auto bg-[#F6F7FC] ">
                         <div className="w-full p-4 h-full">
@@ -67,7 +67,7 @@ function ChatPage() {
                     </div>
 
                     {/* Mobile Layout */}
-                    <div className="md:hidden flex-1 flex flex-col overflow-x-hidden">
+                    <div className="md:hidden flex-1 flex flex-col overflow-x-hidden min-h-0">
                         {!showChat ? (
                             /* Mobile MatchingLeft - Full screen */
                             <div className="flex-1 overflow-auto bg-[#F6F7FC]">
@@ -90,7 +90,7 @@ function ChatPage() {
                     </div>
 
                     {/* Desktop Chat Area */}
-                    <div className="hidden md:flex flex-1 md:basis-3/4 lg:basis-4/5 min-h-0">
+                    <div className="hidden md:flex flex-1 md:basis-3/4 lg:basis-4/5 min-h-0 overflow-hidden">
                         <div className="w-full">
                             {selectedMatchId ? (
                                 <Chat matchId={selectedMatchId} />

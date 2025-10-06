@@ -1,25 +1,28 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { LuPaperclip, LuSend, LuLoader } from 'react-icons/lu';
+import { LuPaperclip, LuSend, LuLoader, LuX } from 'react-icons/lu';
 import { Heart } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { uploadChatPhoto } from '@/lib/supabase/uploadPhotoUtils';
 
-interface ChatProps {
+type ChatProps = {
   matchId: string;
 }
 
-interface Message {
+type Message = {
   id: string;
   match_id: string;
   sender_id: string;
   receiver_id: string;
-  message_text: string;
+  message_text: string | null;
+  message_type?: 'text' | 'image';
+  media_url?: string | null;
   created_at: string;
   is_read: boolean;
 }
 
-const Chat: React.FC<ChatProps> = ({ matchId }) => {
+function Chat({ matchId }: ChatProps) {
   const [user, setUser] = useState<{ id: string; user_metadata?: { avatar_url?: string } } | null>(null);
   const { messages, match, loading, error, sendMessage } = useChat(matchId);
   const [newMessage, setNewMessage] = useState('');
@@ -31,6 +34,13 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
+  const isInitialScrollRef = useRef(false); // ป้องกัน auto-load หลัง mount
+  
+  // States สำหรับการส่งรูปภาพ
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset state เมื่อเปลี่ยน matchId
   useEffect(() => {
@@ -40,14 +50,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
     setOldestMessageId(null);
     setLoadingMore(false);
     isLoadingRef.current = false;
-    
-    // Reset scroll position หลังจาก DOM render
-    setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        console.log('📍 Scroll position reset to bottom');
-      }
-    }, 100);
+    isInitialScrollRef.current = false; // Reset flag สำหรับ chat ใหม่
   }, [matchId]);
 
   // อัปเดต allMessages เมื่อ messages จาก hook เปลี่ยน
@@ -79,10 +82,18 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
         // Scroll to bottom เมื่อมีข้อความใหม่
         setTimeout(() => {
           if (messagesContainerRef.current) {
+            // ใช้ instant scroll เพื่อไม่ให้ trigger scroll event
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
             console.log('📍 Auto scrolled to bottom after loading messages');
+            
+            // ตั้ง flag เพื่อป้องกัน auto-load ในช่วงสั้นๆหลัง scroll
+            isInitialScrollRef.current = true;
+            setTimeout(() => {
+              isInitialScrollRef.current = false;
+              console.log('🟢 Initial scroll completed, load-more enabled');
+            }, 300); // ลดเวลาเหลือ 300ms
           }
-        }, 150);
+        }, 100); // ลดเวลา delay
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,10 +123,14 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
 
   // โหลดข้อความเก่าเพิ่มเติม
   const loadMoreMessages = useCallback(async () => {
+    console.log('📥 loadMoreMessages called', { loadingMore, hasMore, oldestMessageId });
+    
     if (loadingMore || !hasMore || !oldestMessageId) {
+      console.log('❌ Skipped:', { loadingMore, hasMore, oldestMessageId });
       return;
     }
 
+    console.log('🚀 Starting to load more messages...');
     setLoadingMore(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -144,6 +159,8 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
         const data = await response.json();
         const newMessages: Message[] = data.messages || [];
         
+        console.log('📦 Received messages:', newMessages.length, 'hasMore:', data.pagination?.hasMore);
+        
         if (newMessages.length > 0) {
           // เพิ่มข้อความเก่าเข้าไปข้างหน้า
           const combined = [...newMessages, ...allMessages];
@@ -153,6 +170,8 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
           
           setAllMessages(combined);
           setHasMore(data.pagination?.hasMore || false);
+          
+          console.log('✅ Messages updated, total:', combined.length);
 
           // คืน scroll position
           setTimeout(() => {
@@ -160,14 +179,36 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
               const newScrollHeight = messagesContainerRef.current.scrollHeight;
               const scrollDiff = newScrollHeight - previousScrollHeight.current;
               messagesContainerRef.current.scrollTop = scrollDiff;
+              console.log('📍 Scroll position restored:', scrollDiff);
+              
+              // Reset loading flag หลังจาก scroll position ถูกคืนค่าแล้ว
+              setTimeout(() => {
+                isLoadingRef.current = false;
+                console.log('🏁 Loading flag reset, ready for next load');
+              }, 200);
             }
           }, 100);
         } else {
+          console.log('⚠️ No more messages');
           setHasMore(false);
+          // Reset flag เมื่อไม่มีข้อความแล้ว
+          setTimeout(() => {
+            isLoadingRef.current = false;
+          }, 100);
         }
+      } else {
+        console.error('❌ API error:', response.status);
+        // Reset flag เมื่อเกิด error
+        setTimeout(() => {
+          isLoadingRef.current = false;
+        }, 100);
       }
     } catch (error) {
       console.error('Error loading more messages:', error);
+      // Reset flag เมื่อเกิด error
+      setTimeout(() => {
+        isLoadingRef.current = false;
+      }, 100);
     } finally {
       setLoadingMore(false);
     }
@@ -177,8 +218,17 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
   const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return;
     
+    // ป้องกันการ load ข้อความในช่วงที่กำลัง auto-scroll หลัง mount
+    if (isInitialScrollRef.current) {
+      console.log('🔒 Initial scroll in progress, skip load-more');
+      return;
+    }
+    
     // ป้องกันการเรียกซ้ำๆ
-    if (isLoadingRef.current) return;
+    if (isLoadingRef.current) {
+      console.log('⏸️ Already loading, skip');
+      return;
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
 
@@ -195,12 +245,10 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
     if (scrollTop < 200 && hasMore && !loadingMore && allMessages.length > 0) {
       console.log('✅ Triggering loadMoreMessages');
       isLoadingRef.current = true;
-      loadMoreMessages().finally(() => {
-        // รอ 500ms ก่อนให้เรียกใหม่ได้
-        setTimeout(() => {
-          isLoadingRef.current = false;
-        }, 500);
-      });
+      
+      // Call loadMoreMessages
+      // Flag จะถูก reset ภายใน loadMoreMessages หลังจาก scroll position ถูกคืนค่าแล้ว
+      loadMoreMessages();
     }
   }, [hasMore, loadingMore, loadMoreMessages, allMessages.length]);
 
@@ -212,10 +260,74 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
     }
   }, [handleScroll]);
 
+  // จัดการเลือกรูปภาพ
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ตรวจสอบ file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
+      return;
+    }
+
+    // ตรวจสอบ file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('File size too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setSelectedImage(file);
+    
+    // สร้าง preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ยกเลิกการเลือกรูปภาพ
+  const handleCancelImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // ส่งข้อความ
   const handleSendMessage = async () => {
-    if (newMessage.trim()) {
+    // ถ้ามีรูปที่เลือกไว้ ให้ส่งรูปอย่างเดียว (ไม่มี caption)
+    if (selectedImage && user?.id) {
+      setUploadingImage(true);
       try {
-        await sendMessage(newMessage);
+        // อัปโหลดรูปไปที่ Supabase Storage
+        const result = await uploadChatPhoto(selectedImage, user.id);
+        
+        if (!result.success || !result.url) {
+          alert(result.error || 'Failed to upload image');
+          return;
+        }
+
+        // ส่งเฉพาะรูปภาพ (ไม่มี caption)
+        await sendMessage('', 'image', result.url);
+        
+        // รีเซ็ต state
+        handleCancelImage();
+      } catch (error) {
+        console.error('Error uploading/sending image:', error);
+        alert('Failed to send image. Please try again.');
+      } finally {
+        setUploadingImage(false);
+      }
+    }
+    // ถ้าไม่มีรูป แต่มีข้อความ ให้ส่งข้อความปกติ
+    else if (newMessage.trim()) {
+      try {
+        await sendMessage(newMessage, 'text');
         setNewMessage('');
       } catch (error) {
         console.error('Error sending message:', error);
@@ -228,6 +340,45 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // ฟังก์ชันสำหรับ format วันที่เป็นภาษาอังกฤษ (สากล)
+  const formatDateDivider = (dateString: string) => {
+    const messageDate = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Reset time to compare only dates
+    messageDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    yesterday.setHours(0, 0, 0, 0);
+
+    if (messageDate.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (messageDate.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    } else {
+      // Format: DD/MM/YYYY
+      return messageDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+  };
+
+  // ฟังก์ชันเช็คว่าข้อความควรแสดง date divider หรือไม่
+  const shouldShowDateDivider = (currentMessage: Message, previousMessage: Message | null) => {
+    if (!previousMessage) return true;
+
+    const currentDate = new Date(currentMessage.created_at);
+    const previousDate = new Date(previousMessage.created_at);
+
+    currentDate.setHours(0, 0, 0, 0);
+    previousDate.setHours(0, 0, 0, 0);
+
+    return currentDate.getTime() !== previousDate.getTime();
   };
 
   if (loading) {
@@ -255,7 +406,7 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#160404] relative overflow-hidden overflow-x-hidden">
+    <div className="h-full min-h-0 flex flex-col bg-[#160404] relative overflow-hidden">
         {/* Match Notification Modal */}
         <div className="absolute inset-0 z-50 flex items-start justify-center pt-8 md:pt-16 pointer-events-none">
             <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
@@ -313,40 +464,76 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
         )}
 
         {/* Messages */}
-        {allMessages.map((message) => {
+        {allMessages.map((message, index) => {
           const isCurrentUser = message.sender_id === user?.id;
+          const previousMessage = index > 0 ? allMessages[index - 1] : null;
+          const showDateDivider = shouldShowDateDivider(message, previousMessage);
           
           return (
-            <div
-              key={message.id}
-              className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
-            >
-              {!isCurrentUser && (
-                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
-                  <Image
-                    src={match.other_user.photo_url || "/assets/user.jpg"}
-                    alt="Other User Avatar"
-                    width={32}
-                    height={32}
-                    className="w-full h-full object-cover"
-                  />
+            <div key={message.id}>
+              {/* Date Divider */}
+              {showDateDivider && (
+                <div className="flex items-center justify-center my-4 md:my-6">
+                  <div className="bg-[#2A2439] text-white text-xs md:text-sm px-4 py-2 rounded-full">
+                    {formatDateDivider(message.created_at)}
+                  </div>
                 </div>
               )}
-              
+
+              {/* Message */}
               <div
-                className={`max-w-[50%] px-3 md:px-6 py-4 rounded-3xl ${
-                  isCurrentUser
-                    ? 'bg-[#7D2262] text-white rounded-br-none'
-                    : 'bg-[#EFC4E2] text-black rounded-bl-none'
-                }`}
+                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
               >
-                <p className="text-xs md:text-sm break-all">{message.message_text}</p>
-                <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                  {new Date(message.created_at).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
+                {!isCurrentUser && (
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
+                    <Image
+                      src={match.other_user.photo_url || "/assets/user.jpg"}
+                      alt="Other User Avatar"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                
+                <div
+                  className={`max-w-[50%] px-3 md:px-6 py-4 rounded-3xl ${
+                    isCurrentUser
+                      ? 'bg-[#7D2262] text-white rounded-br-none'
+                      : 'bg-[#EFC4E2] text-black rounded-bl-none'
+                  }`}
+                >
+                  {/* แสดงรูปภาพถ้าเป็น message type image */}
+                  {message.message_type === 'image' && message.media_url ? (
+                    <>
+                      <Image
+                        src={message.media_url}
+                        alt="Shared image"
+                        width={300}
+                        height={300}
+                        className="rounded-xl max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(message.media_url || '', '_blank')}
+                      />
+                      <p className={`text-xs opacity-70 mt-2 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                        {new Date(message.created_at).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                    </>
+                  ) : (
+                    /* แสดงข้อความธรรมดา */
+                    <>
+                      <p className="text-xs md:text-sm break-words">{message.message_text}</p>
+                      <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                        {new Date(message.created_at).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -356,33 +543,88 @@ const Chat: React.FC<ChatProps> = ({ matchId }) => {
       </div>          
 
       {/* Message Input */}
-      <div className="bg-[#160404] p-2 border-t border-[#424C6B] px-4 md:px-12 md:py-6">
+      <div className="bg-[#160404] border-t border-[#424C6B] px-4 md:px-12 py-4 md:py-6">
+        {/* Image Preview */}
+        {imagePreview && (
+          <div className="mb-3 relative inline-block">
+            <div className="relative">
+              <Image
+                src={imagePreview}
+                alt="Preview"
+                width={200}
+                height={200}
+                className="rounded-xl max-h-40 w-auto object-cover"
+              />
+              <button
+                onClick={handleCancelImage}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                disabled={uploadingImage}
+              >
+                <LuX size={16} />
+              </button>
+            </div>
+            {uploadingImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
+                <LuLoader className="animate-spin text-white" size={24} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Input Area */}
         <div className="flex items-center gap-2 md:gap-3">
-          <button className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          
+          {/* Paperclip Button */}
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingImage || selectedImage !== null}
+            className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors"
+          >
             <LuPaperclip size={18} className="md:w-5 md:h-5" />
           </button>
           
-          <div className="flex-1">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Messege here..."
-              className="w-full text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
-            />
-          </div>
+          {/* Text Input - ซ่อนเมื่อมีรูปที่เลือก */}
+          {!selectedImage && (
+            <div className="flex-1">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Message here..."
+                disabled={uploadingImage}
+                className="w-full bg-transparent text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
+              />
+            </div>
+          )}
           
+          {/* Spacer เมื่อมีรูป */}
+          {selectedImage && <div className="flex-1"></div>}
+          
+          {/* Send Button */}
           <button
             onClick={handleSendMessage}
+            disabled={(!newMessage.trim() && !selectedImage) || uploadingImage}
             className="w-8 h-8 md:w-10 md:h-10 bg-[#C70039] rounded-full flex items-center justify-center hover:bg-[#C2185B] transition-colors"
           >
-            <LuSend size={16} className="text-white md:w-[18px] md:h-[18px]" />
+            {uploadingImage ? (
+              <LuLoader className="animate-spin text-white" size={16} />
+            ) : (
+              <LuSend size={16} className="text-white md:w-[18px] md:h-[18px]" />
+            )}
           </button>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Chat;

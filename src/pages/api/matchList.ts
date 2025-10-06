@@ -47,6 +47,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const rows = (data ?? []) as unknown as MatchRow[];
 
+    // ดึงข้อความล่าสุดของแต่ละ match
+    const matchIds = rows.map(match => match.id);
+    const lastMessages: Record<string, { message_text: string; created_at: string }> = {};
+    
+    if (matchIds.length > 0) {
+      const { data: messagesData } = await supabase
+        .from("messages")
+        .select("match_id, message_text, created_at")
+        .in("match_id", matchIds)
+        .order("created_at", { ascending: false });
+
+      // เก็บข้อความล่าสุดของแต่ละ match
+      if (messagesData) {
+        messagesData.forEach((msg: { match_id: string; message_text: string; created_at: string }) => {
+          if (!lastMessages[msg.match_id]) {
+            lastMessages[msg.match_id] = {
+              message_text: msg.message_text,
+              created_at: msg.created_at
+            };
+          }
+        });
+      }
+    }
+
     if (error) {
       return res.status(400).json({
         success: false,
@@ -55,16 +79,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-        // ✅ แปลง data ให้ return โปรไฟล์ "อีกฝั่ง" พร้อมแนบ match_id และ other_user_id
+        // ✅ แปลง data ให้ return โปรไฟล์ "อีกฝั่ง" พร้อมแนบ match_id, other_user_id และ last_message
         const transformed = rows
         .map((match: MatchRow) => {
           const isUser1 = match.user1_id === user.id;
           const otherProfile = isUser1 ? match.user2 : match.user1;
           const otherUserId = isUser1 ? match.user2_id : match.user1_id;
           if (!otherProfile) return null;
-          const result = { ...otherProfile, match_id: match.id, other_user_id: otherUserId } as ProfileRow & { match_id: string; other_user_id: string };
+          const lastMessage = lastMessages[match.id];
+          const result = { 
+            ...otherProfile, 
+            match_id: match.id, 
+            other_user_id: otherUserId,
+            last_message: lastMessage?.message_text || null,
+            last_message_at: lastMessage?.created_at || null
+          } as ProfileRow & { 
+            match_id: string; 
+            other_user_id: string; 
+            last_message: string | null;
+            last_message_at: string | null;
+          };
           return result;
-        }).filter((p): p is ProfileRow & { match_id: string; other_user_id: string } => Boolean(p));
+        }).filter((p): p is ProfileRow & { match_id: string; other_user_id: string; last_message: string | null; last_message_at: string | null } => Boolean(p));
     
         // 🔹 ลบ swipe ของคู่ที่ match แล้ว (ถ้ามี)
         const matchedIds = rows

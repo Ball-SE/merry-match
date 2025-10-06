@@ -10,6 +10,8 @@ type Match = {
     name?: string;
     photo_url: string | string[] | null;
     match_id?: string;
+    last_message?: string | null;
+    last_message_at?: string | null;
 };
 
 interface MatchingLeftProps {
@@ -68,6 +70,13 @@ function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
             return photoUrl[0] || "/assets/user.jpg";
         }
         return photoUrl || "/assets/user.jpg";
+    };
+
+    // ฟังก์ชันสำหรับตัดข้อความให้เหลือไม่เกิน 20 ตัวอักษร
+    const truncateMessage = (message: string | null | undefined): string => {
+        if (!message) return "Start a conversation...";
+        if (message.length <= 20) return message;
+        return message.substring(0, 20) + "...";
     };
 
     // ฟังก์ชันสำหรับจัดการ scroll ใน Merry Match section
@@ -230,7 +239,7 @@ function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
                                             {match.name || "Unknown"}
                                         </h4>
                                         <p className="text-xs sm:text-sm text-[#646D89] truncate">
-                                            Start a conversation...
+                                            {truncateMessage(match.last_message)}
                                         </p>
                                     </div>
                                 </div>

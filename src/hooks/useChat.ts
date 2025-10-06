@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
-interface Message {
+type Message = {
   id: string;
   match_id: string;
   sender_id: string;
   receiver_id: string;
-  message_text: string;
+  message_text: string | null;
+  message_type?: 'text' | 'image';
+  media_url?: string | null;
   created_at: string;
   is_read: boolean;
   sender?: {
@@ -24,7 +26,7 @@ interface Message {
   };
 }
 
-interface Match {
+type Match = {
   id: string;
   matched_at: string;
   status: string;
@@ -36,17 +38,17 @@ interface Match {
   };
 }
 
-interface UseChatReturn {
+type UseChatReturn = {
   messages: Message[];
   match: Match | null;
   loading: boolean;
   error: string | null;
-  sendMessage: (messageText: string) => Promise<void>;
+  sendMessage: (messageText: string, messageType?: 'text' | 'image', mediaUrl?: string) => Promise<void>;
   markAsRead: (messageIds: string[]) => Promise<void>;
   unreadCount: number;
 }
 
-export const useChat = (matchId: string): UseChatReturn => {
+export function useChat(matchId: string): UseChatReturn {
   const [messages, setMessages] = useState<Message[]>([]);
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,35 +75,18 @@ export const useChat = (matchId: string): UseChatReturn => {
     getSession();
   }, []);
 
+  // Track ว่าโหลดข้อมูลไปแล้วหรือยัง
+  const hasLoadedRef = useRef(false);
+
   // Reset messages เมื่อเปลี่ยน matchId
   useEffect(() => {
     setMessages([]);
     setMatch(null);
     setUnreadCount(0);
+    hasLoadedRef.current = false; // Reset flag เมื่อเปลี่ยน match
   }, [matchId]);
 
-  // ดึงข้อมูล match
-  const fetchMatch = useCallback(async () => {
-    if (!session?.access_token) return;
-
-    try {
-      const response = await fetch(`/api/matches/${matchId}`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch match");
-      }
-      const data = await response.json();
-      setMatch(data.match);
-    } catch (err) {
-      console.error("Error fetching match:", err);
-      setError("Failed to load match");
-    }
-  }, [matchId, session?.access_token]);
-
-  // ดึงข้อความล่าสุด 20 ข้อความ
+  // ดึงข้อความล่าสุด 20 ข้อความ (ใช้สำหรับ polling)
   const fetchMessages = useCallback(async () => {
     if (!session?.access_token) return;
 
@@ -132,28 +117,52 @@ export const useChat = (matchId: string): UseChatReturn => {
   }, [matchId, session?.access_token, session?.user?.id]);
 
   // ส่งข้อความ
-  const sendMessage = useCallback(async (messageText: string) => {
+  const sendMessage = useCallback(async (
+    messageText: string, 
+    messageType: 'text' | 'image' = 'text', 
+    mediaUrl?: string
+  ) => {
     if (!match || !session?.user?.id || !session?.access_token) return;
 
     console.log('Sending message:', {
       matchId,
       messageText,
+      messageType,
+      mediaUrl,
       receiverId: match.other_user.id,
       senderId: session.user.id
     });
 
     try {
+      const body: {
+        match_id: string;
+        receiver_id: string;
+        message_type: string;
+        message_text?: string;
+        media_url?: string;
+      } = {
+        match_id: matchId,
+        receiver_id: match.other_user.id,
+        message_type: messageType
+      };
+
+      // เพิ่ม message_text ถ้ามี
+      if (messageText && messageText.trim()) {
+        body.message_text = messageText;
+      }
+
+      // เพิ่ม media_url สำหรับข้อความแบบรูปภาพ
+      if (messageType === 'image' && mediaUrl) {
+        body.media_url = mediaUrl;
+      }
+
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({
-          match_id: matchId,
-          message_text: messageText,
-          receiver_id: match.other_user.id,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -167,6 +176,7 @@ export const useChat = (matchId: string): UseChatReturn => {
     } catch (err) {
       console.error('Error sending message:', err);
       setError('Failed to send message');
+      throw err; // Re-throw เพื่อให้ component จัดการได้
     }
   }, [match, matchId, session?.user?.id, session?.access_token]);
 
@@ -301,32 +311,81 @@ export const useChat = (matchId: string): UseChatReturn => {
   }, [matchId, session?.user?.id, session?.access_token]);
 
   // เพิ่ม polling เป็น fallback (ถ้า realtime ไม่ทำงาน)
-  useEffect(() => {
-    if (!matchId || !session?.access_token) return;
+  // useEffect(() => {
+  //   if (!matchId || !session?.access_token) return;
 
-    // Poll ทุก 5 วินาที เมื่อหน้าต่าง active
-    const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        fetchMessages();
-      }
-    }, 5000);
+  //   // Poll ทุก 5 วินาที เมื่อหน้าต่าง active
+  //   const intervalId = setInterval(() => {
+  //     if (!document.hidden) {
+  //       fetchMessages();
+  //     }
+  //   }, 5000);
 
-    return () => clearInterval(intervalId);
-  }, [matchId, session?.access_token, fetchMessages]);
+  //   return () => clearInterval(intervalId);
+  // }, [matchId, session?.access_token, fetchMessages]);
 
   // โหลดข้อมูลเริ่มต้น
   useEffect(() => {
     const loadData = async () => {
+      // รอให้ session พร้อมก่อน
+      if (!session?.access_token || !matchId) {
+        console.log('⏳ Waiting for session and matchId...');
+        return;
+      }
+
+      // ป้องกันการโหลดซ้ำ
+      if (hasLoadedRef.current) {
+        console.log('⚠️ Data already loaded, skipping');
+        return;
+      }
+
+      console.log('📥 Loading match and messages data...');
       setLoading(true);
       setError(null);
+      hasLoadedRef.current = true;
 
-      await Promise.all([fetchMatch(), fetchMessages()]);
+      try {
+        // Fetch match
+        const matchResponse = await fetch(`/api/matches/${matchId}`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        if (matchResponse.ok) {
+          const matchData = await matchResponse.json();
+          setMatch(matchData.match);
+        }
+
+        // Fetch messages
+        const messagesResponse = await fetch(`/api/messages?match_id=${matchId}&limit=20`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        if (messagesResponse.ok) {
+          const messagesData = await messagesResponse.json();
+          setMessages(messagesData.messages || []);
+          
+          // นับข้อความที่ยังไม่ได้อ่าน
+          const unread =
+            messagesData.messages?.filter(
+              (msg: Message) =>
+                !msg.is_read && msg.receiver_id === session.user?.id
+            ).length || 0;
+          setUnreadCount(unread);
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load data');
+      }
 
       setLoading(false);
+      console.log('✅ Data loaded successfully');
     };
 
     loadData();
-  }, [fetchMatch, fetchMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId, session?.access_token]);
 
   // ทำเครื่องหมายข้อความที่ยังไม่ได้อ่านเมื่อ component mount
   useEffect(() => {
@@ -351,4 +410,4 @@ export const useChat = (matchId: string): UseChatReturn => {
     markAsRead,
     unreadCount,
   };
-};
+}

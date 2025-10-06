@@ -15,7 +15,7 @@ export const uploadProfilePhoto = async (
     const fileExt = file.name.split('.').pop() || 'jpg';
     const fileName = `${folderPath}/photo_${photoIndex}_${Date.now()}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('profile-photos')
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -46,6 +46,74 @@ export const deleteProfilePhoto = async (photoUrl: string): Promise<boolean> => 
 
     const { error } = await supabase.storage
       .from('profile-photos')
+      .remove([path]);
+
+    return !error;
+  } catch (error) {
+    console.error('Delete error:', error);
+    return false;
+  }
+};
+
+// ==================== CHAT PHOTO FUNCTIONS ====================
+
+export const uploadChatPhoto = async (
+  file: File,
+  userId: string
+): Promise<UploadResult> => {
+  try {
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      return { 
+        success: false, 
+        error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' 
+      };
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      return { 
+        success: false, 
+        error: 'File size too large. Maximum size is 5MB.' 
+      };
+    }
+
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${userId}/chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('chat-photos')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      return { success: false, error: error.message };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('chat-photos')
+      .getPublicUrl(fileName);
+
+    return { success: true, url: publicUrl };
+  } catch (error: unknown) {
+    console.error('Upload error:', error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+};
+
+export const deleteChatPhoto = async (photoUrl: string): Promise<boolean> => {
+  try {
+    // Extract file path จาก URL
+    const path = photoUrl.split('/chat-photos/')[1];
+    if (!path) return false;
+
+    const { error } = await supabase.storage
+      .from('chat-photos')
       .remove([path]);
 
     return !error;
