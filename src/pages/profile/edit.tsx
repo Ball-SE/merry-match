@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { Loader2, AlertCircle, Upload, X } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { validateEditProfile, validateUsername } from '@/middleware/edit-profile-validation';
+import { SEA_COUNTRY_OPTIONS } from '@/data/sea-countries';
+import { SEA_CITIES_BY_COUNTRY } from '@/data/sea-cities';
+import PhotoUpload from '@/components/edit/PhotoUpload';
+import InterestsInput from '@/components/edit/InterestsInput';
+import ProfileCardPopup from '@/components/edit/ProfileCardPopup';
+import { usePhotoManagement } from '@/hooks/usePhotoManagement';
+import { useInterestsManagement } from '@/hooks/useInterestsManagement';
 
 interface UserProfile {
   id: string;
@@ -33,8 +40,7 @@ export default function EditProfilePage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  // Form state
+  
   const [formData, setFormData] = useState({
     name: '',
     date_of_birth: '',
@@ -51,7 +57,33 @@ export default function EditProfilePage() {
     photos: [] as string[]
   });
 
-  // ดึงข้อมูล profile
+  const {
+    photoFiles,
+    photoPreviews,
+    photoItems,
+    onFiles,
+    removePhoto,
+    handleReorder,
+    loadExistingPhotos
+  } = usePhotoManagement();
+
+  const { chipInput, setChipInput, addChip } = useInterestsManagement();
+
+  const loadPhotosCallback = useCallback((photos: string[]) => {
+    loadExistingPhotos(photos);
+  }, [loadExistingPhotos]);
+
+  // อัปเดต formData.photos เมื่อ photoPreviews เปลี่ยนแปลง
+  useEffect(() => {
+    // สร้าง array ของรูปที่มี preview
+    const photosWithPreviews = photoPreviews.filter(preview => preview !== "");
+    
+    setFormData(prev => ({
+      ...prev,
+      photos: photosWithPreviews
+    }));
+  }, [photoPreviews]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -82,13 +114,7 @@ export default function EditProfilePage() {
         const profileData = result.data;
         setProfile(profileData);
         
-        // Set form data
-        const filteredInterests = (profileData.interests || []).filter((interest: string) => {
-          const lowerInterest = interest.toLowerCase();
-          return !['game', 'football', 'base', 'sing', 'song'].includes(lowerInterest);
-        });
-
-        setFormData({
+        const formData = {
           name: profileData.name || '',
           date_of_birth: profileData.date_of_birth || '',
           location: profileData.location || 'Thailand',
@@ -100,9 +126,12 @@ export default function EditProfilePage() {
           racial_preferences: profileData.racial_preferences || 'Asian',
           meeting_interests: profileData.meeting_interests || 'Friends',
           bio: profileData.bio || '',
-          interests: filteredInterests,
+          interests: profileData.interests || [],
           photos: profileData.photos || []
-        });
+        };
+
+        setFormData(formData);
+        loadPhotosCallback(profileData.photos || []);
 
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch profile';
@@ -113,16 +142,14 @@ export default function EditProfilePage() {
     };
 
     fetchProfile();
-  }, [router]);
+  }, [router, loadPhotosCallback]);
 
-  // Handle input changes
   const handleInputChange = (field: string, value: string | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
     
-    // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors(prev => {
         const newErrors = { ...prev };
@@ -132,7 +159,6 @@ export default function EditProfilePage() {
     }
   };
 
-  // Real-time validation for specific fields
   const validateField = async (field: string, value: string) => {
     if (field === 'username' && value.length >= 6) {
       const validation = await validateUsername(value, profile?.username);
@@ -148,8 +174,6 @@ export default function EditProfilePage() {
     }
   };
 
-
-  // Handle save
   const handleSave = async () => {
     setSaving(true);
     setError(null);
@@ -157,7 +181,6 @@ export default function EditProfilePage() {
     setValidationErrors({});
     
     try {
-      // Validate form data
       const validation = validateEditProfile(formData);
       
       if (!validation.isValid) {
@@ -166,7 +189,6 @@ export default function EditProfilePage() {
         return;
       }
 
-      // Additional username validation if changed
       if (formData.username !== profile?.username) {
         const usernameValidation = await validateUsername(formData.username, profile?.username);
         if (!usernameValidation.isValid) {
@@ -176,41 +198,97 @@ export default function EditProfilePage() {
         }
       }
 
-      // Get session for API call
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login');
         return;
       }
 
-      // Call API to update profile
+      // อัปโหลดรูปใหม่เท่านั้น (รูปที่มี blob URL)
+      const processedPhotos = await Promise.all(
+        formData.photos.map(async (photoUrl) => {
+          if (photoUrl.startsWith('blob:')) {
+            // หา file ที่ตรงกับ blob URL
+            let fileToUpload = null;
+            for (let i = 0; i < photoPreviews.length; i++) {
+              if (photoPreviews[i] === photoUrl && photoFiles[i] !== null) {
+                fileToUpload = photoFiles[i];
+                break;
+              }
+            }
+            
+            if (fileToUpload) {
+              const fileExt = fileToUpload.name.split('.').pop();
+              const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+              const filePath = `profiles/${session.user.id}/${fileName}`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from('profile-photos')
+                .upload(filePath, fileToUpload, {
+                  cacheControl: '3600',
+                  upsert: false
+                });
+              
+              if (uploadError) {
+                throw new Error('Failed to upload photo');
+              }
+              
+              const { data: { publicUrl } } = supabase.storage
+                .from('profile-photos')
+                .getPublicUrl(filePath);
+              
+              return publicUrl;
+            } else {
+              throw new Error('File not found for photo');
+            }
+          }
+          
+          return photoUrl;
+        })
+      );
+
+      const updatedFormData = {
+        ...formData,
+        photos: processedPhotos
+      };
+
       const response = await fetch('/api/profile/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(updatedFormData)
       });
 
       if (!response.ok) {
         const result = await response.json();
-        console.error('❌ API Error:', result);
         throw new Error(result.message || 'Failed to update profile');
       }
 
       const result = await response.json();
       
-      // Show success message
+      // Update formData with the latest data first
+      const latestFormData = {
+        name: result.data.name || '',
+        date_of_birth: result.data.date_of_birth || '',
+        location: result.data.location || 'Thailand',
+        city: result.data.city || 'Bangkok',
+        username: result.data.username || '',
+        email: result.data.email || '',
+        gender: result.data.gender || 'Male',
+        sexual_preferences: result.data.sexual_preferences || 'Female',
+        racial_preferences: result.data.racial_preferences || 'Asian',
+        meeting_interests: result.data.meeting_interests || 'Friends',
+        bio: result.data.bio || '',
+        interests: result.data.interests || [],
+        photos: result.data.photos || []
+      };
+      
+      setFormData(latestFormData);
+      setProfile(result.data);
       setSuccess('Profile updated successfully!');
       
-      // Update local profile state
-      setProfile(result.data);
-      
-      // Redirect to profile page after 2 seconds
-      setTimeout(() => {
-        router.push('/profile');
-      }, 2000);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save profile';
       setError(errorMessage);
@@ -219,7 +297,6 @@ export default function EditProfilePage() {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -231,7 +308,6 @@ export default function EditProfilePage() {
     );
   }
 
-  // Error state
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -250,16 +326,13 @@ export default function EditProfilePage() {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      {/* Main Container */}
       <div className="mx-auto px-4 md:px-8 lg:px-16 xl:px-32 py-4 md:py-10">
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           
-          {/* Header */}
           <div className="px-4 md:px-12 py-6 md:py-12 border-b border-gray-100">
             <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -268,7 +341,6 @@ export default function EditProfilePage() {
                   Let&apos;s make profile<br />to let others know you
                 </h1>
               </div>
-              {/* Desktop Buttons */}
               <div className="hidden md:flex flex-row gap-3 md:gap-4">
                 <button
                   onClick={() => router.push('/profile')}
@@ -288,332 +360,300 @@ export default function EditProfilePage() {
             </div>
           </div>
 
-        {/* Form Content */}
-        <div className="p-4 md:p-12">
-          <div className="max-w-4xl mx-auto">
-          
-          {/* Global Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5" />
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Success Message */}
-          {success && (
-            <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-              <div className="flex items-center gap-3">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>{success}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Validation Errors Summary */}
-          {Object.keys(validationErrors).length > 0 && (
-            <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <AlertCircle className="w-5 h-5" />
-                <span className="font-semibold">Please fix the following errors:</span>
-              </div>
-              <ul className="list-disc list-inside space-y-1">
-                {Object.entries(validationErrors).map(([field, message]) => (
-                  <li key={field} className="text-sm">{message}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {/* Basic Information */}
-          <div className="mb-8 md:mb-10">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Basic Information</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              {/* Name */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
-                    validationErrors.name || fieldErrors.name 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="At least 2 character"
-                />
-                {(validationErrors.name || fieldErrors.name) && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.name || fieldErrors.name}</p>
-                )}
-              </div>
-
-              {/* Date of birth */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Date of birth</label>
-                <input
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
-                    validationErrors.date_of_birth || fieldErrors.date_of_birth 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
-                  }`}
-                />
-                {(validationErrors.date_of_birth || fieldErrors.date_of_birth) && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.date_of_birth || fieldErrors.date_of_birth}</p>
-                )}
-              </div>
-
-              {/* Location */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Location</label>
-                <select
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
-                >
-                  <option value="Thailand">Thailand</option>
-                  <option value="Bangkok">Bangkok</option>
-                  <option value="Chiang Mai">Chiang Mai</option>
-                  <option value="Phuket">Phuket</option>
-                </select>
-              </div>
-
-              {/* City */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">City</label>
-                <select
-                  value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
-                >
-                  <option value="Bangkok">Bangkok</option>
-                  <option value="Chiang Mai">Chiang Mai</option>
-                  <option value="Phuket">Phuket</option>
-                  <option value="Pattaya">Pattaya</option>
-                </select>
-              </div>
-
-              {/* Username */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Username</label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => {
-                    handleInputChange('username', e.target.value);
-                    validateField('username', e.target.value);
-                  }}
-                  className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
-                    validationErrors.username || fieldErrors.username 
-                      ? 'border-red-500' 
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="At least 6 character"
-                />
-                {(validationErrors.username || fieldErrors.username) && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.username || fieldErrors.username}</p>
-                )}
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Email</label>
-                <input
-                  type="email"
-                  value={profile?.email || ''}
-                  disabled
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 text-sm md:text-base cursor-not-allowed"
-                  placeholder="Email cannot be changed"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Identities and Interests */}
-          <div className="mb-8 md:mb-10">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Identities and Interests</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              {/* Sexual Identity */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Sexual Identity</label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
-                >
-                  <option value="">Male</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Non-binary">Non-binary</option>
-                  <option value="LGBTQ+">LGBTQ+</option>
-                </select>
-              </div>
-
-              {/* Sexual preferences */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Sexual preferences</label>
-                <select
-                  value={formData.sexual_preferences}
-                  onChange={(e) => handleInputChange('sexual_preferences', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
-                >
-                  <option value="">Female</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Non-binary">Non-binary</option>
-                  <option value="LGBTQ+">LGBTQ+</option>
-                </select>
-              </div>
-
-              {/* Racial preferences */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Racial preferences</label>
-                <select
-                  value={formData.racial_preferences}
-                  onChange={(e) => handleInputChange('racial_preferences', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
-                >
-                  <option value="">Asian</option>
-                  <option value="Asian">Asian</option>
-                  <option value="Caucasian">Caucasian</option>
-                  <option value="African">African</option>
-                  <option value="Mixed">Mixed</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              {/* Meeting interests */}
-              <div>
-                <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Meeting interests</label>
-                <select
-                  value={formData.meeting_interests}
-                  onChange={(e) => handleInputChange('meeting_interests', e.target.value)}
-                  className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
-                >
-                  <option value="">Friends</option>
-                  <option value="Friends">Friends</option>
-                  <option value="Dating">Dating</option>
-                  <option value="Relationship">Long-term relationship</option>
-                  <option value="Casual">Casual dating</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Hobbies and Interests */}
-            <div className="mt-6 md:mt-8">
-              <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Hobbies and Interests (Choose up to 10)</label>
-              <input
-                type="text"
-                value={formData.interests.join(', ')}
-                onChange={(e) => handleInputChange('interests', e.target.value.split(', ').filter(item => item.trim() !== ''))}
-                className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base"
-                placeholder="Photography, Cooking, Gym, Music..."
-              />
-            </div>
-
-            {/* About me */}
-            <div className="mt-6 md:mt-8">
-              <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">
-                About me (150 Characters)
-              </label>
-              <textarea
-                value={formData.bio}
-                onChange={(e) => handleInputChange('bio', e.target.value)}
-                maxLength={150}
-                rows={4}
-                className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent resize-none text-sm md:text-base ${
-                  validationErrors.bio || fieldErrors.bio 
-                    ? 'border-red-500' 
-                    : 'border-gray-300'
-                }`}
-                placeholder="I really looking for new..."
-              />
-              <div className="flex justify-between items-center mt-1 md:mt-2">
-                <p className="text-xs md:text-sm text-gray-500">
-                  {formData.bio.length}/150 characters
-                </p>
-                {(validationErrors.bio || fieldErrors.bio) && (
-                  <p className="text-xs md:text-sm text-red-600">{validationErrors.bio || fieldErrors.bio}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Profile Pictures */}
-          <div className="mb-8 md:mb-10">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">Profile pictures</h2>
-            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">Upload at least 2 photos</p>
-            {(validationErrors.photos || fieldErrors.photos) && (
-              <p className="text-sm text-red-600 mb-4">{validationErrors.photos || fieldErrors.photos}</p>
-            )}
-            
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
-              {[0, 1, 2, 3, 4].map((index) => (
-                <div key={index} className="aspect-square">
-                  {formData.photos[index] ? (
-                    <div className="relative w-full h-full">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={formData.photos[index]}
-                        alt={`Profile ${index + 1}`}
-                        className="w-full h-full object-cover rounded-xl md:rounded-2xl"
-                      />
-                      <button
-                        onClick={() => {
-                          const newPhotos = [...formData.photos];
-                          newPhotos.splice(index, 1);
-                          handleInputChange('photos', newPhotos);
-                        }}
-                        className="absolute -top-1 md:-top-2 -right-1 md:-right-2 w-6 md:w-7 h-6 md:h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-xs md:text-sm hover:bg-red-600 shadow-lg"
-                      >
-                        <X className="w-3 md:w-4 h-3 md:h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button className="w-full h-full border-2 border-dashed border-gray-300 rounded-xl md:rounded-2xl flex flex-col items-center justify-center text-gray-500 hover:border-[#C70039] hover:text-[#C70039] transition-colors">
-                      <Upload className="w-8 md:w-10 h-8 md:h-10 mb-2 md:mb-3" />
-                      <span className="text-xs md:text-base font-medium">Upload photo</span>
-                    </button>
-                  )}
+          <div className="p-4 md:p-12">
+            <div className="max-w-4xl mx-auto">
+              
+              {error && (
+                <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5" />
+                    <span>{error}</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          {/* Mobile Action Buttons */}
-          <div className="mb-8 md:mb-10 flex md:hidden flex-row gap-4">
-            <button
-              onClick={() => router.push('/profile')}
-              className="flex-1 px-4 py-3 border-2 border-[#C70039] text-[#C70039] rounded-xl hover:bg-pink-50 transition-colors text-base font-bold"
-            >
-              Preview Profile
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1 px-4 py-3 bg-[#C70039] text-white rounded-xl hover:bg-[#950028] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-base font-bold"
-            >
-              {saving && <Loader2 className="w-5 h-5 animate-spin" />}
-              Update Profile
-            </button>
-          </div>
+      {success && (
+        <ProfileCardPopup
+          formData={formData}
+          profile={profile}
+          onClose={() => {
+            setSuccess(null);
+            router.push('/profile/edit');
+          }}
+        />
+      )}
 
-          {/* Delete Account */}
-          <div className="pt-6 md:pt-8 border-t border-gray-200 flex justify-center md:justify-end">
-            <button className="text-gray-500 hover:text-gray-700 text-sm md:text-base font-medium">
-              Delete account
-            </button>
-          </div>
+              
+              <div className="mb-8 md:mb-10">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Basic Information</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Name</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                        validationErrors.name || fieldErrors.name 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                      }`}
+                      placeholder="At least 2 character"
+                    />
+                    {(validationErrors.name || fieldErrors.name) && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.name || fieldErrors.name}</p>
+                    )}
+                  </div>
 
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Date of birth</label>
+                    <input
+                      type="date"
+                      value={formData.date_of_birth}
+                      onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                        validationErrors.date_of_birth || fieldErrors.date_of_birth 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                      }`}
+                    />
+                    {(validationErrors.date_of_birth || fieldErrors.date_of_birth) && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.date_of_birth || fieldErrors.date_of_birth}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Location</label>
+                    <select
+                      value={formData.location}
+                      onChange={(e) => {
+                        handleInputChange('location', e.target.value);
+                        handleInputChange('city', '');
+                      }}
+                      className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
+                      style={{
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        MozAppearance: "none",
+                        backgroundImage:
+                          'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 12px center",
+                        backgroundSize: "16px",
+                        paddingRight: "48px",
+                      }}
+                    >
+                      <option value="">
+                        Select location
+                      </option>
+                      {SEA_COUNTRY_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value} style={{ color: "#000000" }}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">City</label>
+                    <select
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      disabled={!formData.location}
+                      className={`w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                        !formData.location
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : "bg-white"
+                      }`}
+                      style={{
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        MozAppearance: "none",
+                        backgroundImage:
+                          'url(\'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6,9 12,15 18,9"%3e%3c/polyline%3e%3c/svg%3e\')',
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 12px center",
+                        backgroundSize: "16px",
+                        paddingRight: "48px",
+                      }}
+                    >
+                      <option value="">
+                        Select city
+                      </option>
+                      {(SEA_CITIES_BY_COUNTRY[formData.location] || []).map((d) => (
+                        <option key={d.value} value={d.value}>
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Username</label>
+                    <input
+                      type="text"
+                      value={formData.username}
+                      onChange={(e) => {
+                        handleInputChange('username', e.target.value);
+                        validateField('username', e.target.value);
+                      }}
+                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
+                        validationErrors.username || fieldErrors.username 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                      }`}
+                      placeholder="At least 6 character"
+                    />
+                    {(validationErrors.username || fieldErrors.username) && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.username || fieldErrors.username}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Email</label>
+                    <input
+                      type="email"
+                      value={profile?.email || ''}
+                      disabled
+                      className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 text-sm md:text-base cursor-not-allowed"
+                      placeholder="Email cannot be changed"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-8 md:mb-10">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Identities and Interests</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Sexual Identity</label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => handleInputChange('gender', e.target.value)}
+                      className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Non-binary">Non-binary</option>
+                      <option value="LGBTQ+">LGBTQ+</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Sexual preferences</label>
+                    <select
+                      value={formData.sexual_preferences}
+                      onChange={(e) => handleInputChange('sexual_preferences', e.target.value)}
+                      className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Non-binary">Non-binary</option>
+                      <option value="LGBTQ+">LGBTQ+</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Racial preferences</label>
+                    <select
+                      value={formData.racial_preferences}
+                      onChange={(e) => handleInputChange('racial_preferences', e.target.value)}
+                      className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
+                    >
+                      <option value="Asian">Asian</option>
+                      <option value="Caucasian">Caucasian</option>
+                      <option value="African">African</option>
+                      <option value="Mixed">Mixed</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Meeting interests</label>
+                    <select
+                      value={formData.meeting_interests}
+                      onChange={(e) => handleInputChange('meeting_interests', e.target.value)}
+                      className="w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base bg-white"
+                    >
+                      <option value="Friends">Friends</option>
+                      <option value="Dating">Dating</option>
+                      <option value="Relationship">Long-term relationship</option>
+                      <option value="Casual">Casual dating</option>
+                    </select>
+                  </div>
+                </div>
+
+                <InterestsInput
+                  interests={formData.interests}
+                  chipInput={chipInput}
+                  setChipInput={setChipInput}
+                  addChip={() => addChip(formData.interests, handleInputChange)}
+                  handleInputChange={handleInputChange}
+                  validationErrors={validationErrors}
+                  fieldErrors={fieldErrors}
+                />
+
+                <div className="mt-6 md:mt-8">
+                  <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">
+                    About me (150 Characters)
+                  </label>
+                  <textarea
+                    value={formData.bio}
+                    onChange={(e) => handleInputChange('bio', e.target.value)}
+                    maxLength={150}
+                    rows={4}
+                    className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent resize-none text-sm md:text-base ${
+                      validationErrors.bio || fieldErrors.bio 
+                        ? 'border-red-500' 
+                        : 'border-gray-300'
+                    }`}
+                    placeholder="I really looking for new..."
+                  />
+                  <div className="flex justify-between items-center mt-1 md:mt-2">
+                    <p className="text-xs md:text-sm text-gray-500">
+                      {formData.bio.length}/150 characters
+                    </p>
+                    {(validationErrors.bio || fieldErrors.bio) && (
+                      <p className="text-xs md:text-sm text-red-600">{validationErrors.bio || fieldErrors.bio}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <PhotoUpload
+                photoItems={photoItems}
+                photoPreviews={photoPreviews}
+                onFiles={onFiles}
+                removePhoto={removePhoto}
+                handleReorder={handleReorder}
+                validationErrors={validationErrors}
+                fieldErrors={fieldErrors}
+              />
+
+              <div className="mb-8 md:mb-10 flex md:hidden flex-row gap-4">
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="flex-1 px-4 py-3 border-2 border-[#C70039] text-[#C70039] rounded-xl hover:bg-pink-50 transition-colors text-base font-bold"
+                >
+                  Preview Profile
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 px-4 py-3 bg-[#C70039] text-white rounded-xl hover:bg-[#950028] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-base font-bold"
+                >
+                  {saving && <Loader2 className="w-5 h-5 animate-spin" />}
+                  Update Profile
+                </button>
+              </div>
+
+              <div className="pt-6 md:pt-8 border-t border-gray-200 flex justify-center md:justify-end">
+                <button className="text-gray-500 hover:text-gray-700 text-sm md:text-base font-medium">
+                  Delete account
+                </button>
+              </div>
             </div>
           </div>
         </div>
