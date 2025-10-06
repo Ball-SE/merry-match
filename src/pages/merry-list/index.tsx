@@ -1,6 +1,6 @@
 import NavBarUsers from "@/components/NavBarUsers";  
 import Footer from "@/components/Footer";
-import ProfileView from "@/components/profile/ProfileView";
+import UserProfileView from "@/components/profile/UserProfileView";
 import { Heart } from 'lucide-react';
 import { MessageCircleMore } from 'lucide-react';
 import { Eye } from 'lucide-react';
@@ -82,6 +82,7 @@ function MerryList () {
     const [subscriptionData, setSubscriptionData] = useState<Subscription[]>([]);
 
     const [timeLeft, setTimeLeft] = useState("");
+    const [openProfile, setOpenProfile] = useState<string | number | null>(null);
 
     const [unmatchedIds, setUnmatchedIds] = useState<(string | number)[]>([]);
 
@@ -176,6 +177,12 @@ function MerryList () {
                 setAllSwipe(swipes)
                 setSubscriptionData(subscription ? [subscription] : []);
                 console.log("subscription from API:", subscription);
+                console.log("🔍 Match data from API:", matches.map(m => ({
+                    id: m.id,
+                    other_user_id: (m as Match & { other_user_id?: string }).other_user_id,
+                    match_id: (m as Match & { match_id?: string }).match_id,
+                    name: m.name
+                })));
 
                 // เช็คว่าเป็น Premium หรือไม่ ถ้าไม่ใช่จะไม่แสดง swipeList
                 if (!isPremium(subscription ? [subscription] : [])) {
@@ -211,6 +218,12 @@ function MerryList () {
         }
         fetchMatch()
     },[])
+
+    const handleProfile = (userId: string | number) => {
+        console.log('🔍 handleProfile called with userId:', userId, 'type:', typeof userId);
+        setOpenProfile(userId);
+    };
+    const closeProfile = () => setOpenProfile(null);
 
     return(
         <>
@@ -291,10 +304,11 @@ function MerryList () {
                                         <button className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <MessageCircleMore color="white" fill ="#646D89" size={22}/>
                                         </button>
-                                        <Link href={`/user-profile?user_id=${match.id}`}
+                                        <button
+                                        onClick={() => handleProfile((match as Match & { other_user_id?: string }).other_user_id || match.id)}
                                         className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <Eye color="white" fill ="#646D89" size={28}/>
-                                        </Link>
+                                        </button>
                                         <button 
                                         onClick={() => toggleMatch(effectiveMatchId, !isUnmatched, (match as Match & { other_user_id?: string }).other_user_id)} 
                                         className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039]"
@@ -331,9 +345,18 @@ function MerryList () {
                                     </div>
                                 </div>
                             </div>
+                            <UserProfileView
+                        userId={(() => {
+                            const userId = (match as Match & { other_user_id?: string }).other_user_id || match.id;
+                            console.log('🔍 Sending userId to UserProfileView:', userId, 'type:', typeof userId, 'for match:', match.name);
+                            return userId;
+                        })()}
+                        isOpen={openProfile === ((match as Match & { other_user_id?: string }).other_user_id || match.id)}
+                        />
                         </div>
                         <hr className="mt-8 lg:mt-0 lg:mb-8"/>
                     </div>
+                    
                 )
             })}
             
