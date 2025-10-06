@@ -2,28 +2,32 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
+interface PackageData {
+  daily_swipe_limit: number;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    // 1) รับ Bearer token จาก Postman
+    // 1) รับ Bearer token
     const auth = req.headers.authorization || "";
     const token = auth.replace(/^Bearer\s+/i, "");
     if (!token) return res.status(401).json({ error: "Missing bearer token" });
 
-    // 2) สร้าง Supabase client ที่ผูกกับ token นี้
+    // 2) สร้าง Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { global: { headers: { Authorization: `Bearer ${token}` } } }
     );
 
-    // 3) หา user จาก token (สำคัญต่อ RLS)
+    // 3) หา user จาก token
     const { data: { user }, error: getUserErr } = await supabase.auth.getUser();
     if (getUserErr) return res.status(401).json({ error: getUserErr.message });
     if (!user) return res.status(401).json({ error: "Invalid token" });
 
-    // 4) รับ body: ไม่รับ swiper_id จาก client เพื่อกันสวมรอย
+    // 4) รับ body
     const { swiped_id, action } = (typeof req.body === "string" ? JSON.parse(req.body) : req.body) as {
       swiped_id?: string; action?: "like" | "pass";
     };
@@ -32,8 +36,97 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Missing fields" });
     if (swiped_id === user.id)
       return res.status(400).json({ error: "Cannot swipe yourself" });
-    
-    // 5) บันทึก swipe
+
+    // 🆕 5) Check และ update merry_limit
+    const { data: subData, error: subErr } = await supabase
+    .from("subscriptions")
+    .select(`
+      id,
+      merry_limit,
+      updated_at,
+      package_id,
+      packages (
+        daily_swipe_limit
+      )
+    `)
+    .eq("user_id", user.id)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false }) 
+    .limit(1)
+    .maybeSingle();
+
+    if (subErr) return res.status(500).json({ error: subErr.message });
+
+    let subscription = subData;
+
+    // 🔥 ถ้าไม่มี subscription ให้สร้าง Free subscription อัตโนมัติ
+    if (!subscription) {
+      // ตรวจสอบว่ามี Free package ไหม
+      const { data: freePackage } = await supabase
+        .from("packages")
+        .select("id, daily_swipe_limit")
+        .eq("price", 0)  // เปลี่ยนจาก .eq("name", "Free")
+        .maybeSingle();
+      
+      if (freePackage) {
+        // สร้าง subscription ใหม่
+        const { data: newSub, error: createErr } = await supabase
+          .from("subscriptions")
+          .insert({
+            user_id: user.id,
+            package_id: freePackage.id,
+            status: 'active',  // เปลี่ยนจาก 'disabled' เป็น 'active'
+            merry_limit: freePackage.daily_swipe_limit || 10,
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          })
+          .select(`
+            id,
+            merry_limit,
+            updated_at,
+            package_id,
+            packages (
+              daily_swipe_limit
+            )
+          `)
+          .single();
+        
+        if (!createErr && newSub) {
+          subscription = newSub; // ใช้ subscription ที่สร้างใหม่
+        } else {
+          console.error("Create subscription error:", createErr);
+          return res.status(403).json({ 
+            error: "Failed to create subscription", 
+            merry_limit: 0, 
+            daily_swipe_limit: 10 
+          });
+        }
+      } else {
+        // ถ้าไม่มี Free package ในระบบ
+        return res.status(403).json({ 
+          error: "No package available", 
+          merry_limit: 0, 
+          daily_swipe_limit: 10 
+        });
+      }
+    }
+
+    // ดึงค่า limit ปัจจุบัน
+    const currentLimit = subscription.merry_limit;
+    const dailyLimit = Array.isArray(subscription.packages) 
+      ? subscription.packages[0]?.daily_swipe_limit ?? 10
+      : (subscription.packages as PackageData)?.daily_swipe_limit ?? 10;
+
+    // Check ว่า limit เหลือไหม
+    if (currentLimit <= 0) {
+      return res.status(403).json({ 
+        error: "Swipe limit reached", 
+        merry_limit: 0,
+        daily_swipe_limit: dailyLimit 
+      });
+    }
+
+    // 6) บันทึก swipe
     const { error: upErr } = await supabase
       .from("swipes")
       .upsert(
@@ -42,22 +135,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
     if (upErr) return res.status(500).json({ error: upErr.message });
 
-    // 5.1) ดึงข้อมูล user ที่ถูก swipe (swiped_id)
+    // 🆕 6.1) ลด merry_limit ลง 1
+    const newLimit = currentLimit - 1;
+    const { error: updateLimitErr } = await supabase
+      .from("subscriptions")
+      .update({ merry_limit: newLimit })
+      .eq("id", subscription.id);
+
+    if (updateLimitErr) console.error("Update limit error:", updateLimitErr.message);
+
+    // 7) ดึงข้อมูล user ที่ถูก swipe
     const { data: swipedUser, error: swipedErr } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", swiped_id)
-    .maybeSingle();
+      .from("profiles")
+      .select("*")
+      .eq("id", swiped_id)
+      .maybeSingle();
     if (swipedErr) console.error("Error fetching swiped user:", swipedErr?.message);
 
-    // 6) เช็ค like สวนกลับ (สลับข้างให้ถูก)
+    // 8) เช็ค like สวนกลับ
     let matched = false;
     let matchUser: typeof swipedUser = null;
     if (action === "like") {
       const { data: reciprocal, error: recErr } = await supabase
         .from("swipes")
         .select("id")
-        .eq("swiper_id", swiped_id) // เขาเคยปัดเราไหม
+        .eq("swiper_id", swiped_id)
         .eq("swiped_id", user.id)
         .eq("action", "like")
         .maybeSingle();
@@ -70,17 +172,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .upsert({ user1_id: a, user2_id: b }, { onConflict: "user1_id,user2_id", ignoreDuplicates: true });
         if (matchErr) console.error("match upsert:", matchErr.message);
         matched = true;
-
-        // ถ้า match ให้เก็บข้อมูลอีกฝั่งด้วย
-      matchUser = swipedUser;
+        matchUser = swipedUser;
       }
     }
 
     return res.status(200).json({
       message: matched ? "Liked — it's a match!" : "Swipe saved",
       match: matched,
-      swipedUser,  // ใครที่เราเพิ่ง swipe
-      matchUser,   // ถ้า match เก็บข้อมูลอีกฝ่าย
+      swipedUser,
+      matchUser,
+      merry_limit: newLimit,  // 🆕 ส่ง limit ที่เหลือกลับไป
+      daily_swipe_limit: dailyLimit
     });
   } catch (e: unknown) {
     console.error("merry API error:", e);

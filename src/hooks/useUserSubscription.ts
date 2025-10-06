@@ -6,6 +6,7 @@ interface UserSubscription {
   user_id: string;
   package_id: number;
   status: string;
+  merry_limit: number;
   current_period_start: string;
   current_period_end: string;
   cancel_at_period_end?: boolean;
@@ -36,6 +37,7 @@ export const useUserSubscription = () => {
         .from('subscriptions')
         .select(`
           *,
+          merry_limit,
           packages (
             id,
             name,

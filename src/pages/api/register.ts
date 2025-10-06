@@ -106,18 +106,28 @@ export default async function handler(
       });
     }
 
-    // 3) สร้าง subscription เริ่มต้นด้วย status 'disabled'
+    const { data: freePackage, error: packageError } = await supabase
+      .from('packages')
+      .select('id, daily_swipe_limit')
+      .eq('price', 0)
+      .single();
+
+      if (packageError) {
+        console.error("Package Error:", packageError);
+      }
+
+    // 3) สร้าง subscription เริ่มต้นด้วย status 'active'
     const { error: subscriptionError } = await supabase
       .from('subscriptions')
       .insert({
         user_id: userId,
-        package_id: null, // หรือ package_id ของ free package ถ้ามี
+        package_id: freePackage?.id || null, // หรือ package_id ของ free package ถ้ามี
         stripe_subscription_id: null,
         stripe_customer_id: null,
-        status: 'disabled',
-        current_period_start: null,
+        status: 'active',
+        current_period_start: freePackage ? new Date().toISOString() : null,
         current_period_end: null,
-        merry_limit: 10, // ใช้ค่า default จาก schema
+        merry_limit: freePackage?.daily_swipe_limit || 10, // ใช้ค่า default จาก schema
       });
 
     if (subscriptionError) {
