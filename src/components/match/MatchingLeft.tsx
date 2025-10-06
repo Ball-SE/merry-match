@@ -97,7 +97,7 @@ function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
 
     // ฟังก์ชันสำหรับเริ่ม matching process
     const handleDiscoverMatch = () => {
-        applyFilters(); // เรียกใช้ applyFilters เพื่อเริ่มค้นหาโปรไฟล์ใหม่
+        router.push('/matching');
     };
 
     return (
