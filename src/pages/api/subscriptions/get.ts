@@ -1,4 +1,3 @@
-// src/pages/api/subscriptions/get.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
@@ -31,8 +30,6 @@ export default async function handler(
       return res.status(401).json({ error: "Invalid token" });
     }
 
-    console.log('Getting subscription for user:', user.id);
-
     // ดึงข้อมูล subscription จาก table subscriptions
     const { data: subscription, error: subscriptionError } = await supabase
       .from('subscriptions')
@@ -54,10 +51,7 @@ export default async function handler(
       throw subscriptionError;
     }
 
-    console.log('Raw subscription data:', subscription);
-
     if (!subscription) {
-      console.log('No active subscription found for user:', user.id);
       return res.status(200).json({ 
         success: true, 
         subscription: null,
@@ -78,9 +72,6 @@ export default async function handler(
         .eq('id', subscription.package_id)
         .single()
     ]);
-
-    console.log('Profile result:', profileResult);
-    console.log('Package result:', packageResult);
 
     // จัดรูปแบบข้อมูลให้ตรงกับที่ frontend ต้องการ
     const formattedSubscription = {
