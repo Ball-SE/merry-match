@@ -49,11 +49,20 @@ export default async function handler(
       return res.status(404).json({ error: 'No active subscription found' });
     }
 
-    // อัพเดท status เป็น cancelled
+    // ตรวจสอบว่า subscription ถูก cancel ไปแล้วหรือยัง
+    if (currentSubscription.cancel_at_period_end) {
+      return res.status(400).json({ 
+        error: 'Subscription is already scheduled for cancellation',
+        cancel_at: currentSubscription.cancel_at 
+      });
+    }
+
+    // อัพเดทให้ cancel ที่ period end แทนการยกเลิกทันที
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({ 
-        status: 'cancelled',
+        cancel_at_period_end: true,
+        cancel_at: currentSubscription.current_period_end,
         updated_at: new Date().toISOString()
       })
       .eq('id', currentSubscription.id);
@@ -65,7 +74,8 @@ export default async function handler(
 
     res.status(200).json({ 
       success: true,
-      message: 'Subscription cancelled successfully' 
+      message: 'Subscription will be cancelled at the end of the billing period',
+      cancel_at: currentSubscription.current_period_end
     });
   } catch (error) {
     console.error('Error in cancel subscription API:', error);

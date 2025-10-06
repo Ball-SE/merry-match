@@ -8,6 +8,8 @@ interface UserSubscription {
   status: string;
   current_period_start: string;
   current_period_end: string;
+  cancel_at_period_end?: boolean;
+  cancel_at?: string | null;
   package: {
     id: number;
     name: string;

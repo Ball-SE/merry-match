@@ -121,21 +121,35 @@ export default async function handler(
         await stripe.paymentMethods.attach(paymentMethodId, {
           customer: stripeCustomerId,
         });
-
+    
         // ตั้งเป็น default payment method
         await stripe.customers.update(stripeCustomerId, {
           invoice_settings: {
             default_payment_method: paymentMethodId,
           },
         });
-
-        console.log('Payment method attached successfully:', paymentMethodId);
+    
+        console.log('✅ Payment method attached successfully:', paymentMethodId);
       } catch (attachError: unknown) {
-        // ถ้า payment method attach อยู่แล้วก็ข้าม
-        if (attachError instanceof Error && attachError.message !== 'resource_missing') {
-          console.error('Error attaching payment method:', attachError);
+        // ถ้า payment method attach อยู่แล้วให้ทำการ update default เท่านั้น
+        if (attachError instanceof Error && (attachError.message === 'resource_already_exists' || 
+            attachError.message.includes('already been attached'))) {
+          console.log('⚠️ Payment method already attached, updating as default');
+          
+          // แค่ update default payment method
+          await stripe.customers.update(stripeCustomerId, {
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+        } else {
+          // Error อื่นๆ ให้ log และ throw ออกมา
+          console.error('❌ Error attaching payment method:', attachError);
+          throw new Error(`Failed to attach payment method: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);
         }
       }
+    } else {
+      console.warn('⚠️ No payment method found in PaymentIntent');
     }
 
     // บันทึก subscription ใน table subscriptions ที่มีอยู่แล้ว
