@@ -1,5 +1,6 @@
 import NavBarUsers from "@/components/NavBarUsers";  
 import Footer from "@/components/Footer";
+import ProfileView from "@/components/profile/ProfileView";
 import { Heart } from 'lucide-react';
 import { MessageCircleMore } from 'lucide-react';
 import { Eye } from 'lucide-react';
@@ -290,9 +291,10 @@ function MerryList () {
                                         <button className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <MessageCircleMore color="white" fill ="#646D89" size={22}/>
                                         </button>
-                                        <button className="flex justify-between items-center cursor-pointer w-7 h-7">
+                                        <Link href={`/user-profile?user_id=${match.id}`}
+                                        className="flex justify-between items-center cursor-pointer w-7 h-7">
                                             <Eye color="white" fill ="#646D89" size={28}/>
-                                        </button>
+                                        </Link>
                                         <button 
                                         onClick={() => toggleMatch(effectiveMatchId, !isUnmatched, (match as Match & { other_user_id?: string }).other_user_id)} 
                                         className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039]"
