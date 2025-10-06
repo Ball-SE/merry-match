@@ -46,6 +46,9 @@ export default function Package() {
     // เรียง packages ตามราคาจากน้อยไปมาก
     const sortedPackages = packages.sort((a, b) => a.price - b.price);
 
+    // กรองเฉพาะ package ที่มีราคามากกว่า 0 (ซ่อน free package)
+    const visiblePackages = sortedPackages.filter(pkg => pkg.price > 0);
+    
     // ราคาของ package ปัจจุบันที่ user สมัครอยู่
     const currentPackagePrice = subscription?.package?.price || 0;
 
@@ -81,13 +84,13 @@ export default function Package() {
     }, []);
 
     const totalSlides = Math.max(0, sortedPackages.length - cardsPerView + 1);
-    const showArrows = packages.length > cardsPerView;
+    const showArrows = visiblePackages.length > cardsPerView;
     const isMobile = cardsPerView === 1; // ตรวจสอบว่าเป็น mobile หรือไม่
 
     const scrollToIndex = (index: number) => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
-            const cardWidth = container.scrollWidth / sortedPackages.length;
+            const cardWidth = container.scrollWidth / visiblePackages.length;
             container.scrollTo({
                 left: cardWidth * index,
                 behavior: 'smooth'
@@ -157,7 +160,7 @@ export default function Package() {
             {isMobile ? (
                 // Mobile Layout - Grid แบบเดิม
                 <div className="grid grid-cols-1 gap-8 max-w-7xl mx-auto mb-10">
-                    {sortedPackages.map((pkg) => {
+                    {visiblePackages.map((pkg) => {
                         const isCurrentPackage = subscription?.package_id === pkg.id;
                         const canSelect = canSelectPackage(pkg.price);
                         const isDowngrade = !canSelect && subscription;
@@ -261,7 +264,7 @@ export default function Package() {
                         className={`overflow-hidden ${showArrows ? 'mx-16' : 'mx-4'}`}
                     >
                         <div className="flex gap-4 transition-transform duration-300 ease-in-out">
-                            {sortedPackages.map((pkg) => {
+                            {visiblePackages.map((pkg) => {
                                 const isCurrentPackage = subscription?.package_id === pkg.id;
                                 const canSelect = canSelectPackage(pkg.price);
                                 const isDowngrade = !canSelect && subscription;

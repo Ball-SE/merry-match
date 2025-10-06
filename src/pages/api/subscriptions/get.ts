@@ -43,7 +43,9 @@ export default async function handler(
         current_period_end
         `)
       .eq("user_id", user.id)
-      .eq("status", "active")
+      .eq('status', 'active') 
+      .order('created_at', { ascending: false }) 
+      .limit(1)
       .maybeSingle();
 
     if (subscriptionError) {

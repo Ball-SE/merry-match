@@ -12,6 +12,8 @@ import { RiMapPin2Fill } from "react-icons/ri";
 import { GiSettingsKnobs } from "react-icons/gi";
 import MatchingRight from "./MatchingRight";
 import Img from "next/image";
+import { useUserSubscription } from "@/hooks/useUserSubscription";
+import { useRouter } from "next/router";
 
 function MatchingCenter() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -20,6 +22,9 @@ function MatchingCenter() {
   const [showMatch, setShowMatch] = useState(false);
   const [matchedCardId, setMatchedCardId] = useState<string | null>(null); 
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const { subscription, refetch: refetchSubscription } = useUserSubscription(); 
+  const router = useRouter();
   // ใช้ context เพื่อดึง filters และ searchTrigger
   const { filters, searchTrigger, refreshMatches } = useMatchingContext();
   
@@ -81,6 +86,12 @@ function MatchingCenter() {
   // เพิ่มฟังก์ชันสำหรับเรียก merry API
   const callMerryAPI = async (swiped_id: string, action: "like" | "pass") => {
     try {
+      // 🆕 Check limit ก่อน swipe
+      if (subscription && subscription.merry_limit <= 0) {
+        setShowLimitModal(true);
+        return { success: false, match: false, limitReached: true };
+      }
+
       // ดึง token จาก Supabase session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session?.access_token) {
@@ -99,10 +110,18 @@ function MatchingCenter() {
       });
 
       const result = response.data;
+
+      // 🆕 Refresh subscription เพื่อ update merry_limit
+      await refetchSubscription();
       
       // return ผลลัพธ์แทนการ set state
       return { success: true, match: result.match || false };
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 403) {
+        setShowLimitModal(true);
+        await refetchSubscription();
+        return { success: false, match: false, limitReached: true };
+      }
       return { success: false, match: false };
     }
   };
@@ -136,9 +155,9 @@ function MatchingCenter() {
       removeCard(targetCard.id);
       setCurrentImageIndex(0);
     }
-  } else {
+  } else if (!result.limitReached){
     // ⚠️ ถ้า API error ให้ reload profiles เพื่อคืน state กลับมา
-    alert('Error occurred while liking. Please try again.');
+    console.error('Error occurred while liking');
     updateWithFilters(profileFilters);
   }
 };
@@ -154,8 +173,8 @@ function MatchingCenter() {
       // pass ไม่มี match เลยลบการ์ดเลย
       removeCard(targetCard.id);
       setCurrentImageIndex(0);
-    } else {
-      alert('Error occurred while passing. Please try again.');
+    } else if (!result.limitReached){
+      console.error('Error occurred while passing');
     }
   };
 
@@ -369,10 +388,12 @@ function MatchingCenter() {
         )}
 
         <div className={`absolute mt-53 sm:mt-15 right-15 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
-          <p className="text-[#646D89] text-center text-sm">
-            Merry limit Today
-            <span className="text-[#FF1659] ml-2">20/20</span>
-          </p>
+        <p className="text-[#646D89] text-center text-sm">
+          Merry limit Today
+          <span className={subscription?.merry_limit === 0 ? "text-red-500 ml-2" : "text-[#FF1659] ml-2"}>
+            {subscription?.merry_limit ?? 0}/{subscription?.package?.daily_swipe_limit ?? 0}
+          </span>
+        </p>
         </div>
       </div>
 
@@ -385,6 +406,62 @@ function MatchingCenter() {
         onLike={handleLike} 
         onPass={handlePass} 
       />
+
+      {/* Limit Reached Modal */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative animate-scale-in">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowLimitModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <IoClose className="w-6 h-6 text-gray-400" />
+            </button>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#742138] to-[#A62D82] flex items-center justify-center">
+                <FaHeart className="w-10 h-10 text-white" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-2xl font-bold text-center text-[#2A2E3F] mb-3">
+              Out of Merry Limit!
+            </h3>
+
+            {/* Description */}
+            <p className="text-center text-gray-600 mb-6">
+              You&apos;ve reached your daily swipe limit. Upgrade to get more Merry and make more connections!
+            </p>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setShowLimitModal(false);
+                  router.push('/package');
+                }}
+                className="w-full py-3 px-6 bg-gradient-to-r from-[#742138] to-[#A62D82] text-white rounded-full font-semibold hover:shadow-lg transition-all hover:scale-105"
+              >
+                Upgrade Package
+              </button>
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className="w-full py-3 px-6 border-2 border-gray-200 text-gray-700 rounded-full font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Maybe Later
+              </button>
+            </div>
+
+            {/* Footer Text */}
+            <p className="text-center text-sm text-gray-500 mt-4">
+              Your limit will reset tomorrow
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
