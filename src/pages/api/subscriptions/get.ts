@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseWithAuth } from '@/lib/supabase/suapabaseServer';
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,18 +11,13 @@ export default async function handler(
 
   try {
     // รับ Bearer token จาก header
-    const auth = req.headers.authorization || "";
-    const token = auth.replace(/^Bearer\s+/i, "");
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '') || '';
     if (!token) {
       return res.status(401).json({ error: "Missing bearer token" });
     }
 
     // สร้าง Supabase client ที่ผูกกับ token
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    );
+    const supabase = getSupabaseWithAuth(token);
 
     // ดึงข้อมูล user จาก token
     const { data: { user }, error: getUserErr } = await supabase.auth.getUser();

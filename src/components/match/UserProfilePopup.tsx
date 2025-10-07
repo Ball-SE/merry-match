@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
 import Img from 'next/image';
+import { Card } from '@/components/swipe/SwipeDeck';
 
 interface UserProfile {
   id: string;
@@ -28,9 +29,11 @@ interface Props {
     age: string;
     img: string[];
   };
+  onLike?: (card: Card) => void;  
+  onPass?: (card: Card) => void;  
 }
 
-export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: Props) {
+export default function UserProfilePopup({ isOpen, onClose, userId, cardData, onLike, onPass }: Props) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +111,7 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
 
   // Handle Like/Pass actions
   const handleAction = async (actionType: 'like' | 'pass') => {
-    if (actionState.loading || !profile) return;
+    if (actionState.loading || !profile || !cardData) return;
     
     setActionState({
       type: actionType,
@@ -118,16 +121,24 @@ export default function UserProfilePopup({ isOpen, onClose, userId, cardData }: 
     });
     
     try {
-      // TODO: Implement actual like/pass logic
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (Math.random() < 0.1) {
-            reject(new Error('Network error occurred'));
-          } else {
-            resolve(true);
-          }
-        }, 1500);
-      });
+      // สร้าง Card object จาก cardData
+      const card: Card = {
+        id: cardData.id,
+        title: cardData.title,
+        age: cardData.age,
+        img: cardData.img,
+        location: {
+          city: profile.city,
+          location: profile.city
+        }
+      };
+      
+      // เรียก callback function ที่ส่งมาจาก parent
+      if (actionType === 'like' && onLike) {
+        await onLike(card);
+      } else if (actionType === 'pass' && onPass) {
+        await onPass(card);
+      }
       
       setActionState({
         type: actionType,
