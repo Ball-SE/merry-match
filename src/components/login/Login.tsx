@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase/supabaseClient';
 import { validateEmail } from '@/middleware/validation';
 import Image from 'next/image';
 import ForgotPassword from './ForgotPassword';
+import { useAuthContext } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,23 +14,13 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const { isLoggedIn } = useAuthContext();
   
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data?.session) router.push('/')
+    if (isLoggedIn) {
+      router.push('/');
     }
-    checkSession()
-
-    //onAuthStateChange จับได้ว่ามี session ใหม่ → redirect ไป '/'
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) router.push('/')
-    })
-
-    return () => {
-      authListener?.subscription.unsubscribe()
-    }
-  }, [router])
+  }, [isLoggedIn, router]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
