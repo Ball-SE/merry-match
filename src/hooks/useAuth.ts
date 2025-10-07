@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { useAuthContext } from '@/context/AuthContext';
 
 export const useAuth = (redirectTo?: string) => {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isLoggedIn, loading } = useAuthContext();
   const router = useRouter();
 
   // function logout
@@ -13,46 +12,9 @@ export const useAuth = (redirectTo?: string) => {
     router.push(redirectPath);
   };
 
-  useEffect(() => {
-    let mounted = true;
-
-    const init = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (mounted) {
-          setIsLoggedIn(!!data?.session);
-          setLoading(false);
-          
-          if (!data?.session && redirectTo) {
-            router.push(redirectTo);
-          }
-        }
-      } catch (error) {
-        if (mounted) {
-          setIsLoggedIn(false);
-          setLoading(false);
-        }
-      }
-    };
-
-    init();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        setIsLoggedIn(!!session);
-        setLoading(false);
-        
-        if (!session && redirectTo) {
-          router.push(redirectTo);
-        }
-      }
-    });
-
-    return () => {
-      mounted = false;
-      authListener?.subscription.unsubscribe();
-    };
-  }, [router, redirectTo]);
+  if (!isLoggedIn && !loading && redirectTo) {
+    router.push(redirectTo);
+  }
 
   return { isLoggedIn, loading, logout };
 };

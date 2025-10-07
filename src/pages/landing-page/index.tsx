@@ -2,47 +2,18 @@ import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { Element } from "react-scroll";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabase/supabaseClient";
 import Img from "next/image";
+import { useAuthContext } from '@/context/AuthContext';
 
 function HomePage(){
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+    const { isLoggedIn, isAdmin } = useAuthContext();
     const router = useRouter();
 
-    useEffect(() => {
-        let mounted = true;
-
-        const init = async () => {
-            const { data } = await supabase.auth.getSession();
-            if (mounted) {
-                setIsLoggedIn(!!data?.session);
-
-                // ถ้า login แล้วและเป็น admin ให้ redirect ไป admin dashboard
-                if (data?.session && data.session.user.app_metadata?.is_admin === true) {
-                    router.push('/admin');
-                }
-            }
-        };
-        init();
-
-        const {data: authListener} = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                if (mounted) {
-                    setIsLoggedIn(!!session);
-                    // ถ้า login แล้วและเป็น admin ให้ redirect ไป admin dashboard
-                    if (session && session.user.app_metadata?.is_admin === true) {
-                        router.push('/admin');
-                    }
-                }
-            });
-
-        return () => {
-            mounted = false;
-            authListener?.subscription.unsubscribe();
-        };
-    }, [router]);
+    // Redirect admin to admin dashboard
+    if (isAdmin) {
+        router.push('/admin');
+    }
 
     const handleStartMatching = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();
