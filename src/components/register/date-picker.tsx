@@ -245,7 +245,7 @@ export function CustomDatePicker({
                   fontSize: "16px",
                   fontWeight: "600",
                   fontFamily: "var(--font-nunito)",
-                  color: "#6B7280",
+                  color: "#933d6b",
                 },
                 "& .MuiDayCalendar-weekContainer": {
                   margin: "0",
