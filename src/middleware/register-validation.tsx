@@ -1,49 +1,11 @@
+import { validateDateOfBirth as validateDateOfBirthRegister } from '@/lib/validation/dateOfBirth';
+import { validateBasicInfoForRegister } from '@/lib/validation/basicInfo';
+import { validateIdentitiesForRegister } from '@/lib/validation/identities';
+import { validatePhotos as validatePhotosShared } from '@/lib/validation/photos';
+
 // Date of birth validation: no future dates, minimum 18 years old
 export const validateDateOfBirth = (dateString: string): { isValid: boolean; message?: string } => {
-  if (!dateString) {
-    return { isValid: false, message: 'Date of birth is required' };
-  }
-
-  // Parse the date - assuming format is YYYY-MM-DD (HTML date input format)
-  const selectedDate = new Date(dateString);
-  const today = new Date();
-
-  // Check if date is valid
-  if (isNaN(selectedDate.getTime())) {
-    return { isValid: false, message: 'Please enter a valid date of birth' };
-  }
-
-  // Check if date is in the future
-  if (selectedDate > today) {
-    return { isValid: false, message: 'Users cannot select the current date or any future dates.' };
-  }
-
-  // Check if date is today
-  const todayStr = today.toISOString().split('T')[0];
-  const selectedStr = selectedDate.toISOString().split('T')[0];
-  if (selectedStr === todayStr) {
-    return { isValid: false, message: 'The minimum age for registration is 18 years old.' };
-  }
-
-  // Check minimum age (18 years)
-  const age = today.getFullYear() - selectedDate.getFullYear();
-  const monthDiff = today.getMonth() - selectedDate.getMonth();
-
-  let actualAge = age;
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < selectedDate.getDate())) {
-    actualAge = age - 1;
-  }
-
-  if (actualAge < 18) {
-    return { isValid: false, message: 'The minimum age for registration is 18 years old.' };
-  }
-
-  // Check maximum age (reasonable limit to prevent invalid dates)
-  if (actualAge > 120) {
-    return { isValid: false, message: 'Please enter a valid date of birth' };
-  }
-
-  return { isValid: true };
+  return validateDateOfBirthRegister(dateString);
 };
 
 // Step 1 Validation
@@ -57,85 +19,7 @@ export const validateBasicInfo = (data: {
   password: string;
   confirmPassword: string;
 }) => {
-  const errors: Record<string, string> = {};
-
-  // Name validation
-  if (!data.name || data.name.length < 2) {
-    errors.name = "Name must be at least 2 characters";
-  } else if (!/^[a-zA-Z\s]+$/.test(data.name)) {
-    errors.name = "Name can only contain letters and spaces";
-  }
-
-  // Email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!data.email || !emailRegex.test(data.email)) {
-    errors.email = "Please enter a valid email address";
-  }
-
-  // Password validation
-  if (!data.password || data.password.length < 8) {
-    errors.password = "Password must be at least 8 characters";
-  }
-
-  // Confirm password validation
-  if (data.password !== data.confirmPassword) {
-    errors.confirmPassword = "Passwords do not match";
-  }
-
-  // Username validation
-  if (!data.username || data.username.length < 6) {
-    errors.username = "Username must be at least 6 characters";
-  }
-
-  // Date of birth validation with enhanced logic
-  const dateValidation = validateDateOfBirth(data.dateOfBirth);
-  if (!dateValidation.isValid) {
-    errors.dateOfBirth = dateValidation.message || "Date of birth is required";
-  }
-
-  // Required fields
-  if (!data.location) errors.location = "Location is required";
-  if (!data.city) errors.city = "City is required";
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
-};
-
-// Email validation with Supabase check
-export const validateEmail = async (email: string): Promise<{ isValid: boolean; message?: string }> => {
-  if (!email) {
-    return { isValid: false, message: 'Email is required' };
-  }
-
-  // Basic email format validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return { isValid: false, message: 'Please enter a valid email address' };
-  }
-
-  try {
-    // Check if email exists in Supabase
-    const response = await fetch('/api/check-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    const result = await response.json();
-
-    if (!result.isAvailable) {
-      return { isValid: false, message: 'Email already exists' };
-    }
-
-    return { isValid: true };
-  } catch (error) {
-    console.error('Email validation error:', error);
-    return { isValid: false, message: 'Unable to verify email availability' };
-  }
+  return validateBasicInfoForRegister(data);
 };
 
 // Step 2 Validation
@@ -145,36 +29,13 @@ export const validateIdentitiesAndInterests = (data: {
   racialPreferences: string;
   meetingInterests: string;
 }) => {
-  const errors: Record<string, string> = {};
-
-  if (!data.sexualIdentities) errors.sexualIdentities = "Sexual identity is required";
-  if (!data.sexualPreferences) errors.sexualPreferences = "Sexual preference is required";
-  if (!data.racialPreferences) errors.racialPreferences = "Racial preference is required";
-  if (!data.meetingInterests) errors.meetingInterests = "Meeting interest is required";
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
+  return validateIdentitiesForRegister(data);
 };
 
 // Step 3 Validation
 export const validatePhotos = (photos: string[]) => {
-  const errors: Record<string, string> = {};
-
-  // Comment ไว้ก่อน - ยังไม่ต้องบังคับใส่รูป
-  if (!photos || photos.length < 2) {
-    errors.photos = "Please upload at least 2 photos";
-  }
-
-  if (photos.length > 6) {
-    errors.photos = "Maximum 6 photos allowed";
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
+  // Register อนุญาตได้มากสุด 5 รูป
+  return validatePhotosShared(photos, { min: 2, max: 5, allowBlob: true });
 };
 
 // Complete registration validation

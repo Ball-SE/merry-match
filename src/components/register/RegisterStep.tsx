@@ -98,8 +98,8 @@ function Step1({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // เพิ่ม email validation hook
-  const emailValidation = useEmailValidation(formData.email, 2000);
-  const usernameValidation = useUsernameValidation(formData.username, 2000);
+  const emailValidation = useEmailValidation(formData.email, 500);
+  const usernameValidation = useUsernameValidation(formData.username, 500);
 
   const handleBlur = (fieldName: string) => {
     setTouched((prev) => ({ ...prev, [fieldName]: true }));
@@ -791,11 +791,11 @@ const Step3 = React.forwardRef<
     );
   };
 
-  const validateCurrentPhotos = () => {
-    const photoCount = photoFiles.filter((file) => file !== null).length;
-    const validation = validatePhotos(Array(photoCount).fill("temp"));
-    setErrors(validation.errors);
-  };
+  const validateCurrentPhotos = (files: (File | null)[]) => { // EDIT                                               
+    const photoCount = files.filter((file) => file !== null).length; // EDIT                                       
+    const validation = validatePhotos(Array(photoCount).fill("temp")); // EDIT                                     
+    setErrors(validation.errors); // EDIT                                                                           
+  }; // EDIT
 
   // useEffect สำหรับจัดเรียงใหม่หลัง 1.5 วินาที
   useEffect(() => {
@@ -821,7 +821,7 @@ const Step3 = React.forwardRef<
         const remainingPhotos = compactedFiles.filter((f) => f !== null);
         setPhotos(Array(remainingPhotos.length).fill("temp"));
 
-        validateCurrentPhotos();
+        validateCurrentPhotos(compactedFiles);
       }
     }, 1500);
 
@@ -885,7 +885,7 @@ const Step3 = React.forwardRef<
       const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
       setPhotos(Array(remainingPhotos.length).fill("temp"));
 
-      validateCurrentPhotos();
+      validateCurrentPhotos(newPhotoFiles);
     } catch (error: unknown) {
       console.error("File processing error:", error);
       setUploadError("Failed to process image. Please try again.");
@@ -920,7 +920,7 @@ const Step3 = React.forwardRef<
     const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
     setPhotos(Array(remainingPhotos.length).fill("temp"));
 
-    validateCurrentPhotos();
+    validateCurrentPhotos(newPhotoFiles);
   };
 
   // จัดการการเรียงลำดับใหม่ (drag & drop)
@@ -937,7 +937,7 @@ const Step3 = React.forwardRef<
     const remainingPhotos = newPhotoFiles.filter((f) => f !== null);
     setPhotos(Array(remainingPhotos.length).fill("temp"));
 
-    validateCurrentPhotos();
+    validateCurrentPhotos(newPhotoFiles);
   };
 
   // ฟังก์ชันสำหรับ upload รูปไป Supabase
