@@ -45,9 +45,9 @@ function UserProfileNavbar() {
                     </Link>
                 )}
                 
-                <Link href="/compliant" className="w-full text-[#646D89] flex flex-row items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <Link href="/complaint" className="w-full text-[#646D89] flex flex-row items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
                     <FaExclamationTriangle className="text-pink-400" />
-                    <span>Compliant</span>
+                    <span>Complaint</span>
                 </Link>
             </div>
 
