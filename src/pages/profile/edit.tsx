@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
-import { validateEditProfile, validateUsername } from '@/middleware/edit-profile-validation';
+import { validateBasicInfoForEdit } from '@/lib/validation/basicInfo';
+import { validateIdentitiesAndInterestsForEdit } from '@/lib/validation/identities';
+import { validatePhotos as validatePhotosShared } from '@/lib/validation/photos';
+import { validateUsername } from '@/middleware/edit-profile-validation';
 import { SEA_COUNTRY_OPTIONS } from '@/data/sea-countries';
 import { SEA_CITIES_BY_COUNTRY } from '@/data/sea-cities';
-import PhotoUpload from '@/components/edit/PhotoUpload';
+import { CustomDatePicker } from '@/components/register/date-picker';
 import InterestsInput from '@/components/edit/InterestsInput';
 import ProfileCardPopup from '@/components/edit/ProfileCardPopup';
 import { usePhotoManagement } from '@/hooks/usePhotoManagement';
 import { useInterestsManagement } from '@/hooks/useInterestsManagement';
-
 interface UserProfile {
   id: string;
   name: string;
@@ -40,7 +43,8 @@ export default function EditProfilePage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
   const [formData, setFormData] = useState({
     name: '',
     date_of_birth: '',
@@ -77,7 +81,7 @@ export default function EditProfilePage() {
   useEffect(() => {
     // สร้าง array ของรูปที่มี preview
     const photosWithPreviews = photoPreviews.filter(preview => preview !== "");
-    
+
     setFormData(prev => ({
       ...prev,
       photos: photosWithPreviews
@@ -113,7 +117,7 @@ export default function EditProfilePage() {
 
         const profileData = result.data;
         setProfile(profileData);
-        
+
         const formData = {
           name: profileData.name || '',
           date_of_birth: profileData.date_of_birth || '',
@@ -149,7 +153,7 @@ export default function EditProfilePage() {
       ...prev,
       [field]: value
     }));
-    
+
     if (fieldErrors[field]) {
       setFieldErrors(prev => {
         const newErrors = { ...prev };
@@ -179,12 +183,29 @@ export default function EditProfilePage() {
     setError(null);
     setSuccess(null);
     setValidationErrors({});
-    
+
     try {
-      const validation = validateEditProfile(formData);
-      
-      if (!validation.isValid) {
-        setValidationErrors(validation.errors);
+      // EDIT use the same shared validators as register-page
+      const basic = validateBasicInfoForEdit({
+        name: formData.name,
+        date_of_birth: formData.date_of_birth,
+        location: formData.location,
+        city: formData.city,
+        username: formData.username,
+      });
+      const identities = validateIdentitiesAndInterestsForEdit({
+        gender: formData.gender,
+        sexual_preferences: formData.sexual_preferences,
+        racial_preferences: formData.racial_preferences,
+        meeting_interests: formData.meeting_interests,
+        bio: formData.bio,
+        interests: formData.interests,
+      });
+      const photosVal = validatePhotosShared(formData.photos, { min: 2, max: 5, allowBlob: true });
+      const isValid = basic.isValid && identities.isValid && photosVal.isValid;
+      const mergedErrors = { ...basic.errors, ...identities.errors, ...photosVal.errors };
+      if (!isValid) {
+        setValidationErrors(mergedErrors);
         setSaving(false);
         return;
       }
@@ -203,49 +224,35 @@ export default function EditProfilePage() {
         router.push('/login');
         return;
       }
+      // Upload new photos using same method as RegisterStep
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < photoFiles.length; i++) {
+        const file = photoFiles[i];
+        if (file) {
+          try {
+            const { uploadProfilePhoto } = await import('@/lib/supabase/uploadPhotoUtils');
+            const folderName = `${formData.email.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-_]/g, "_").slice(0, 24)}`;
+            const result = await uploadProfilePhoto(file, folderName, i);
 
-      // อัปโหลดรูปใหม่เท่านั้น (รูปที่มี blob URL)
-      const processedPhotos = await Promise.all(
-        formData.photos.map(async (photoUrl) => {
-          if (photoUrl.startsWith('blob:')) {
-            // หา file ที่ตรงกับ blob URL
-            let fileToUpload = null;
-            for (let i = 0; i < photoPreviews.length; i++) {
-              if (photoPreviews[i] === photoUrl && photoFiles[i] !== null) {
-                fileToUpload = photoFiles[i];
-                break;
-              }
-            }
-            
-            if (fileToUpload) {
-              const fileExt = fileToUpload.name.split('.').pop();
-              const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-              const filePath = `profiles/${session.user.id}/${fileName}`;
-              
-              const { error: uploadError } = await supabase.storage
-                .from('profile-photos')
-                .upload(filePath, fileToUpload, {
-                  cacheControl: '3600',
-                  upsert: false
-                });
-              
-              if (uploadError) {
-                throw new Error('Failed to upload photo');
-              }
-              
-              const { data: { publicUrl } } = supabase.storage
-                .from('profile-photos')
-                .getPublicUrl(filePath);
-              
-              return publicUrl;
+            if (result.success && result.url) {
+              uploadedUrls[i] = result.url;
             } else {
-              throw new Error('File not found for photo');
+              throw new Error(result.error || "Upload failed");
             }
+          } catch (error) {
+            console.error(`Upload error for photo ${i}:`, error);
+            throw new Error(`Failed to upload photo ${i + 1}`);
           }
-          
-          return photoUrl;
-        })
-      );
+        }
+      }
+
+      // Combine existing photos with new uploads
+      const processedPhotos = formData.photos.map((photoUrl, index) => {
+        if (photoUrl.startsWith('blob:')) {
+          return uploadedUrls[index] || photoUrl;
+        }
+        return photoUrl;
+      });
 
       const updatedFormData = {
         ...formData,
@@ -267,7 +274,7 @@ export default function EditProfilePage() {
       }
 
       const result = await response.json();
-      
+
       // Update formData with the latest data first
       const latestFormData = {
         name: result.data.name || '',
@@ -284,11 +291,11 @@ export default function EditProfilePage() {
         interests: result.data.interests || [],
         photos: result.data.photos || []
       };
-      
+
       setFormData(latestFormData);
       setProfile(result.data);
       setSuccess('Profile updated successfully!');
-      
+
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save profile';
       setError(errorMessage);
@@ -329,10 +336,10 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
-      
+
       <div className="mx-auto px-4 md:px-8 lg:px-16 xl:px-32 py-4 md:py-10">
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          
+
           <div className="px-4 md:px-12 py-6 md:py-12 border-b border-gray-100">
             <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -362,7 +369,7 @@ export default function EditProfilePage() {
 
           <div className="p-4 md:p-12">
             <div className="max-w-4xl mx-auto">
-              
+
               {error && (
                 <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                   <div className="flex items-center gap-3">
@@ -372,21 +379,21 @@ export default function EditProfilePage() {
                 </div>
               )}
 
-      {success && (
-        <ProfileCardPopup
-          formData={formData}
-          profile={profile}
-          onClose={() => {
-            setSuccess(null);
-            router.push('/profile/edit');
-          }}
-        />
-      )}
+              {success && (
+                <ProfileCardPopup
+                  formData={formData}
+                  profile={profile}
+                  onClose={() => {
+                    setSuccess(null);
+                    router.push('/profile/edit');
+                  }}
+                />
+              )}
 
-              
+
               <div className="mb-8 md:mb-10">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Basic Information</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   <div>
                     <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Name</label>
@@ -394,11 +401,10 @@ export default function EditProfilePage() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
-                        validationErrors.name || fieldErrors.name 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${validationErrors.name || fieldErrors.name
+                        ? 'border-red-500'
+                        : 'border-gray-300'
+                        }`}
                       placeholder="At least 2 character"
                     />
                     {(validationErrors.name || fieldErrors.name) && (
@@ -408,19 +414,28 @@ export default function EditProfilePage() {
 
                   <div>
                     <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Date of birth</label>
-                    <input
-                      type="date"
-                      value={formData.date_of_birth}
-                      onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
-                        validationErrors.date_of_birth || fieldErrors.date_of_birth 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                      }`}
+                    <CustomDatePicker
+                      selected={formData.date_of_birth ? new Date(formData.date_of_birth) : null} // EDIT
+                      onChange={(date: Date | null) => { // EDIT
+                        const dateString = date ? date.toISOString().split('T')[0] : '';
+                        handleInputChange('date_of_birth', dateString);
+                      }}
+                      onBlur={() => { // EDIT
+                        setTouched(prev => ({ ...prev, date_of_birth: true }));
+                        const basic = validateBasicInfoForEdit({
+                          name: formData.name,
+                          date_of_birth: formData.date_of_birth,
+                          location: formData.location,
+                          city: formData.city,
+                          username: formData.username,
+                        });
+                        setValidationErrors(prev => ({ ...prev, ...basic.errors }));
+                      }}
+                      minDate={new Date(new Date().getFullYear() - 120, new Date().getMonth(), new Date().getDate())} // EDIT
+                      maxDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())} // EDIT
+                      error={validationErrors.date_of_birth || fieldErrors.date_of_birth} // EDIT
+                      touched={touched.date_of_birth} // EDIT
                     />
-                    {(validationErrors.date_of_birth || fieldErrors.date_of_birth) && (
-                      <p className="mt-1 text-sm text-red-600">{validationErrors.date_of_birth || fieldErrors.date_of_birth}</p>
-                    )}
                   </div>
 
                   <div>
@@ -461,11 +476,10 @@ export default function EditProfilePage() {
                       value={formData.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
                       disabled={!formData.location}
-                      className={`w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
-                        !formData.location
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white"
-                      }`}
+                      className={`w-full px-3 md:px-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${!formData.location
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white"
+                        }`}
                       style={{
                         appearance: "none",
                         WebkitAppearance: "none",
@@ -498,11 +512,10 @@ export default function EditProfilePage() {
                         handleInputChange('username', e.target.value);
                         validateField('username', e.target.value);
                       }}
-                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${
-                        validationErrors.username || fieldErrors.username 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent text-sm md:text-base ${validationErrors.username || fieldErrors.username
+                        ? 'border-red-500'
+                        : 'border-gray-300'
+                        }`}
                       placeholder="At least 6 character"
                     />
                     {(validationErrors.username || fieldErrors.username) && (
@@ -525,7 +538,7 @@ export default function EditProfilePage() {
 
               <div className="mb-8 md:mb-10">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Identities and Interests</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   <div>
                     <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">Sexual Identity</label>
@@ -604,11 +617,10 @@ export default function EditProfilePage() {
                     onChange={(e) => handleInputChange('bio', e.target.value)}
                     maxLength={150}
                     rows={4}
-                    className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent resize-none text-sm md:text-base ${
-                      validationErrors.bio || fieldErrors.bio 
-                        ? 'border-red-500' 
-                        : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 md:px-4 py-3 md:py-4 border rounded-lg focus:ring-2 focus:ring-[#C70039] focus:border-transparent resize-none text-sm md:text-base ${validationErrors.bio || fieldErrors.bio
+                      ? 'border-red-500'
+                      : 'border-gray-300'
+                      }`}
                     placeholder="I really looking for new..."
                   />
                   <div className="flex justify-between items-center mt-1 md:mt-2">
@@ -621,16 +633,136 @@ export default function EditProfilePage() {
                   </div>
                 </div>
               </div>
+              {/* Photo Upload Section - Same as RegisterStep */}
+              <div className="mb-8 md:mb-10">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">Profile pictures</h2>
+                <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">
+                  Upload at least 2 photos. Drag to reorder. Main photo will be the first one.
+                </p>
 
-              <PhotoUpload
-                photoItems={photoItems}
-                photoPreviews={photoPreviews}
-                onFiles={onFiles}
-                removePhoto={removePhoto}
-                handleReorder={handleReorder}
-                validationErrors={validationErrors}
-                fieldErrors={fieldErrors}
-              />
+                {(validationErrors.photos || fieldErrors.photos) && (
+                  <p className="text-sm text-red-600 mb-4">{validationErrors.photos || fieldErrors.photos}</p>
+                )}
+
+                <Reorder.Group
+                  axis="x"
+                  values={photoItems}
+                  onReorder={handleReorder}
+                  className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5"
+                >
+                  <AnimatePresence>
+                    {photoItems.map((item, i) => {
+                      const hasFile = item.file !== null;
+                      const isMainPhoto = i === 0 && hasFile;
+
+                      return (
+                        <Reorder.Item
+                          key={item.id}
+                          value={item}
+                          as="div"
+                          className="relative"
+                          dragListener={hasFile}
+                          whileDrag={{
+                            scale: 1.05,
+                            rotate: 2,
+                            zIndex: 1000,
+                            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+                          }}
+                          whileHover={hasFile ? { scale: 1.02 } : {}}
+                          transition={{
+                            type: "spring",
+                            damping: 25,
+                            stiffness: 300,
+                          }}
+                        >
+                          <motion.div
+                            className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${photoPreviews.filter(preview => preview !== "").length < 2 && i < 2
+                                ? "border-red-300"
+                                : "border-gray-300"
+                              }`}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.2 }}
+                            layout
+                          >
+                            {item.preview ? (
+                              <motion.div
+                                className="relative h-full w-full"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.1 }}
+                                layout
+                              >
+                                <img
+                                  src={item.preview}
+                                  alt={`photo-${i}`}
+                                  className="h-full w-full rounded-xl object-cover cursor-grab active:cursor-grabbing"
+                                  draggable={false}
+                                />
+
+                                {/* Main photo indicator */}
+                                {isMainPhoto && (
+                                  <motion.div
+                                    className="absolute top-2 left-2 bg-[#A62D82] text-white text-xs px-2 py-1 rounded"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.2, type: "spring" }}
+                                  >
+                                    Main
+                                  </motion.div>
+                                )}
+
+                                {/* Delete button */}
+                                <motion.button
+                                  onClick={() => removePhoto(i)}
+                                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C70039] text-white hover:bg-[#950028]"
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: 0.3, type: "spring" }}
+                                >
+                                  ×
+                                </motion.button>
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                className="text-center flex flex-col"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                whileHover={{ scale: 1.05 }}
+                                layout
+                              >
+                                <div className="mx-auto mb-2 flex h-8 w-8 items-center text-4xl justify-center rounded-full text-[#A62D82]">
+                                  +
+                                </div>
+                                <span className="text-sm font-medium text-[#A62D82]">
+                                  {i === 0 ? "Main photo" : "Upload photo"}
+                                </span>
+                              </motion.div>
+                            )}
+                          </motion.div>
+
+                          {/* File input overlay */}
+                          {!hasFile && (
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                              onChange={(e) => onFiles(e.target.files, i)}
+                            />
+                          )}
+                        </Reorder.Item>
+                      );
+                    })}
+                  </AnimatePresence>
+                </Reorder.Group>
+
+                <div className="mt-4 text-sm text-gray-500">
+                  {photoPreviews.filter(preview => preview !== "").length}/5 photos ready
+                </div>
+              </div>
 
               <div className="mb-8 md:mb-10 flex md:hidden flex-row gap-4">
                 <button
@@ -658,7 +790,7 @@ export default function EditProfilePage() {
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
