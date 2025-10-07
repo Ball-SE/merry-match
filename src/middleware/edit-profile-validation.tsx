@@ -1,5 +1,6 @@
-// Edit Profile Validation Functions
-// ใช้รูปแบบเดียวกับ register-validation แต่ปรับให้เหมาะกับการแก้ไขข้อมูล
+import { validateBasicInfoForEdit } from '@/lib/validation/basicInfo';
+import { validateIdentitiesAndInterestsForEdit } from '@/lib/validation/identities';
+import { validatePhotos as validatePhotosShared } from '@/lib/validation/photos';
 
 // Date of birth validation: no future dates, minimum 18 years old
 export const validateDateOfBirth = (dateString: string): { isValid: boolean; message?: string } => {
@@ -57,36 +58,7 @@ export const validateBasicInfo = (data: {
   city: string;
   username: string;
 }) => {
-  const errors: Record<string, string> = {};
-
-  // Name validation
-  if (!data.name || data.name.length < 2) {
-    errors.name = "Name must be at least 2 characters";
-  } else if (!/^[a-zA-Z\s]+$/.test(data.name)) {
-    errors.name = "Name can only contain letters and spaces";
-  }
-
-  // Username validation
-  if (!data.username || data.username.length < 6) {
-    errors.username = "Username must be at least 6 characters";
-  } else if (!/^[a-zA-Z0-9_]+$/.test(data.username)) {
-    errors.username = "Username can only contain letters, numbers, and underscores";
-  }
-
-  // Date of birth validation
-  const dateValidation = validateDateOfBirth(data.date_of_birth);
-  if (!dateValidation.isValid) {
-    errors.date_of_birth = dateValidation.message || "Date of birth is required";
-  }
-
-  // Required fields (with default values, so these should always have values)
-  if (!data.location || data.location === '') errors.location = "Location is required";
-  if (!data.city || data.city === '') errors.city = "City is required";
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
+  return validateBasicInfoForEdit(data);
 };
 
 // Identities and Interests Validation for Edit Profile
@@ -98,65 +70,12 @@ export const validateIdentitiesAndInterests = (data: {
   bio: string;
   interests: string[];
 }) => {
-  const errors: Record<string, string> = {};
-
-  // Required fields (with default values, so these should always have values)
-  if (!data.gender || data.gender === '') errors.gender = "Sexual identity is required";
-  if (!data.sexual_preferences || data.sexual_preferences === '') errors.sexual_preferences = "Sexual preference is required";
-  if (!data.racial_preferences || data.racial_preferences === '') errors.racial_preferences = "Racial preference is required";
-  if (!data.meeting_interests || data.meeting_interests === '') errors.meeting_interests = "Meeting interest is required";
-
-  // Bio validation (optional but with character limit)
-  if (data.bio && data.bio.length > 150) {
-    errors.bio = "Bio must be 150 characters or less";
-  }
-
-  // Interests validation
-  if (data.interests && data.interests.length > 10) {
-    errors.interests = "Maximum 10 interests allowed";
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
+  return validateIdentitiesAndInterestsForEdit(data); // EDIT
 };
 
 // Photos Validation for Edit Profile
 export const validatePhotos = (photos: string[]) => {
-  const errors: Record<string, string> = {};
-
-  // At least 2 photos required
-  if (!photos || photos.length < 2) {
-    errors.photos = "Please upload at least 2 photos";
-  }
-
-  // Maximum 5 photos allowed
-  if (photos.length > 5) {
-    errors.photos = "Maximum 5 photos allowed";
-  }
-
-  // Validate each photo URL (allow both regular URLs and blob URLs)
-  if (photos && photos.length > 0) {
-    for (let i = 0; i < photos.length; i++) {
-      const photo = photos[i];
-      if (photo) {
-        // Check if it's a valid URL or blob URL
-        const isValidUrl = photo.startsWith('blob:') || 
-          (photo.startsWith('http://') || photo.startsWith('https://'));
-        
-        if (!isValidUrl) {
-          errors.photos = "Invalid photo URL detected";
-          break;
-        }
-      }
-    }
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
+  return validatePhotosShared(photos, { min: 2, max: 5, allowBlob: true }); // EDIT
 };
 
 // Username validation with Supabase check (for edit profile)
