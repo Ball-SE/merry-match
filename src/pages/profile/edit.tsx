@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
@@ -16,6 +16,7 @@ import InterestsInput from '@/components/edit/InterestsInput';
 import ProfileCardPopup from '@/components/edit/ProfileCardPopup';
 import { usePhotoManagement } from '@/hooks/usePhotoManagement';
 import { useInterestsManagement } from '@/hooks/useInterestsManagement';
+import { deleteProfilePhoto } from '@/lib/supabase/uploadPhotoUtils';
 interface UserProfile {
   id: string;
   name: string;
@@ -70,6 +71,51 @@ export default function EditProfilePage() {
     handleReorder,
     loadExistingPhotos
   } = usePhotoManagement();
+
+  // เพิ่ม folderRef เหมือน RegisterStep
+  const folderRef = useRef(
+    formData.email
+      ? `${formData.email
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-_]/g, "_")
+        .slice(0, 24)}`
+      : `temp-user-${Date.now()}`
+  );
+
+  // ช่วยดึงโฟลเดอร์เดิมจาก URL รูปใน Supabase // EDIT
+  const extractFolderFromPhotoUrl = (url: string): string | null => {
+    // ตัวอย่าง path: https://.../profile-photos/public/USER_FOLDER/photo_0_....jpg
+    const parts = url.split('/profile-photos/')[1]?.split('/');
+    if (!parts || parts.length < 2) return null;
+    // parts[0] คือ bucket visibility (เช่น public), parts[1] คือโฟลเดอร์ผู้ใช้
+    // บางโปรเจกต์ path อาจเป็น `public/username/...` หรือ `username/...`
+    // ลองหาชิ้นส่วนที่ไม่ใช่ 'public' เป็นโฟลเดอร์
+    const folder = parts.find(seg => seg && seg !== 'public');
+    return folder || null;
+  };
+
+  // อัปเดต folderRef เมื่อโหลดโปรไฟล์/รูปเสร็จหรือ email พร้อมใช้งาน // EDIT
+  useEffect(() => {
+    // 1) ถ้ามีรูปเดิม ให้ใช้โฟลเดอร์เดิมจาก URL
+    const existingFolder =
+      (formData.photos?.find(p => p.startsWith('http')) && extractFolderFromPhotoUrl(formData.photos.find(p => p.startsWith('http'))!))
+      || null;
+    if (existingFolder) {
+      folderRef.current = existingFolder; // ใช้โฟลเดอร์เดิม // EDIT
+      return;
+    }
+    // 2) ถ้าไม่มีรูปเดิม ให้ใช้โฟลเดอร์จากอีเมล (เมื่ออีเมลมาแล้ว)
+    if (formData.email) {
+      folderRef.current = `${formData.email
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-_]/g, "_")
+        .slice(0, 24)}`; // EDIT
+    }
+  }, [formData.email, formData.photos]); // EDIT
 
   const { chipInput, setChipInput, addChip } = useInterestsManagement();
 
@@ -231,8 +277,7 @@ export default function EditProfilePage() {
         if (file) {
           try {
             const { uploadProfilePhoto } = await import('@/lib/supabase/uploadPhotoUtils');
-            const folderName = `${formData.email.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-_]/g, "_").slice(0, 24)}`;
-            const result = await uploadProfilePhoto(file, folderName, i);
+            const result = await uploadProfilePhoto(file, folderRef.current, i);
 
             if (result.success && result.url) {
               uploadedUrls[i] = result.url;
@@ -677,8 +722,8 @@ export default function EditProfilePage() {
                         >
                           <motion.div
                             className={`flex aspect-square items-center justify-center rounded-xl bg-gray-100 transition-all duration-200 ${photoPreviews.filter(preview => preview !== "").length < 2 && i < 2
-                                ? "border-red-300"
-                                : "border-gray-300"
+                              ? "border-red-300"
+                              : "border-gray-300"
                               }`}
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -715,7 +760,17 @@ export default function EditProfilePage() {
 
                                 {/* Delete button */}
                                 <motion.button
-                                  onClick={() => removePhoto(i)}
+                                  onClick={async () => {
+                                    const currentUrl = item.preview;
+                                    if (currentUrl && currentUrl.startsWith('http')) {
+                                      const ok = await deleteProfilePhoto(currentUrl);
+                                      if (!ok) {
+                                        setError('Failed to delete photo');
+                                        return;
+                                      }
+                                    }
+                                    await removePhoto(i);
+                                  }}
                                   className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#C70039] text-white hover:bg-[#950028]"
                                   whileHover={{ scale: 1.1 }}
                                   whileTap={{ scale: 0.9 }}
@@ -745,7 +800,7 @@ export default function EditProfilePage() {
                           </motion.div>
 
                           {/* File input overlay */}
-                          {!hasFile && (
+                          {!item.preview && ( // EDIT: แสดง overlay เฉพาะตอนยังไม่มี preview เพื่อไม่ให้บังปุ่มลบ
                             <input
                               type="file"
                               accept="image/*"

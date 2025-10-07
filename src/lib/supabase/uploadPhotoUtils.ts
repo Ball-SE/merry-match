@@ -40,17 +40,33 @@ export const uploadProfilePhoto = async (
 
 export const deleteProfilePhoto = async (photoUrl: string): Promise<boolean> => {
   try {
-    // Extract file path จาก URL
-    const path = photoUrl.split('/profile-photos/')[1];
-    if (!path) return false;
+    console.log('🗑️ Deleting photo:', photoUrl); // DEBUG
+    
+    // Extract path from URL: .../profile-photos/FOLDER/FILE
+    // URL format: https://...supabase.co/storage/v1/object/public/profile-photos/gdd_hotmail_com/photo_0_1759860665465.jpg
+    const urlParts = photoUrl.split('/profile-photos/');
+    if (urlParts.length < 2) {
+      console.error('❌ Invalid URL format:', photoUrl);
+      return false;
+    }
+    
+    // Get path after /profile-photos/ (e.g., "gdd_hotmail_com/photo_0_1759860665465.jpg")
+    const path = urlParts[1];
+    console.log('📁 Extracted path:', path); // DEBUG
 
     const { error } = await supabase.storage
       .from('profile-photos')
       .remove([path]);
 
-    return !error;
+    if (error) {
+      console.error('❌ Delete error:', error);
+      return false;
+    }
+    
+    console.log('✅ Successfully deleted:', path); // DEBUG
+    return true;
   } catch (error) {
-    console.error('Delete error:', error);
+    console.error('❌ Delete error:', error);
     return false;
   }
 };
