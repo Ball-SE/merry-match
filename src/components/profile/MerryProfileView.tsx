@@ -199,7 +199,7 @@ export default function UserProfileView({
   // Loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[9999] backdrop-blur-sm">
+      <div className="fixed inset-0 bg-black/40 transition-colors duration-300 flex items-center justify-center p-4 z-[9999]">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
           <Loader2 className="w-12 h-12 animate-spin text-[#C70039] mx-auto mb-4" />
           <p className="text-gray-600">Loading profile...</p>
@@ -231,7 +231,7 @@ export default function UserProfileView({
     <div className={`fixed inset-0 flex items-center justify-center p-4 z-[9999] ${className}`}>
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40"
         onClick={handleClose}
       ></div>
       

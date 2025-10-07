@@ -1,6 +1,7 @@
 import NavBarUsers from "@/components/NavBarUsers";  
 import Footer from "@/components/Footer";
 import MerryProfileView from "@/components/profile/MerryProfileView";
+import FullScreenLoader from "@/components/loader/FullScreenLoader";
 import { Heart } from 'lucide-react';
 import { MessageCircleMore } from 'lucide-react';
 import { Eye } from 'lucide-react';
@@ -12,6 +13,7 @@ import { supabase } from "@/lib/supabase/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { px } from "framer-motion";
 
 type ProfileLocation = {
     city?: string;
@@ -88,6 +90,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
     const [timeLeft, setTimeLeft] = useState("");
     const [openProfile, setOpenProfile] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | number | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const [unmatchedIds, setUnmatchedIds] = useState<(string | number)[]>([]);
 
@@ -100,6 +103,35 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
         const area = typeof maybe.location === "string" ? maybe.location : "";
         return [city, area].filter(Boolean).join(", ");
     }
+
+    async function unswipe(id: string | number) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+      
+          if (!token) {
+            console.warn("No token found, cannot unswipe.");
+            return;
+          }
+      
+          const origin = typeof window !== "undefined" ? window.location.origin : "";
+      
+          // 🔹 ยิง API ลบ swipe
+          await axios.post(
+            `${origin}/api/unswipe`,
+            { id },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+      
+          // 🔹 อัปเดต UI ทันที — ลบ swipe ออกจาก state
+          setSwipeList((prev) => prev.filter((swipe) => swipe.id !== id));
+          setAllSwipe((prev) => prev.filter((swipe) => swipe.id !== id));
+      
+          console.log("Swipe deleted locally:", id);
+        } catch (err) {
+          console.error("Unswipe error:", err);
+        }
+      }
 
     async function toggleMatch(matchId: string | number, isCurrentlyMatched: boolean, otherUserId?: string) {
         try {
@@ -204,6 +236,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                 setMatchList(matches)
                 setAllSwipe(swipes)
                 setSubscriptionData(subscription ? [subscription] : []);
+
                 console.log("subscription from API:", subscription);
                 console.log("🔍 Match data from API:", matches.map(m => ({
                     id: m.id,
@@ -221,6 +254,8 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                   
             } catch (error) {
                 console.error(error)
+            } finally {
+                setLoading(false);
             };
         };
         fetchMatch()
@@ -245,6 +280,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
 
     return(
         <>
+        <FullScreenLoader show={loading} />
         <NavBarUsers />
         <div className="mb-15 lg:flex lg:flex-col lg:items-center lg:mt-15">
         <div className="p-3 lg:w-300">
@@ -290,25 +326,26 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                 const isUnmatched = unmatchedIds.includes(effectiveMatchId);
 
                 return(
-                    <div key={match.id}>
-                        <div className="p-4 mt-5 lg:w-300 lg:flex lg:p-0 lg:mb-8">
+                    <div key={match.id}
+                    className="transition-all duration-300 ease-in-out hover:scale-103 hover:bg-pink-200 rounded-xl group">
+                        <div className="p-4 mt-5 lg:w-300 lg:flex lg:p-0 lg:mt-8">
                             <div className="flex justify-between lg:w-290 lg:absolute">
                                 <Image 
                                 src={src} 
                                 alt={match.gender || "profile"}
                                 width={200} 
                                 height={200}
-                                className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"
+                                className="rounded-2xl w-40 h-40 object-cover lg:w-50 lg:h-50 lg:ml-5"
                                 />
-                                <div className="lg:order-3 justify-items-end">
+                                <div className="mt-7 mr-2 lg:mt-0 lg:mr-0 lg:order-3 justify-items-end">
                                     {isUnmatched ? 
-                                    <span className="flex items-end w-35 px-2.5 p-1 border-1 border-gray-300 rounded-2xl cursor-not-allowed">
+                                    <span className="flex items-end w-35 px-2.5 p-1 border-1 border-gray-300 rounded-2xl select-none">
                                     <p className="ml-2 text-gray-600">
                                     Not Match yet
                                     </p>
                                     </span> 
                                     : 
-                                    <p className="flex items-center px-4 pr-4.5 p-1 border-1 border-red-700 rounded-2xl">
+                                    <p className="flex items-center px-4 pr-4.5 p-1 border-2 border-red-700 rounded-2xl bg-[#FCFCFE] select-none">
                                         <Heart color = "#ff1659" fill="#ff1659" size={10}
                                         className="absolute" />
                                         <Heart color = "#ff1659" fill="#ff1659" stroke="white" strokeWidth={1} size={12}
@@ -319,7 +356,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                     </p>
                                     }
                                     <div className="flex justify-between items-center mt-6 w-40">
-                                        <button className="flex justify-between items-center cursor-pointer w-7 h-7"
+                                        <button className="flex justify-between items-center cursor-pointer w-7 h-7 transition-all duration-300 ease-in-out hover:scale-120"
                                         onClick={() => {
                                             if (onChatSelect && match.match_id && match.name) {
                                                 onChatSelect(match.match_id, match.name);
@@ -334,16 +371,16 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                             }
                                         }}
                                         >
-                                            <MessageCircleMore color="white" fill ="#646D89" size={22}/>
+                                            <MessageCircleMore color="white" fill ="#646D89" size={22} className="group-hover:stroke-pink-200"/>
                                         </button>
                                         <button
                                         onClick={() => handleProfile(match.id)}
-                                        className="flex justify-between items-center cursor-pointer w-7 h-7">
-                                            <Eye color="white" fill ="#646D89" size={28}/>
+                                        className="flex justify-between items-center cursor-pointer w-7 h-7 transition-all duration-300 ease-in-out hover:scale-120">
+                                            <Eye color="white" fill ="#646D89" size={28} className="group-hover:stroke-pink-200"/>
                                         </button>
                                         <button 
                                         onClick={() => toggleMatch(effectiveMatchId, !isUnmatched, (match as Match & { other_user_id?: string }).other_user_id)} 
-                                        className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039]"
+                                        className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039] transition-all duration-300 ease-in-out hover:scale-120"
                                         >
                                             <Heart 
                                             color = "white" 
@@ -355,11 +392,11 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                 </div>
                             </div>
                             <div className="lg:relative left-65">
-                                <div className="flex gap-1 items-center mt-3 lg:relative lg:bottom-10 lg:mt-8">
+                                <div className="flex gap-1 items-center mt-5 lg:relative lg:bottom-10 lg:mt-8">
                                     <p className="font-bold text-[#2A2E3F] text-lg">{match.name}</p>
                                     <p className="ml-2 font-bold text-[#646D89] text-lg">{match.age}</p>
                                     <MapPin color="white" fill="#FFB1C8" size={15}
-                                    className="ml-1" />
+                                    className="ml-1 group-hover:stroke-pink-200" />
                                     <p className="text-[#646D89]">{formatLocation(match.location)}</p>
                                 </div>
                                 <div className="flex flex-cols gap-8 mt-1 lg:relative lg:bottom-3">
@@ -392,34 +429,46 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                     : (swipe.photo_url || null);
                     const src = firstPhoto || "/assets/user.jpg";
                     return(
-                        <div key={swipe.id}>
-                            <div className="p-4 mt-2 lg:w-300 lg:flex lg:p-0 lg:mb-8">
+                            <div key={swipe.id}
+                            className="transition-all duration-300 ease-in-out hover:scale-103 hover:bg-pink-200 rounded-xl group"
+                            >
+                            <div className="p-4 mt-2 lg:w-300 lg:flex lg:p-0 lg:mt-8">
                                 <div className="flex justify-between lg:w-290 lg:absolute">
                                     <Image 
                                     src={src}
                                     alt={swipe.gender || "profile"}
                                     width={200} 
                                     height={200}
-                                    className="rounded-2xl w-25 h-25 object-cover lg:w-50 lg:h-50"/>
-                                    <div className="lg:order-3 justify-items-end">
-                                        <button className="flex items-center px-3 pr-4.5 p-1 border-1 border-gray-300 rounded-2xl cursor-not-allowed">
-                                            <p className="ml-2 text-gray-600 ">Not Match yet</p>
-                                        </button>
-                                        <div className="flex justify-end items-center w-25 mt-6">
+                                    className="rounded-2xl w-40 h-40 object-cover lg:w-50 lg:h-50 lg:ml-5"/>
+                                    <div className="mt-7 mr-2 lg:mt-0 lg:mr-0 lg:order-3 justify-items-end">
+                                        <div className="flex items-center px-3 pr-4.5 p-1 border-2 border-gray-300 rounded-2xl bg-[#FCFCFE] select-none">
+                                            <p className="ml-2 text-gray-600">Not Match yet</p>
+                                        </div>
+                                        <div className="flex justify-between items-center w-24 mt-6">
                                             <button 
                                             onClick={() => handleProfile(swipe.id)}
-                                            className="flex justify-between items-center cursor-pointer w-7 h-7">
-                                                <Eye color="white" fill ="#646D89" size={28}/>
+                                            className="flex justify-between items-center cursor-pointer w-7 h-7 transition-all duration-300 ease-in-out hover:scale-120">
+                                                <Eye color="white" fill ="#646D89" size={28} className="group-hover:stroke-pink-200"/>
                                             </button>
+                                            <button 
+                                            onClick={() => unswipe(swipe.id)} 
+                                            className="flex items-center justify-center rounded-lg cursor-pointer w-10 h-10 bg-[#C70039] transition-all duration-300 ease-in-out hover:scale-120 group"
+                                        >   
+                                                <Heart 
+                                                color = "white" 
+                                                fill="white" 
+                                                size={20}
+                                                />
+                                        </button>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="lg:relative left-65">
-                                    <div className="flex gap-1 items-center mt-3 lg:relative lg:bottom-10 lg:mt-8">
+                                    <div className="flex gap-1 items-center mt-5 lg:relative lg:bottom-10 lg:mt-8">
                                         <p className="font-bold text-[#2A2E3F] text-lg">{swipe.name}</p>
                                         <p className="ml-2 font-bold text-[#646D89] text-lg">{swipe.age}</p>
                                         <MapPin color="white" fill="#FFB1C8" size={15}
-                                        className="ml-1" />
+                                        className="ml-1 group-hover:stroke-pink-200" />
                                         <p className="text-[#646D89]">{formatLocation(swipe.location)}</p>
                                     </div>
                                     <div className="flex flex-cols gap-8 mt-1 lg:relative lg:bottom-3">
@@ -465,11 +514,12 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
         </div>
         <Footer />
         {openProfile && selectedUserId && (
-    <MerryProfileView 
-      userId={selectedUserId}
-      onClose={closeProfile}
-    />
-)}
+            <MerryProfileView 
+            userId={selectedUserId}
+            onClose={closeProfile}
+            />
+        )}
+        <FullScreenLoader show={loading} />
         </>
     )
 }

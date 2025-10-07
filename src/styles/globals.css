@@ -2,6 +2,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@keyframes smooth-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* class สำหรับใช้กับตัวอักษร */
+.animate-smooth-bounce {
+  display: inline-block;
+  animation: smooth-bounce 0.75s ease-in-out infinite;
+}
+
 /* Custom animation for Match Notification */
 @keyframes fade-in-out {
   0% {
