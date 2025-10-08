@@ -13,6 +13,21 @@
   animation: smooth-bounce 0.75s ease-in-out infinite;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
 /* Custom animation for Match Notification */
 @keyframes fade-in-out {
   0% {
