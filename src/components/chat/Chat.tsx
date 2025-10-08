@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import { uploadChatPhoto } from '@/lib/supabase/uploadPhotoUtils';
+import ImageModal from './ImageModal';
 
 type ChatProps = {
   matchId: string;
@@ -41,6 +42,10 @@ function Chat({ matchId }: ChatProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // States สำหรับ Image Modal
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
 
   // Reset state เมื่อเปลี่ยน matchId
   useEffect(() => {
@@ -298,6 +303,18 @@ function Chat({ matchId }: ChatProps) {
     }
   };
 
+  // เปิด Image Modal
+  const handleImageClick = (imageUrl: string) => {
+    setSelectedImageUrl(imageUrl);
+    setIsImageModalOpen(true);
+  };
+
+  // ปิด Image Modal
+  const handleCloseImageModal = () => {
+    setIsImageModalOpen(false);
+    setSelectedImageUrl('');
+  };
+
   // ส่งข้อความ
   const handleSendMessage = async () => {
     // ถ้ามีรูปที่เลือกไว้ ให้ส่งรูปอย่างเดียว (ไม่มี caption)
@@ -406,7 +423,15 @@ function Chat({ matchId }: ChatProps) {
   }
 
   return (
-    <div className="h-full min-h-0 flex flex-col bg-[#160404] relative overflow-hidden">
+    <>
+      {/* Image Modal */}
+      <ImageModal
+        imageUrl={selectedImageUrl}
+        isOpen={isImageModalOpen}
+        onClose={handleCloseImageModal}
+      />
+
+      <div className="h-full min-h-0 flex flex-col bg-[#160404] relative overflow-hidden">
         {/* Match Notification Modal */}
         <div className="absolute inset-0 z-50 flex items-start justify-center pt-8 md:pt-16 pointer-events-none">
             <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
@@ -512,7 +537,7 @@ function Chat({ matchId }: ChatProps) {
                         width={300}
                         height={300}
                         className="rounded-xl max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(message.media_url || '', '_blank')}
+                        onClick={() => handleImageClick(message.media_url || '')}
                       />
                       <p className={`text-xs opacity-70 mt-2 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                         {new Date(message.created_at).toLocaleTimeString([], { 
@@ -624,6 +649,7 @@ function Chat({ matchId }: ChatProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
