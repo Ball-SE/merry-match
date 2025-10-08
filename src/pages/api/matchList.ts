@@ -49,22 +49,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // ดึงข้อความล่าสุดของแต่ละ match
     const matchIds = rows.map(match => match.id);
-    const lastMessages: Record<string, { message_text: string; created_at: string }> = {};
+    const lastMessages: Record<string, { message_text: string | null; created_at: string; message_type?: string; sender_id?: string }> = {};
     
     if (matchIds.length > 0) {
       const { data: messagesData } = await supabase
         .from("messages")
-        .select("match_id, message_text, created_at")
+        .select("match_id, message_text, created_at, message_type, sender_id")
         .in("match_id", matchIds)
         .order("created_at", { ascending: false });
 
       // เก็บข้อความล่าสุดของแต่ละ match
       if (messagesData) {
-        messagesData.forEach((msg: { match_id: string; message_text: string; created_at: string }) => {
+        messagesData.forEach((msg: { match_id: string; message_text: string | null; created_at: string; message_type?: string; sender_id?: string }) => {
           if (!lastMessages[msg.match_id]) {
             lastMessages[msg.match_id] = {
               message_text: msg.message_text,
-              created_at: msg.created_at
+              created_at: msg.created_at,
+              message_type: msg.message_type,
+              sender_id: msg.sender_id
             };
           }
         });
@@ -87,11 +89,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const otherUserId = isUser1 ? match.user2_id : match.user1_id;
           if (!otherProfile) return null;
           const lastMessage = lastMessages[match.id];
+          
+          // จัดการข้อความที่จะแสดง
+          let displayMessage: string | null = null;
+          if (lastMessage) {
+            if (lastMessage.message_type === 'image') {
+              // ถ้าเป็นรูปภาพ
+              if (lastMessage.sender_id === user.id) {
+                displayMessage = "You sent a photo";
+              } else {
+                displayMessage = "Sent you a photo";
+              }
+            } else {
+              // ข้อความธรรมดา
+              displayMessage = lastMessage.message_text;
+            }
+          }
+          
           const result = { 
             ...otherProfile, 
             match_id: match.id, 
             other_user_id: otherUserId,
-            last_message: lastMessage?.message_text || null,
+            last_message: displayMessage,
             last_message_at: lastMessage?.created_at || null
           } as ProfileRow & { 
             match_id: string; 
