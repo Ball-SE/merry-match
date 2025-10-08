@@ -117,8 +117,9 @@ export default function SwipeDeck({
         width:'100%', 
         maxWidth: '100%',
         margin:'0 auto',
-        height: isMobile ? '600px' : 'clamp(400px, 70vh, 700px)',
-        aspectRatio: '3/4' // Maintain consistent aspect ratio
+        height: isMobile ? '500px' : 'clamp(400px, 70vh, 700px)',
+        aspectRatio: '3/4', // Maintain consistent aspect ratio
+        overflow: 'hidden' // Prevent any content from overflowing
       }}
     >
       {rest.slice(0, 3).map((c, i) => (
@@ -155,25 +156,35 @@ export default function SwipeDeck({
         }}
       >
         {/* แสดงรูปภาพตาม currentImageIndex */}
-        <Img 
-          src={top.img[currentImageIndex] || top.img[0]} 
-          alt={top.title + ' ' + top.age} 
-          style={{
-            width:'100%', 
-            height:'100%', 
-            objectFit:'cover',
-            objectPosition: 'center',
-            display: 'block', // Prevent inline spacing issues
-            userSelect: 'none', // Prevent text selection
-            WebkitUserSelect: 'none', // Safari
-            MozUserSelect: 'none', // Firefox
-            msUserSelect: 'none' // IE
-          }} 
-          width={600}
-          height={450}
-          quality={100}
-          priority
-        />
+        <div style={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <Img 
+            src={top.img[currentImageIndex] || top.img[0]} 
+            alt={top.title + ' ' + top.age} 
+            style={{
+              width:'100%', 
+              height:'100%', 
+              objectFit:'cover',
+              objectPosition: 'center',
+              display: 'block', // Prevent inline spacing issues
+              userSelect: 'none', // Prevent text selection
+              WebkitUserSelect: 'none', // Safari
+              MozUserSelect: 'none', // Firefox
+              msUserSelect: 'none', // IE
+              position: 'absolute',
+              top: 0,
+              left: 0
+            }} 
+            width={600}
+            height={450}
+            quality={100}
+            priority
+          />
+        </div>
         
         {/* แสดงจุดบอกจำนวนรูปภาพ */}
         {top.img.length > 1 && (

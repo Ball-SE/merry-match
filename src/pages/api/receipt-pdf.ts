@@ -87,6 +87,13 @@ export default async function handler(
        .fillColor('#333333')
        .text('Payment Receipt', { align: 'center' });
 
+       // เพิ่มข้อความ "Latest Payment Information"
+    doc.moveDown(0.3);
+    doc.fontSize(12)
+       .fillColor('#646D89')
+       .text('Latest Payment Information', { align: 'center' });
+
+
     doc.moveDown(1.5);
     
     // Line separator
