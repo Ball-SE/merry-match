@@ -28,13 +28,13 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'new':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-700 border border-blue-200';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-700 border border-yellow-200';
       case 'resolved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-700 border border-green-200';
       case 'cancel':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gray-100 text-[#646D89] border border-[#F1F2F6]';
       default:
         return 'bg-gray-100 text-gray-800';
     }
