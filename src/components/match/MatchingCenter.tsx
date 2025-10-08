@@ -29,7 +29,7 @@ function MatchingCenter() {
   const { filters, searchTrigger, refreshMatches } = useMatchingContext();
   
   // ใช้ custom hook
-  const { profiles, cards, loading, error, removeCard, updateWithFilters } = useMatchingProfiles();
+  const { cards, loading, error, removeCard, updateWithFilters } = useMatchingProfiles();
 
   // แปลง filters เป็น format ที่ service ต้องการ
   const profileFilters = useMemo(() => ({
@@ -308,7 +308,7 @@ function MatchingCenter() {
         </div>
 
           {/* Name, Age และ Profile Button - Position คงที่ */}
-          <div className={`absolute bottom-[500px] sm:bottom-16 left-6 sm:left-10 flex items-center gap-58 sm:gap-3 z-30 ${showMatch ? 'sm:hidden' : ''}`}>
+          <div className={`absolute bottom-[600px] sm:bottom-16 left-6 sm:left-10 right-6 sm:right-10 flex items-center justify-between sm:justify-start sm:gap-3 z-30 ${showMatch ? 'sm:hidden' : ''}`}>
             <div className="flex flex-row gap-2">
               <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.title || ''}</h3>
               <h3 className="text-white font-bold text-2xl sm:text-3xl drop-shadow-2xl">{currentCard?.age || ''}</h3>
@@ -341,7 +341,7 @@ function MatchingCenter() {
           </div>
 
         {/* Location - Mobile only */}
-          <div className={`sm:hidden absolute bottom-[470px] left-6 flex flex-row gap-2 items-center z-30 ${showMatch ? 'sm:hidden' : ''}`}>
+          <div className={`sm:hidden absolute bottom-[570px] left-6 flex flex-row gap-2 items-center z-30 ${showMatch ? 'sm:hidden' : ''}`}>
             <RiMapPin2Fill className="text-[#BEBFF1] text-2xl" />
             <p className="text-[#D6D9E4] text-xl">
               {currentCard?.location?.city && currentCard?.location?.location 
@@ -352,7 +352,7 @@ function MatchingCenter() {
         
 
         {/* Action Buttons - Position คงที่ */}
-          <div className={`absolute bottom-[375px] sm:bottom-[-25px] left-1/2 -translate-x-1/2 flex gap-6 z-30 ${showMatch ? 'hidden' : ''}`}>
+          <div className={`absolute bottom-[475px] sm:bottom-[-25px] left-1/2 -translate-x-1/2 flex gap-6 z-30 ${showMatch ? 'hidden' : ''}`}>
             <button
               onClick={() => handlePass()}
               className="w-15 h-15 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl grid place-items-center shadow-xl hover:shadow-2xl transition hover:scale-105"
@@ -381,32 +381,35 @@ function MatchingCenter() {
           </div>
         )}
 
-        <div className="sm:hidden absolute mt-52 sm:mt-15 left-10 sm:left-0 sm:right-0 cursor-pointer">
-          <button 
-            className="text-[#C8CCDB] font-medium text-center text-sm flex flex-row gap-2 items-center"
-            onClick={handleOpenFilter}
-          >
-            <GiSettingsKnobs className="text-white w-6 h-6" />
-            Filter
-          </button>
-        </div>
+        <div className="flex flex-row justify-between">
+          <div className="sm:hidden absolute mt-15 left-8 sm:left-0 sm:right-0 cursor-pointer">
+            <button 
+              className="text-[#C8CCDB] font-medium text-center text-sm flex flex-row gap-2 items-center"
+              onClick={handleOpenFilter}
+            >
+              <GiSettingsKnobs className="text-white w-6 h-6" />
+              Filter
+            </button>
+          </div>
 
-        {/* Filter Modal - แสดงเฉพาะบน mobile */}
-        {showFilterModal && (
-          <MatchingRight 
-            isModal={true}
-            onClose={handleCloseFilter}
-          />
-        )}
+          {/* Filter Modal - แสดงเฉพาะบน mobile */}
+          {showFilterModal && (
+            <MatchingRight 
+              isModal={true}
+              onClose={handleCloseFilter}
+            />
+          )}
 
-        <div className={`absolute mt-53 sm:mt-15 right-15 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
-        <p className="text-[#646D89] text-center text-sm">
-          Merry limit Today
-          <span className={subscription?.merry_limit === 0 ? "text-red-500 ml-2" : "text-[#FF1659] ml-2"}>
-            {subscription?.merry_limit ?? 0}/{subscription?.package?.daily_swipe_limit ?? 0}
-          </span>
-        </p>
+          <div className={`absolute mt-15 right-8 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
+            <p className="text-[#646D89] text-center text-sm">
+              Merry limit Today
+              <span className={subscription?.merry_limit === 0 ? "text-red-500 ml-2" : "text-[#FF1659] ml-2"}>
+                {subscription?.merry_limit ?? 0}/{subscription?.package?.daily_swipe_limit ?? 0}
+              </span>
+            </p>
+          </div>
         </div>
+        
       </div>
 
       {/* User Profile View */}
