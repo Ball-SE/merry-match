@@ -374,6 +374,45 @@ class DatabaseServiceClass {
     }
   }
 
+  // Add this method to your DatabaseService class in services/database.ts
+// Place it in the COMPLAINT METHODS section
+
+async submitComplaint(userId: string, userName: string, issue: string, description: string): Promise<ComplaintType> {
+  try {
+    console.log('Submitting complaint:', { userId, userName, issue });
+
+    const { data, error } = await supabase
+      .from('complaints')
+      .insert([
+        {
+          user_id: userId,
+          user_name: userName,
+          issue,
+          description,
+          status: 'New',
+          date_submitted: new Date().toISOString()
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error submitting complaint:', error);
+      throw new Error(`Failed to submit complaint: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new Error('No data returned from complaint submission');
+    }
+
+    const frontendComplaint = this.dbComplaintToFrontend(data);
+    console.log('Complaint submitted successfully:', frontendComplaint);
+    return frontendComplaint;
+  } catch (error) {
+    console.error('Error submitting complaint:', error);
+    throw error;
+  }
+}
   // ==================== UTILITY METHODS ====================
 
   async testConnection(): Promise<boolean> {

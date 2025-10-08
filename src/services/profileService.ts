@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase/supabaseClient';
 
 export interface Profile {
+  full_name?: string;
   id: string;
   name: string;
   email: string;
