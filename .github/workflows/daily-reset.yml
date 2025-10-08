@@ -1,0 +1,20 @@
+name: Reset Daily Limits
+on:
+  schedule:
+    # รันทุกวันเวลา 17:00 UTC (00:00 ประเทศไทย)
+    - cron: '0 17 * * *'
+  workflow_dispatch: # อนุญาตให้รัน manual
+
+jobs:
+  reset-limits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset Daily Limits
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            ${{ secrets.SITE_URL }}/api/reset-daily-limits
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: ${{ secrets.SITE_URL }}

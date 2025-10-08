@@ -303,27 +303,28 @@ function Member() {
             {/* Cancel Modal */}
             {showCancelModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-8 max-w-md w-full">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                            Cancel Membership?
+                    <div className="bg-white rounded-2xl  max-w-2xl w-full">
+                        <h3 className="text-2xl font-bold p-5 text-gray-800 mb-4 border-b">
+                            Cancel confirmation?
                         </h3>
-                        <p className="text-gray-600 mb-6">
-                            Are you sure you want to cancel your membership? You will lose access to premium features at the end of your billing period.
+                        
+                        <p className="text-gray-600 mb-6 px-5">
+                            Do you sure to cancel Membership to get more Merry?
                         </p>
-                        <div className="flex gap-4">
-                            <button 
-                                onClick={() => setShowCancelModal(false)}
-                                disabled={cancelling}
-                                className="flex-1 px-6 py-3 border-2 border-[#C70039] text-[#C70039] rounded-full font-semibold hover:bg-[#C70039] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Keep Membership
-                            </button>
+                        <div className="flex gap-4 p-5">
                             <button 
                                 onClick={handleCancelSubscription}
                                 disabled={cancelling}
-                                className="flex-1 px-6 py-3 bg-[#C70039] text-white rounded-full font-semibold hover:bg-[#A00030] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="button-secondary bg-[#FFE1EA] w-full"
                             >
-                                {cancelling ? 'Cancelling...' : 'Confirm Cancel'}
+                                {cancelling ? 'Cancelling...' : 'Yes, I want to cancel'}
+                            </button>
+                            <button 
+                                onClick={() => setShowCancelModal(false)}
+                                disabled={cancelling}
+                                className="button-primary bg-[#C70039]  w-full"
+                            >
+                                No, I still want to be member
                             </button>
                         </div>
                     </div>
