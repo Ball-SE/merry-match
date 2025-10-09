@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import UserProfileNavbar from "./UserProfileNavbar";
 import { slide as Menu } from "react-burger-menu";
 import { AlertNotification } from "./AlertNotification";
@@ -7,7 +7,6 @@ import { useNotifications } from '@/hooks/useNotifications';
 import MessageNavbar from "./MessageNavbar";
 import Img from "next/image";
 import { useProfile } from "../hooks/useProfile";
-import { useEffect } from "react";
 
 function NavBarUsers() {
     const [isOpen, setIsOpen] = useState(false);
