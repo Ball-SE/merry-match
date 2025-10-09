@@ -1,29 +1,31 @@
 "use client";
 
-import React from 'react';
-import { Package, AlertTriangle, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Package, AlertTriangle, LogOut, Menu, X } from 'lucide-react';
 import { SidebarProps } from '../../types/admin';
 import { useAuth } from '@/hooks/useAuth';
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  return (
-    <div className="w-64 bg-white shadow-lg flex flex-col min-h-screen">
+  const SidebarContent = () => (
+    <>
       {/* Header */}
-  <div className="p-6">
-        <div>
-          <h1 className="text-4xl font-bold">
-            Merry<span className=" text-[#C70039]">Match</span>
-          </h1>
-          <p className="text-sm text-gray-500 mt-1 text-center">Admin Panel Control</p>
-        </div>
+      <div className="p-6">
+        <h1 className="text-4xl font-bold text-center">
+          Merry<span className="text-[#C70039]">Match</span>
+        </h1>
+        <p className="text-sm text-gray-500 mt-1 text-center">Admin Panel Control</p>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
         <button
-          onClick={() => setActiveTab('merry-package')}
+          onClick={() => {
+            setActiveTab('merry-package');
+            setIsMobileMenuOpen(false);
+          }}
           className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
             activeTab === 'merry-package'
               ? 'bg-pink-50 text-pink-600'
@@ -37,7 +39,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         </button>
         
         <button
-          onClick={() => setActiveTab('complaint')}
+          onClick={() => {
+            setActiveTab('complaint');
+            setIsMobileMenuOpen(false);
+          }}
           className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
             activeTab === 'complaint'
               ? 'bg-red-50 text-red-600'
@@ -53,14 +58,51 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
       {/* Logout */}
       <div className="p-4 border-t border-gray-100">
-        <button onClick={() => logout('/')} className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors">
+        <button 
+          onClick={() => {
+            logout('/');
+            setIsMobileMenuOpen(false);
+          }} 
+          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+        >
           <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
             <LogOut className="w-4 h-4 text-gray-500" />
           </div>
           <span className="font-medium text-sm">Log out</span>
         </button>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-lg"
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex w-64 bg-white shadow-lg flex-col min-h-screen">
+        <SidebarContent />
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <>
+          <div 
+            className="md:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="md:hidden fixed inset-y-0 left-0 w-64 bg-white shadow-lg flex flex-col z-50">
+            <SidebarContent />
+          </div>
+        </>
+      )}
+    </>
   );
 };
 

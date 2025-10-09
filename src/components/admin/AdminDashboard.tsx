@@ -38,8 +38,18 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [initialized, setInitialized] = useState<boolean>(false);
 
+  // Auto-dismiss errors after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   // Initialize component and load data
   useEffect(() => {
+    let isMounted = true;
+
     const initializeDashboard = async () => {
       try {
         setLoading(true);
@@ -58,18 +68,28 @@ const AdminDashboard: React.FC = () => {
           loadComplaints()
         ]);
 
-        setInitialized(true);
-        console.log('Dashboard initialized successfully');
+        if (isMounted) {
+          setInitialized(true);
+          console.log('Dashboard initialized successfully');
+        }
       } catch (err) {
         console.error('Dashboard initialization error:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize dashboard';
-        setError(errorMessage);
+        if (isMounted) {
+          setError(errorMessage);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeDashboard();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // ==================== DATA LOADING FUNCTIONS ====================
@@ -351,6 +371,7 @@ const AdminDashboard: React.FC = () => {
           <button 
             onClick={() => setError('')}
             className="ml-2 text-red-500 hover:text-red-700 text-xl leading-none"
+            aria-label="Close error"
           >
             ×
           </button>
@@ -417,7 +438,7 @@ const AdminDashboard: React.FC = () => {
               onSearchChange={setPackageSearchTerm}
             />
             <div className="bg-[#F6F7FC] pt-6">
-              <div className="px-6">
+              <div className="px-4 md:px-6">
                 <ErrorDisplay />
                 <LoadingDisplay />
               </div>
@@ -433,7 +454,7 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {currentView === 'add' && (
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <PackageForm 
                     isEdit={false} 
                     editingPackage={null}
@@ -444,7 +465,7 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {currentView === 'edit' && editingPackage && (
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <PackageForm 
                     isEdit={true} 
                     editingPackage={editingPackage}
@@ -459,8 +480,10 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'complaint' && (
           <div className="bg-[#F6F7FC]">
-            <ErrorDisplay />
-            <LoadingDisplay />
+            <div className="px-4 md:px-6 pt-4">
+              <ErrorDisplay />
+              <LoadingDisplay />
+            </div>
 
             {!selectedComplaint ? (
               <ComplaintList
@@ -472,12 +495,12 @@ const AdminDashboard: React.FC = () => {
                 onComplaintClick={handleComplaintClick}
               />
             ) : (
-                <ComplaintDetail
-                  complaint={selectedComplaint}
-                  onBack={handleBackToComplaintList}
-                  onResolve={handleResolveComplaint}
-                  onCancel={handleCancelComplaint}
-                />
+              <ComplaintDetail
+                complaint={selectedComplaint}
+                onBack={handleBackToComplaintList}
+                onResolve={handleResolveComplaint}
+                onCancel={handleCancelComplaint}
+              />
             )}
           </div>
         )}
