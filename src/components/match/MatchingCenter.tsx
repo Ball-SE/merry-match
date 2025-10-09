@@ -443,7 +443,7 @@ function MatchingCenter() {
         )}
 
         <div className="flex flex-row justify-between">
-          <div className="sm:hidden absolute mt-15 left-8 sm:left-0 sm:right-0 cursor-pointer">
+          <div className="sm:hidden absolute mt-30 left-8 sm:left-0 sm:right-0 cursor-pointer">
             <button 
               className="text-[#C8CCDB] font-medium text-center text-sm flex flex-row gap-2 items-center"
               onClick={handleOpenFilter}
@@ -461,7 +461,7 @@ function MatchingCenter() {
             />
           )}
 
-          <div className={`absolute mt-15 right-8 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
+          <div className={`absolute mt-30 right-8 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
             <p className="text-[#646D89] text-center text-sm">
               Merry limit Today
               <span className={subscription?.merry_limit === 0 ? "text-red-500 ml-2" : "text-[#FF1659] ml-2"}>

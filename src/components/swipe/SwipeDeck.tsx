@@ -125,10 +125,10 @@ export default function SwipeDeck({
       {rest.slice(0, 3).map((c, i) => (
         <div
           key={c.id}
+          className="swipe-card-mobile"
           style={{
             position:'absolute', 
             inset:0, 
-            borderRadius: 'clamp(12px, 2vw, 20px)', // Responsive border radius
             boxShadow:'0 12px 30px rgba(0,0,0,.25)',
             background:'#111',
             transform:`scale(${1 - (i+1)*0.03}) translateY(${(i+1)*10}px)`
@@ -138,10 +138,10 @@ export default function SwipeDeck({
 
       <div
         {...handlers}
+        className="swipe-card-mobile"
         style={{
           position:'absolute', 
           inset:0, 
-          borderRadius: 'clamp(12px, 2vw, 20px)', // Responsive border radius
           overflow:'hidden',
           boxShadow:'0 20px 40px rgba(0,0,0,.35)',
           cursor: dragging ? 'grabbing' : 'grab',

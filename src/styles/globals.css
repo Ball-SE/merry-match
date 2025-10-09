@@ -377,3 +377,13 @@ body {
     zoom: 1;
   }
 }
+
+.swipe-card-mobile {
+  border-radius: 0 0 0 0;
+}
+
+@media (min-width: 640px) {
+  .swipe-card-mobile {
+    border-radius: clamp(12px, 2vw, 20px);
+  }
+}
