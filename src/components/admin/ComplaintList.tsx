@@ -74,11 +74,14 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
 
   return (
     <div className="min-h-screen">
-      {/* Top Navigation Bar - exact match with TopNavigation.tsx styling */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-8 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Complaint List</h2>
-          <div className="flex items-center space-x-4">
+      {/* Fixed Top Navigation Bar */}
+      <div className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 z-40 md:border-l md:border-l-gray-200">
+        <div className="px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="relative">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">Complaint List</h2>
+      
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
             {/* Search Input */}
             <div className="relative w-full sm:w-auto">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -87,7 +90,7 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 h-12"
+                className="w-full sm:w-auto pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 h-12"
               />
             </div>
             
@@ -96,7 +99,7 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
               <select
                 value={statusFilter}
                 onChange={(e) => onStatusFilterChange(e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-gray-700 h-12"
+                className="w-full appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-gray-700 h-12"
               >
                 <option value="All status">All status</option>
                 <option value="New">New</option>
@@ -135,10 +138,42 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
                       {complaints.length === 0 ? 'No complaints found.' : 'No complaints match your search criteria.'}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredComplaints.map((complaint) => (
+                    <tr 
+                      key={complaint.id} 
+                      onClick={() => onComplaintClick?.(complaint)}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                    >
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {truncateText(complaint.user, 20)}
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {truncateText(complaint.issue, 25)}
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-6 py-4">
+                        <div className="text-sm text-gray-900 max-w-xs truncate" title={complaint.description}>
+                          {truncateText(complaint.description, 60)}
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <div className="text-xs md:text-sm text-[#424C6B]">
+                          {formatDate(complaint.dateSubmitted)}
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(complaint.status)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
