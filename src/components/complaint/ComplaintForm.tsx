@@ -54,19 +54,19 @@ const ComplaintForm: React.FC = () => {
         className="flex flex-col space-y-4 w-full max-w-md"
       >
         <div className="flex flex-col">
-          <label className="font-medium text-sm text-gray-700 mb-1">Issue</label>
+          <label className="font-medium text-sm text-gray-700 mb-2">Issue</label>
           <input
             type="text"
             placeholder="Enter your issue"
             value={issue}
             onChange={(e) => setIssue(e.target.value)}
             required
-            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#A62D82]"
+            className="border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A62D82]"
           />
         </div>
 
         <div className="flex flex-col">
-          <label className="font-medium text-sm text-gray-700 mb-1">
+          <label className="font-medium text-sm text-gray-700 mb-2">
             Description
           </label>
           <textarea
@@ -74,14 +74,14 @@ const ComplaintForm: React.FC = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
-            className="border border-gray-300 rounded-md px-3 py-2 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-[#A62D82]"
+            className="border border-gray-300 rounded-md px-4 py-3 h-40 resize-none focus:outline-none focus:ring-2 focus:ring-[#A62D82]"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className={`bg-[#C70039] hover:bg-[#950028] text-white rounded-full py-2 px-6 mt-2 transition-colors ${
+          className={`w-full bg-[#C70039] hover:bg-[#950028] text-white rounded-full py-3 px-6 mt-4 transition-colors ${
             loading ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
