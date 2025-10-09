@@ -6,6 +6,7 @@ import { useChat } from '@/hooks/useChat';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import { uploadChatPhoto } from '@/lib/supabase/uploadPhotoUtils';
 import ImageModal from './ImageModal';
+import FullScreenLoader from '../loader/FullScreenLoader';
 
 type ChatProps = {
   matchId: string;
@@ -400,8 +401,39 @@ function Chat({ matchId }: ChatProps) {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#160404]">
-        <div className="text-white">Loading chat...</div>
+      <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center relative">
+        {/* Heart animation */}
+        <div className="flex flex-col items-center justify-center gap-8">
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            <div className="animate-pulse absolute">
+              <svg className="w-24 h-24 text-[#FF6390]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </div>
+            <div className="animate-ping absolute">
+              <svg className="w-20 h-20 text-[#FF6390] opacity-50" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </div>
+          </div>
+          
+          {/* Text animation */}
+          <div className="flex space-x-3">
+            {["Merry", "Match!"].map((word, wIndex) => (
+              <div key={wIndex} className="flex space-x-0.5">
+                {word.split("").map((char, i) => (
+                  <p
+                    key={i}
+                    className="text-pink-500 text-4xl font-extrabold animate-bounce"
+                    style={{ animationDelay: `${(i + wIndex * 0.5) * 0.1}s` }}
+                  >
+                    {char}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
