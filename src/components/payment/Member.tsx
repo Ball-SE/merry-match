@@ -67,6 +67,11 @@ function Member() {
                 });
             }
         };
+
+    // กรอง billingHistory เอาเฉพาะที่ไม่ใช่ package "free"
+    const filteredBillingHistory = billingHistory.filter(
+        item => item.package.toLowerCase() !== 'free'
+    );
         
 
     // ฟังก์ชัน Cancel Subscription
@@ -206,7 +211,7 @@ function Member() {
                                 {/* Features and Status */}
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
                                     <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 items-center">
-                                        <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
+                                        <span className={`hidden sm:block px-4 py-1.5 rounded-full text-sm font-semibold ${
                                             subscription.cancel_at_period_end || subscription.status === 'cancelled' || subscription.status === 'active' 
                                                 ? 'bg-[#F3E4DD] text-[#B8653E]' 
                                                 : 'bg-gray-100 text-gray-600'
@@ -222,7 +227,7 @@ function Member() {
 
                             <div className="border-t-[1px] border-[#E4E6ED] mb-5 mt-5"></div>
 
-                            <div className="flex flex-row sm:flex-col gap-3 sm:gap-2 justify-end items-end">
+                            <div className="hidden sm:flex flex-row sm:flex-col gap-3 sm:gap-2 justify-end items-end">
                                 {subscription.cancel_at_period_end ? (
                                     <p className="text-white text-sm">
                                         Your subscription will end on {formatDate(subscription.cancel_at || subscription.current_period_end)}
@@ -235,6 +240,16 @@ function Member() {
                                         Cancel Package
                                     </button>
                                 )}
+                            </div>
+
+                            {/* Mobile package info */}
+                            <div className="sm:hidden flex flex-col gap-2">
+                                <p className="text-white text-sm flex flex-row justify-between items-center">
+                                        Start Member Ship <span>{formatDate(subscription.current_period_start)}</span>
+                                </p>
+                                <p className="text-white text-sm flex flex-row justify-between items-center">
+                                    Next Billing <span>{nextBillingDate}</span>
+                                </p>
                             </div>
                         </div>
                     ) : (
@@ -257,11 +272,11 @@ function Member() {
                         </div>
 
                         {/* Table */}
-                        {billingHistory.length > 0 ? (
+                        {filteredBillingHistory.length > 0 ? (
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <tbody className="">
-                                        {billingHistory.map((item) => (
+                                        {filteredBillingHistory.map((item) => (
                                             <tr key={item.id} className="even:bg-[#F6F7FC] rounded-lg">
                                                 <td className="py-4 px-2 text-[#646D89]">
                                                     {formatDate(item.date)}
@@ -285,8 +300,8 @@ function Member() {
                             <button 
                                 onClick={() => {
                                     // ถ้ามี billing history อย่างน้อย 1 รายการ ให้ใช้รายการแรก (ล่าสุด)
-                                    if (billingHistory.length > 0) {
-                                        handleRequestPDF(billingHistory[0].id);
+                                    if (filteredBillingHistory.length > 0) {
+                                        handleRequestPDF(filteredBillingHistory[0].id);
                                     } else {
                                         setAlert({ type: 'error', message: 'No billing history to export' });
                                     }

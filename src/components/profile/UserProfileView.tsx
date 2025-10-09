@@ -11,7 +11,10 @@ interface UserProfile {
   age: number;
   email: string;
   username: string;
-  city: string;
+  location?: {
+    city?: string;
+    location?: string;
+  }; 
   gender: string;
   sexual_preferences: string;
   racial_preferences: string;
@@ -91,7 +94,9 @@ export default function UserProfileView({
               age: 31,
               email: "piyawat@example.com",
               username: "piyawat",
-              city: "Bangkok, Thailand", // ใช้ข้อมูลจริงแทน hardcode
+              location: {
+                city: "Bangkok, Thailand"
+              }, // ใช้ข้อมูลจริงแทน hardcode
               gender: "male",
               sexual_preferences: "female",
               racial_preferences: "asian",
@@ -321,75 +326,73 @@ export default function UserProfileView({
           </div>
 
           {/* Mobile Controls - Below Image */}
-          <div className="flex-shrink-0 bg-white p-4">
-            <div className="flex items-center justify-between">
-              {/* Photo Counter - Left */}
-              {profile.photos && profile.photos.length > 1 && (
-                <div className="text-gray-500 text-sm font-medium">
-                  {currentImageIndex + 1}/{profile.photos.length}
-                </div>
-              )}
-              
-              {/* Center Space for Counter when no multiple photos */}
-              {(!profile.photos || profile.photos.length <= 1) && (
-                <div></div>
-              )}
+          <div className="flex-shrink-0 bg-white px-2 flex flex-row justify-between items-center">
+            {/* Photo Counter - Left */}
+            {profile.photos && profile.photos.length > 1 && (
+              <div className="text-gray-500 text-sm font-medium">
+                {currentImageIndex + 1}/{profile.photos.length}
+              </div>
+            )}
+            
+            {/* Empty div when no multiple photos */}
+            {(!profile.photos || profile.photos.length <= 1) && (
+              <div></div>
+            )}
 
-              {/* Action Buttons - Center */}
-              <div className="absolute bottom-[525px] sm:bottom-[-25px] left-1/2 -translate-x-1/2  flex items-center gap-4">
+            {/* Action Buttons - Center */}
+            <div className="flex items-center gap-4 absolute bottom-[335px] left-1/2 -translate-x-1/2  ">
+              <button 
+                onClick={handlePass}
+                disabled={actionState.loading}
+                className={`w-16 h-16 bg-white border-2 border-gray-300 rounded-xl grid place-items-center shadow-lg hover:shadow-xl transition-all ${
+                  actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:scale-105'
+                }`}
+              >
+                {actionState.loading && actionState.type === 'pass' ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                ) : (
+                  <X className="text-gray-500 w-6 h-6" />
+                )}
+              </button>
+              
+              <button 
+                onClick={handleLike}
+                disabled={actionState.loading}
+                className={`w-16 h-16 bg-[#C70039] rounded-xl grid place-items-center shadow-lg hover:shadow-xl transition-all ${
+                  actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:scale-105'
+                }`}
+              >
+                {actionState.loading && actionState.type === 'like' ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-white" />
+                ) : (
+                  <Heart className="text-white w-6 h-6 fill-white" />
+                )}
+              </button>
+            </div>
+
+            {/* Navigation Arrows - Right */}
+            {profile.photos && profile.photos.length > 1 && (
+              <div className="flex items-center gap-2">
                 <button 
-                  onClick={handlePass}
+                  onClick={prevImage}
                   disabled={actionState.loading}
-                  className={`w-12 h-12 bg-white border-2 border-gray-300 rounded-xl grid place-items-center shadow-lg hover:shadow-xl transition-all ${
-                    actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:scale-105'
+                  className={`w-8 h-8 flex items-center justify-center text-gray-500 transition-all ${
+                    actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
                   }`}
                 >
-                  {actionState.loading && actionState.type === 'pass' ? (
-                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                  ) : (
-                    <X className="text-gray-500 w-6 h-6" />
-                  )}
+                  <span className="text-sm">←</span>
                 </button>
-                
                 <button 
-                  onClick={handleLike}
+                  onClick={nextImage}
                   disabled={actionState.loading}
-                  className={`w-12 h-12 bg-[#C70039] rounded-xl grid place-items-center shadow-lg hover:shadow-xl transition-all ${
-                    actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:scale-105'
+                  className={`w-8 h-8 flex items-center justify-center text-gray-500 transition-all ${
+                    actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
                   }`}
                 >
-                  {actionState.loading && actionState.type === 'like' ? (
-                    <Loader2 className="w-6 h-6 animate-spin text-white" />
-                  ) : (
-                    <Heart className="text-white w-6 h-6 fill-white" />
-                  )}
+                  <span className="text-sm">→</span>
                 </button>
               </div>
-
-              {/* Navigation Arrows - Right */}
-              {profile.photos && profile.photos.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={prevImage}
-                    disabled={actionState.loading}
-                    className={`w-8 h-8 flex items-center justify-center text-gray-500 transition-all ${
-                      actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
-                    }`}
-                  >
-                    <span className="text-sm">←</span>
-                  </button>
-                  <button 
-                    onClick={nextImage}
-                    disabled={actionState.loading}
-                    className={`w-8 h-8 flex items-center justify-center text-gray-500 transition-all ${
-                      actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
-                    }`}
-                  >
-                    <span className="text-sm">→</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Profile Info Section - Scrollable */}
@@ -402,7 +405,9 @@ export default function UserProfileView({
                 </h1>
                 <div className="flex items-center text-gray-600">
                   <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
-                  <span className="text-gray-700">{profile.city}</span>
+                  <span className="text-base">
+                    {profile.location?.location}, {profile.location?.city}
+                  </span>
                 </div>
               </div>
               
@@ -453,10 +458,10 @@ export default function UserProfileView({
       </div>
 
       {/* Desktop Layout - Modal */}
-      <div className={`hidden sm:flex fixed inset-0 bg-black bg-opacity-50 items-center justify-center p-4 z-50 ${className}`}>
+      <div className={`hidden sm:flex fixed inset-0  items-center justify-center p-4 z-50 ${className}`}>
         {/* Backdrop */}
         <div 
-          className="absolute inset-0 bg-black bg-opacity-50"
+          className="absolute inset-0 bg-black/40"
           onClick={handleClose}
         ></div>
         
@@ -619,7 +624,9 @@ export default function UserProfileView({
                 </h1>
                 <div className="flex items-center text-gray-600">
                   <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
-                  <span className="text-base">{profile.city}</span>
+                  <span className="text-base">
+                    {profile.location?.location}, {profile.location?.city}
+                  </span>
                 </div>
               </div>
               

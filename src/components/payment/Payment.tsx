@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/supabaseClient';
 import Image from "next/image";
 import { stripePromise } from '@/lib/devtool';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
+import FullScreenLoader from "@/components/loader/FullScreenLoader";
 
 
 function formatDateUTC(dateString: string): string {
@@ -264,6 +265,7 @@ function PaymentForm() {
 function Payment() {
     const router = useRouter();
     const [clientSecret, setClientSecret] = useState('');
+    const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false); 
 
     const { packageId, packagePrice, packageCurrency } = router.query;
     const price = packagePrice ? parseFloat(packagePrice as string) : 0;
@@ -276,6 +278,7 @@ function Payment() {
 
     const createPaymentIntent = async () => {
         try {
+            setIsLoadingClientSecret(true);
             // เพิ่ม idempotency key
             const idempotencyKey = `${packageId}-${Date.now()}`;
 
@@ -296,6 +299,8 @@ function Payment() {
             setClientSecret(data.clientSecret);
         } catch (error) {
             console.error('Error creating payment intent:', error);
+        } finally {
+            setIsLoadingClientSecret(false); // หยุด loading
         }
     };
 
@@ -317,6 +322,10 @@ function Payment() {
             }
         }
     };
+
+    if (isLoadingClientSecret) {
+        return <FullScreenLoader show={true} />;
+    }
 
     return (
         <div>
