@@ -28,11 +28,11 @@ type Notification = {
 };
 
 type NotificationsProps = {
-  notifications: Notification[];
-  unreadCount: number;
-  loading: boolean;
-  error: string | null;
-  markAsRead: (notificationIds: string[]) => Promise<void>;
+  notifications?: Notification[];
+  unreadCount?: number | null;
+  loading?: boolean;
+  error?: string | null;
+  markAsRead?: (notificationIds: string[]) => Promise<void>;
 };
 
 export const AlertNotiNavbar = ({
@@ -41,7 +41,7 @@ export const AlertNotiNavbar = ({
 }: NotificationsProps) => {
   const router = useRouter();
   // แสดงเฉพาะที่ยังไม่อ่าน และจำกัด 5 รายการล่าสุด
-  const visible = notifications
+  const visible = notifications ?? []
     //  .filter(n => !n.is_read)      // ยังไม่อ่านเท่านั้น
     .slice(0, 5);                 // จำกัด 5 รายการ    
 
@@ -166,7 +166,7 @@ export const AlertNotification = ({
       const toRead = (notifications ?? []).filter(n => !n.is_read).map(n => n.id); // EDIT
       if (toRead.length > 0 && !markingRef.current) {                 // EDIT
         markingRef.current = true;                                    // EDIT
-        await markAsRead(toRead);                                     // EDIT
+        await markAsRead?.(toRead);                                     // EDIT
         markingRef.current = false;                                   // EDIT
       }
     }
@@ -199,7 +199,7 @@ export const AlertNotification = ({
       const toRead = (notifications ?? []).filter(n => !n.is_read).map(n => n.id);  // EDIT
       if (toRead.length > 0 && !markingRef.current) {                 // EDIT
         markingRef.current = true;                                    // EDIT
-        await markAsRead(toRead);                                     // EDIT
+        await markAsRead?.(toRead);                                     // EDIT
         markingRef.current = false;                                   // EDIT
       }
     };
@@ -229,7 +229,7 @@ export const AlertNotification = ({
       <div className="w-[28px] h-[28px] sm:w-[48px] sm:h-[48px] rounded-full bg-[#F6F7FC] flex justify-center items-center">
         <button onClick={handleOpenAlertNotification} className="relative">
           <HiMiniBellAlert className="w-[20px] h-[21px] cursor-pointer transition-all ease-in-out duration-280 hover:scale-120" color="#FFB1C8" />
-          {unreadCount > 0 && (
+          {typeof unreadCount === "number" && unreadCount > 0 && (
             <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[0.5rem] rounded-full w-3.5 h-3.5 flex items-center justify-center">
               {unreadCount > 9 ? "9+" : unreadCount}
             </div>
