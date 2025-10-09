@@ -197,221 +197,221 @@ const PackageForm: React.FC<PackageFormProps> = ({ isEdit, editingPackage, onSub
   };
 
   return (
-    <form onSubmit={handleSubmit} id="package-form" className="w-full">
+    <form onSubmit={handleSubmit} id="package-form" className="w-full mt-10">
       <div className="bg-white rounded-lg shadow p-8 space-y-8 w-full">
-        <div className="grid grid-cols-2 gap-8">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Package name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={packageName}
-              onChange={(e) => {
-                setPackageName(e.target.value);
-                if (showValidation) setTimeout(() => validateForm(), 0);
-              }}
-              placeholder="Enter package name"
-              className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
-                showValidation && validationErrors.packageName
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300'
-              }`}
-            />
-            {showValidation && validationErrors.packageName && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.packageName}</p>
-            )}
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Package name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={packageName}
+                onChange={(e) => {
+                  setPackageName(e.target.value);
+                  if (showValidation) setTimeout(() => validateForm(), 0);
+                }}
+                placeholder="Enter package name"
+                className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                  showValidation && validationErrors.packageName
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-300'
+                }`}
+              />
+              {showValidation && validationErrors.packageName && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.packageName}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Daily swipe limit <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={dailySwipeLimit}
+                onChange={handleDailySwipeLimitChange}
+                onKeyDown={handleKeyDown}
+                min="0"
+                placeholder="Enter daily swipe limit"
+                className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                  showValidation && validationErrors.dailySwipeLimit
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-300'
+                }`}
+              />
+              {showValidation && validationErrors.dailySwipeLimit && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.dailySwipeLimit}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Daily swipe limit <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              value={dailySwipeLimit}
-              onChange={handleDailySwipeLimitChange}
-              onKeyDown={handleKeyDown}
-              min="0"
-              placeholder="Enter daily swipe limit"
-              className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
-                showValidation && validationErrors.dailySwipeLimit
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300'
-              }`}
-            />
-            {showValidation && validationErrors.dailySwipeLimit && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.dailySwipeLimit}</p>
-            )}
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-8">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Price (฿) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={handlePriceChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Enter price in baht (e.g., 99.00)"
-              className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
-                showValidation && validationErrors.price
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300'
-              }`}
-            />
-            {price && (
-              <p className="mt-1 text-sm text-gray-600">
-                Display: {formatPrice(price)}
-              </p>
-            )}
-            {showValidation && validationErrors.price && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.price}</p>
-            )}
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price (฿) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={price}
+                onChange={handlePriceChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Enter price in baht (e.g., 99.00)"
+                className={`w-full px-4 py-3 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                  showValidation && validationErrors.price
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-300'
+                }`}
+              />
+              {price && (
+                <p className="mt-1 text-sm text-gray-600">
+                  Display: {formatPrice(price)}
+                </p>
+              )}
+              {showValidation && validationErrors.price && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.price}</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            Icon <span className="text-red-500">*</span>
-          </label>
-          {icon ? (
-            <div className="relative inline-block">
-              <div className="w-32 h-32 bg-pink-50 rounded-lg flex items-center justify-center border border-pink-200 overflow-hidden">
-                <Image 
-                  src={icon} 
-                  alt="Package icon" 
-                  width={128}
-                  height={128}
-                  className="w-full h-full object-contain"
-                  unoptimized
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-4">
+              Icon <span className="text-red-500">*</span>
+            </label>
+            {icon ? (
+              <div className="relative inline-block">
+                <div className="w-32 h-32 bg-pink-50 rounded-lg flex items-center justify-center border border-pink-200 overflow-hidden">
+                  <Image 
+                    src={icon} 
+                    alt="Package icon" 
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-contain"
+                    unoptimized
+                  />
+                </div>
+                <button 
+                  type="button"
+                  onClick={removeIcon}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                  isDragging
+                    ? 'border-pink-500 bg-pink-50'
+                    : showValidation && validationErrors.icon
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                }`}
+              >
+                <Upload className={`w-8 h-8 mb-2 ${isDragging ? 'text-pink-500' : 'text-pink-400'}`} />
+                <p className="text-xs font-medium text-pink-600">
+                  Upload icon
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileInputChange}
+                  className="hidden"
                 />
               </div>
-              <button 
-                type="button"
-                onClick={removeIcon}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ) : (
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                isDragging
-                  ? 'border-pink-500 bg-pink-50'
-                  : showValidation && validationErrors.icon
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-              }`}
-            >
-              <Upload className={`w-8 h-8 mb-2 ${isDragging ? 'text-pink-500' : 'text-pink-400'}`} />
-              <p className="text-xs font-medium text-pink-600">
-                Upload icon
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileInputChange}
-                className="hidden"
-              />
-            </div>
-          )}
-          {showValidation && validationErrors.icon && (
-            <p className="mt-2 text-sm text-red-600">{validationErrors.icon}</p>
-          )}
-        </div>
+            )}
+            {showValidation && validationErrors.icon && (
+              <p className="mt-2 text-sm text-red-600">{validationErrors.icon}</p>
+            )}
+          </div>
 
-        <hr className="my-8 border-gray-200" />
+          <hr className="my-8 border-gray-200" />
 
-        <div>
-          <h3 className="text-lg font-medium text-gray-700 mb-4">Package Detail</h3>
-          <div className="space-y-4">
-            {details.map((detail, index) => (
-              <div key={index}>
-                <div className="flex items-start justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-900">
-                    Detail {index + 1} {index === 0 && <span className="text-red-500">*</span>}
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-gray-400 cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-4 h-4" />
+          <div>
+            <h3 className="text-lg font-medium text-gray-700 mb-4">Package Detail</h3>
+            <div className="space-y-4">
+              {details.map((detail, index) => (
+                <div key={index}>
+                  <div className="flex items-start justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-900">
+                      Detail {index + 1} {index === 0 && <span className="text-red-500">*</span>}
+                    </label>
                   </div>
-                  <input
-                    type="text"
-                    value={detail}
-                    onChange={(e) => updateDetail(index, e.target.value)}
-                    className={`flex-1 h-10 px-4 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
-                      showValidation && index === 0 && validationErrors.details
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-300'
-                    }`}
-                    placeholder={`Enter detail ${index + 1}`}
-                  />
-                  {details.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeDetail(index)}
-                      className="ml-2 px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded hover:bg-gray-200"
-                      style={{ minWidth: 48 }}
-                    >
-                      Delete
-                    </button>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-gray-400 cursor-grab active:cursor-grabbing">
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      value={detail}
+                      onChange={(e) => updateDetail(index, e.target.value)}
+                      className={`flex-1 h-10 px-4 border rounded-md focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                        showValidation && index === 0 && validationErrors.details
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-gray-300'
+                      }`}
+                      placeholder={`Enter detail ${index + 1}`}
+                    />
+                    {details.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeDetail(index)}
+                        className="ml-2 px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded hover:bg-gray-200"
+                        style={{ minWidth: 48 }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                  {showValidation && index === 0 && validationErrors.details && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.details}</p>
                   )}
                 </div>
-                {showValidation && index === 0 && validationErrors.details && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.details}</p>
-                )}
-              </div>
-            ))}
-            
-            <button 
-              type="button"
-              onClick={addDetail}
-              style={{
-                borderRadius: '99px',
-                fontFamily: 'Nunito, sans-serif',
-                color: '#C70039',
-                backgroundColor: '#FFE1EA',
-                fontWeight: 700,
-                fontSize: '16px',
-                padding: '12px 24px',
-                transition: 'background 0.2s',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              + Add detail
-            </button>
+              ))}
+              
+              <button 
+                type="button"
+                onClick={addDetail}
+                style={{
+                  borderRadius: '99px',
+                  fontFamily: 'Nunito, sans-serif',
+                  color: '#C70039',
+                  backgroundColor: '#FFE1EA',
+                  fontWeight: 700,
+                  fontSize: '16px',
+                  padding: '12px 24px',
+                  transition: 'background 0.2s',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                + Add detail
+              </button>
+            </div>
           </div>
-        </div>
 
-        {isEdit && (
-          <div className="pt-6 border-t border-gray-200 flex justify-end">
-            <button 
-              type="button"
-              onClick={onDelete}
-              className="text-red-500 hover:text-red-700 text-sm font-medium"
-            >
-              Delete Package
-            </button>
-          </div>
-        )}
-      </div>
-    </form>
+          {isEdit && (
+            <div className="pt-6 border-t border-gray-200 flex justify-end">
+              <button 
+                type="button"
+                onClick={onDelete}
+                className="text-red-500 hover:text-red-700 text-sm font-medium"
+              >
+                Delete Package
+              </button>
+            </div>
+          )}
+        </div>
+      </form>
   );
 };
 
