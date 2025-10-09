@@ -54,12 +54,15 @@ function HomePage(){
                                 Don&apos;t forget to get Merry with us
                                 </p>
                                 {/* authen ตรงนี้ */}
+                                <div className="transform transition-transform duration-500 hover:scale-105">
                                 <Link
                                     href="/matching"
                                     onClick={handleStartMatching}
-                                    className="bg-[#C70039] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-[#950028] transition-colors">
+                                    className="bg-[#C70039] text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-[#950028] duration-500">
                                 Start matching!
                                 </Link>
+                                </div>
+                                
                             </div>
 
                             {/* Profile Images */}
@@ -241,11 +244,14 @@ function HomePage(){
                                 and matching someone new
                                 </h2>
                                 {/* authen ตรงนี้ */}
+                                <div className="transform transition-transform duration-500 hover:scale-105">
                                 <Link href="/matching" 
                                 onClick={handleStartMatching}
-                                className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors relative z-10">
+                                className="bg-[#FFE1EA] text-[#950028] px-6 py-3 rounded-full font-bold hover:bg-[#FFB1C8] transition-colors duration-500 relative z-10">
                                 Start Matching!
                                 </Link>
+                                </div>
+                                
                             </div>
                         </div>
                     </div>
