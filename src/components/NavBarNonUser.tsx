@@ -10,7 +10,7 @@ function NavBarNonUser() {
     return (
             <nav className="w-full navbar-shadow bg-white shadow-2xl sticky top-0 left-0 right-0 z-[1300]">
             <div className="w-full mx-auto px-4 sm:px-36 py-4 flex flex-row justify-between items-center">
-            <Link href="/" className="w-auto flex flex-row">
+            <Link href="/" className="w-auto flex flex-row select-none">
                 <h1 className="sm:text-4xl text-xl">Merry</h1>
                 <h1 className="sm:text-4xl text-xl text-[#C70039] font-bold">Match</h1>
             </Link>
@@ -21,7 +21,7 @@ function NavBarNonUser() {
                         to="why-merry-match" 
                         smooth={true}
                         duration={500}  
-                        className="button-ghost cursor-pointer"
+                        className="button-ghost cursor-pointer select-none hover:text-red-500 transition-colors duration-250"
                     >
                         Why Merry Match?
                     </ScrollLink>
@@ -29,11 +29,13 @@ function NavBarNonUser() {
                         to="how-to-merry" 
                         smooth={true} 
                         duration={500} 
-                        className="button-ghost cursor-pointer"
+                        className="button-ghost cursor-pointer select-none hover:text-red-500 transition-colors duration-250"
                     >
                         How to Merry
                     </ScrollLink>
-                <Link href="/login" className="button-primary bg-[#C70039] text-white">Login</Link>
+                    <div className="transform transition-transform duration-500 hover:scale-105 relative">
+                        <Link href="/login" className="button-primary bg-[#C70039] text-white select-none hover:bg-[#950028] duration-500 absolute">Login</Link>
+                    </div>
             </div>
             {/* Mobile hamburger */}
                 <div className="sm:hidden flex flex-row gap-4 mr-5">

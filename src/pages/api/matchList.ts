@@ -108,7 +108,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           const result = { 
             ...otherProfile, 
-            match_id: match.id, 
+            match_id: match.id,
+            matched_at: match.matched_at, 
             other_user_id: otherUserId,
             last_message: displayMessage,
             last_message_at: lastMessage?.created_at || null

@@ -45,6 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select("id")
       .match({ user1_id: a, user2_id: b })
       .maybeSingle();
+      
     if (findErr) {
       console.error("[unmatch] find match error(otherUserId)", findErr);
       error = findErr as { message?: string };
