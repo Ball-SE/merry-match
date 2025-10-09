@@ -71,11 +71,11 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
   };
 
   return (
-    <div className="bg-[#F6F7FC]">
-      {/* Top Navigation Bar - matches the style shown in PackageList */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-8 py-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Complaint List</h1>
+    <div className="min-h-screen">
+      {/* Top Navigation Bar - exact match with TopNavigation.tsx styling */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-8 py-4 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Complaint List</h2>
           <div className="flex items-center space-x-4">
             {/* Search Input */}
             <div className="relative">
@@ -85,7 +85,7 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 h-12"
               />
             </div>
             
@@ -94,7 +94,7 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
               <select
                 value={statusFilter}
                 onChange={(e) => onStatusFilterChange(e.target.value)}
-                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-gray-700"
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-gray-700 h-12"
               >
                 <option value="All status">All status</option>
                 <option value="New">New</option>
@@ -102,7 +102,7 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
                 <option value="Resolved">Resolved</option>
                 <option value="Cancel">Cancel</option>
               </select>
-              <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -163,15 +163,6 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
               )}
             </tbody>
           </table>
-          
-          {/* Results Summary */}
-          {filteredComplaints.length > 0 && (
-            <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-              <p className="text-sm text-gray-700">
-                Showing {filteredComplaints.length} of {complaints.length} complaints
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>

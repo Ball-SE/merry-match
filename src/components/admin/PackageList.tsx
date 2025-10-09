@@ -47,9 +47,8 @@ const PackageList: React.FC<PackageListProps> = ({
   });
 
   return (
-    <div className="bg-[#F6F7FC]">
-      <div className="p-6">
-        <div className="rounded-lg shadow overflow-hidden bg-white w-full">
+    <div className="min-h-screen p-6">
+      <div className="rounded-lg shadow overflow-hidden bg-white w-full">
         <table className="w-full bg-transparent">
           <thead className="bg-[#D6D9E4]">
             <tr>
@@ -150,10 +149,10 @@ const PackageList: React.FC<PackageListProps> = ({
             ))}
           </tbody>
         </table>
-        </div>
       </div>
+      
       {filteredPackages.length === 0 && (
-        <div className="text-center py-12 px-6">
+        <div className="text-center py-12">
           <p className="text-[#424C6B] bg-white p-4 rounded-lg">
             {searchTerm ? `No packages found matching "${searchTerm}"` : 'No packages available.'}
           </p>
