@@ -114,3 +114,33 @@ export async function createMessageNotification(
     return false;
   }
 }
+
+// ✅ ใหม่: แจ้งเตือนเมื่อถูก Merry ฝั่งเดียว
+export async function createLikeNotification(
+  targetUserId: string,                 // คนที่ถูกกด like
+  likerUserId: string,                  // คนที่มากด like
+  likerData: { name?: string; photo_url?: string }
+) {
+  try {
+    const supabase = createServiceRoleSupabaseClient();             
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: targetUserId,
+        type: 'like',                                               
+        title: 'Someone Merry you 💖',                              
+        message: `${likerData?.name || 'Someone'} Merry you!`,      
+        data: {                                                     
+          liker_user_id: likerUserId,                               
+          liker_user_name: likerData?.name,                         
+          liker_user_photo: likerData?.photo_url                    
+        },
+        is_read: false
+      });
+    if (error) { console.error('Error creating like notification:', error); return false; }
+    return true;                                                    
+  } catch (e) {
+    console.error('Failed to create like notification:', e);        
+    return false;                                                   
+  }
+}

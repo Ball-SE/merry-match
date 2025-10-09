@@ -1,6 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
-import { createMatchNotification } from "@/lib/notification/notificationService";
+import {
+  createMatchNotification,
+  createLikeNotification,
+} from "@/lib/notification/notificationService";
 
 interface PackageData {
   daily_swipe_limit: number;
@@ -195,11 +198,34 @@ export default async function handler(
         matched = true;
         matchUser = swipedUser;
 
+        const { data: currentUserProfile } = await supabase
+          .from("profiles")
+          .select("name, photo_url")
+          .eq("id", user.id)
+          .single();
+
         // เพิ่ม: สร้าง notification สำหรับทั้งสองฝ่าย
         await createMatchNotification(user.id, swiped_id, swipedUser);
         await createMatchNotification(swiped_id, user.id, {
-          name: user.user_metadata?.name || user.email || "",
-          photo_url: user.user_metadata?.photo_url || ""
+          name: currentUserProfile?.name || user.user_metadata?.name || user.email || "",
+          photo_url: currentUserProfile?.photo_url || null  // ✅ ใช้จาก profiles
+        });
+      } else {
+        // ✅ ดึงข้อมูล profile ของ current user ก่อน
+        const { data: currentUserProfile } = await supabase
+          .from("profiles")
+          .select("name, photo_url")
+          .eq("id", user.id)
+          .single();
+
+        // สร้าง noti แบบ like ให้ผู้ถูกกด
+        await createLikeNotification(swiped_id, user.id, {
+          name:
+            currentUserProfile?.name ||
+            user.user_metadata?.name ||
+            user.email ||
+            "",
+          photo_url: currentUserProfile?.photo_url || null, // ✅ ใช้จาก profiles
         });
       }
     }
