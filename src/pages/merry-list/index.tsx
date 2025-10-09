@@ -13,7 +13,6 @@ import { supabase } from "@/lib/supabase/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { px } from "framer-motion";
 
 type ProfileLocation = {
     city?: string;
@@ -27,6 +26,7 @@ type Match = {
     gender?: string;
     name?: string;
     age?: number;
+    matched_at: string;
     location?: ProfileLocation | null;
     photo_url: string | string[] | null;
     sexual_preferences: string | null;
@@ -299,10 +299,10 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                         <div className="flex">
                             <p className="text-[#C70039] font-extrabold text-xl">{matchList.length}</p>
                             <div className="ml-2">
-                                <Heart color = "#ff1659" fill="#ff1659" 
-                                className="absolute" />
+                                <Heart color = "#ff1659" fill="#ff1659" stroke="white" strokeWidth={1} size={28} 
+                                className="absolute " />
                                 <Heart color = "#ff1659" fill="#ff1659" stroke="white" strokeWidth={1} size={28}
-                                className="relative left-3.5 bottom-0.5" />
+                                className="relative left-3.5" />
                             </div>
                         </div>
                     <p className="text-[#646D89]">Merry match</p>
@@ -325,11 +325,32 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                 const effectiveMatchId = (match as Match & { match_id?: string }).match_id ?? match.id;
                 const isUnmatched = unmatchedIds.includes(effectiveMatchId);
 
+                function formatDateUTC(dateString: string): string {
+                    const date = new Date(dateString);
+                    const day = date.getUTCDate().toString().padStart(2, '0');
+                    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getUTCFullYear();
+                    return `${day}/${month}/${year}`;
+                }
+
+                // ✅ ถ้ามี match.matched_at ให้แปลงก่อนใช้
+                const formattedMatchDate = match.matched_at ? formatDateUTC(match.matched_at) : null;
+
+                // ✅ ใช้เทียบกับเวลาปัจจุบัน
+                const today = new Date();
+                const matchDate = formattedMatchDate ? new Date(match.matched_at) : null;
+                const isTodayMatch =
+                    matchDate &&
+                    matchDate.getUTCDate() === today.getUTCDate() &&
+                    matchDate.getUTCMonth() === today.getUTCMonth() &&
+                    matchDate.getUTCFullYear() === today.getUTCFullYear();
+
                 return(
                     <div key={match.id}
-                    className="transition-all duration-300 ease-in-out hover:scale-103 hover:bg-pink-200 rounded-xl group">
+                    className="transition-all duration-300 ease-in-out hover:scale-102 border-b-2 border-gray-300">
                         <div className="p-4 mt-5 lg:w-300 lg:flex lg:p-0 lg:mt-8">
                             <div className="flex justify-between lg:w-290 lg:absolute">
+                                <div className="relative">
                                 <Image 
                                 src={src} 
                                 alt={match.gender || "profile"}
@@ -337,6 +358,13 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                 height={200}
                                 className="rounded-2xl w-40 h-40 object-cover lg:w-50 lg:h-50 lg:ml-5"
                                 />
+                                    {isTodayMatch && (
+                                        <div className="flex absolute bg-[#F4EBF2] text-[#7D2262] rounded-tr-lg rounded-bl-lg h-5 w-20 top-35.5 text-xs justify-center text-center items-center lg:top-45.5 lg:left-5" >
+                                        Merry today
+                                        </div>
+                                    )}
+                                </div>
+                                
                                 <div className="mt-7 mr-2 lg:mt-0 lg:mr-0 lg:order-3 justify-items-end">
                                     {isUnmatched ? 
                                     <span className="flex items-end w-35 px-2.5 p-1 border-1 border-gray-300 rounded-2xl select-none">
@@ -371,12 +399,12 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                             }
                                         }}
                                         >
-                                            <MessageCircleMore color="white" fill ="#646D89" size={22} className="group-hover:stroke-pink-200"/>
+                                            <MessageCircleMore color="white" fill ="#646D89" size={22} />
                                         </button>
                                         <button
                                         onClick={() => handleProfile(match.id)}
                                         className="flex justify-between items-center cursor-pointer w-7 h-7 transition-all duration-300 ease-in-out hover:scale-120">
-                                            <Eye color="white" fill ="#646D89" size={28} className="group-hover:stroke-pink-200"/>
+                                            <Eye color="white" fill ="#646D89" size={28} />
                                         </button>
                                         <button 
                                         onClick={() => toggleMatch(effectiveMatchId, !isUnmatched, (match as Match & { other_user_id?: string }).other_user_id)} 
@@ -391,12 +419,12 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="lg:relative left-65">
+                            <div className="relative lg:left-65">
                                 <div className="flex gap-1 items-center mt-5 lg:relative lg:bottom-10 lg:mt-8">
                                     <p className="font-bold text-[#2A2E3F] text-lg">{match.name}</p>
                                     <p className="ml-2 font-bold text-[#646D89] text-lg">{match.age}</p>
                                     <MapPin color="white" fill="#FFB1C8" size={15}
-                                    className="ml-1 group-hover:stroke-pink-200" />
+                                    className="ml-1" />
                                     <p className="text-[#646D89]">{formatLocation(match.location)}</p>
                                 </div>
                                 <div className="flex flex-cols gap-8 mt-1 lg:relative lg:bottom-3">
@@ -415,7 +443,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                 </div>
                             </div>
                         </div>
-                        <hr className="mt-8 lg:mt-0 lg:mb-8"/>
+                        <div className="mt-3 lg:mt-0 lg:mb-8"></div>
                     </div>
                     
                 )
@@ -430,7 +458,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                     const src = firstPhoto || "/assets/user.jpg";
                     return(
                             <div key={swipe.id}
-                            className="transition-all duration-300 ease-in-out hover:scale-103 hover:bg-pink-200 rounded-xl group"
+                            className="transition-all duration-300 ease-in-out hover:scale-102 absoulte border-b-2 rounded-tr-xl rounded-tl-xl"
                             >
                             <div className="p-4 mt-2 lg:w-300 lg:flex lg:p-0 lg:mt-8">
                                 <div className="flex justify-between lg:w-290 lg:absolute">
@@ -448,7 +476,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                             <button 
                                             onClick={() => handleProfile(swipe.id)}
                                             className="flex justify-between items-center cursor-pointer w-7 h-7 transition-all duration-300 ease-in-out hover:scale-120">
-                                                <Eye color="white" fill ="#646D89" size={28} className="group-hover:stroke-pink-200"/>
+                                                <Eye color="white" fill ="#646D89" size={28} className="group-hover:stroke-gray-200"/>
                                             </button>
                                             <button 
                                             onClick={() => unswipe(swipe.id)} 
@@ -468,7 +496,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                         <p className="font-bold text-[#2A2E3F] text-lg">{swipe.name}</p>
                                         <p className="ml-2 font-bold text-[#646D89] text-lg">{swipe.age}</p>
                                         <MapPin color="white" fill="#FFB1C8" size={15}
-                                        className="ml-1 group-hover:stroke-pink-200" />
+                                        className="ml-1" />
                                         <p className="text-[#646D89]">{formatLocation(swipe.location)}</p>
                                     </div>
                                     <div className="flex flex-cols gap-8 mt-1 lg:relative lg:bottom-3">
@@ -487,7 +515,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                                     </div>
                                 </div>
                             </div>
-                            <hr className="mt-8 lg:mt-0 lg:mb-8"/>
+                            <div className="mt-3 lg:mt-0 lg:mb-8"></div>
                         </div>
                     )
                 })

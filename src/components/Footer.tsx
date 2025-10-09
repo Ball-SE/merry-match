@@ -14,8 +14,8 @@ function Footer() {
                 <div className="w-full  h-15 border-[#E4E6ED] border-b-[1px] flex text-center items-start justify-center mt-3">
                     <span>New generation of online dating website for everyone</span>
                 </div>
-                    <span className="text-[#9AA1B9] mt-3">
-                        copyright ©2022 merrymatch.com All rights reserved
+                    <span className="text-[#9AA1B9] mt-3 text-center">
+                        copyright ©2022 merrymatch.com <br className="lg:hidden"/>All rights reserved
                     </span>
 
                 <div className="flex flex-row w-[176px] space-x-4 mt-3">
