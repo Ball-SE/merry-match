@@ -126,7 +126,7 @@ function MatchingCenter() {
     }
   };
 
-  // เพิ่มฟังก์ชันปิด match modal (แก้ไข)
+  // ฟังก์ชันปิด match modal
   const handleCloseMatch = () => {
     setShowMatch(false);
     setMatchedCardId(null);
@@ -217,8 +217,39 @@ function MatchingCenter() {
 
   if (loading) {
     return (
-      <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center">
-        <div className="text-white text-xl">Loading matching profiles...</div>
+      <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center relative">
+        {/* Heart animation */}
+        <div className="flex flex-col items-center justify-center gap-8">
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            <div className="animate-pulse absolute">
+              <svg className="w-24 h-24 text-[#FF6390]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </div>
+            <div className="animate-ping absolute">
+              <svg className="w-20 h-20 text-[#FF6390] opacity-50" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </div>
+          </div>
+          
+          {/* Text animation */}
+          <div className="flex space-x-3">
+            {["Merry", "Match!"].map((word, wIndex) => (
+              <div key={wIndex} className="flex space-x-0.5">
+                {word.split("").map((char, i) => (
+                  <p
+                    key={i}
+                    className="text-pink-500 text-4xl font-extrabold animate-bounce"
+                    style={{ animationDelay: `${(i + wIndex * 0.5) * 0.1}s` }}
+                  >
+                    {char}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -234,11 +265,41 @@ function MatchingCenter() {
   // แสดงข้อความเมื่อไม่มีโปรไฟล์ที่ตรงกับ filter
   if (cards.length === 0) {
     return (
-      <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex items-center justify-center">
-        <div className="text-white text-xl text-center">
-          <p>No profiles match your criteria</p>
-          <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
+      <div className="flex-1 h-full min-h-0 w-full bg-[#160404] rounded-lg flex flex-col">
+        {/* Main content area */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-white text-xl text-center">
+            <p>No profiles match your criteria</p>
+            <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
+          </div>
         </div>
+        
+        {/* Filter section at bottom for mobile */}
+        <div className="sm:hidden p-4 border-t border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <button 
+              className="text-[#C8CCDB] font-medium text-center text-sm flex flex-row gap-2 items-center"
+              onClick={handleOpenFilter}
+            >
+              <GiSettingsKnobs className="text-white w-6 h-6" />
+              Filter
+            </button>
+            <p className="text-[#646D89] text-center text-sm">
+              Merry limit Today
+              <span className={subscription?.merry_limit === 0 ? "text-red-500 ml-2" : "text-[#FF1659] ml-2"}>
+                {subscription?.merry_limit ?? 0}/{subscription?.package?.daily_swipe_limit ?? 0}
+              </span>
+            </p>
+          </div>
+        </div>
+        
+        {/* Filter Modal - แสดงเฉพาะบน mobile */}
+        {showFilterModal && (
+          <MatchingRight 
+            isModal={true}
+            onClose={handleCloseFilter}
+          />
+        )}
       </div>
     )
   }
@@ -257,7 +318,7 @@ function MatchingCenter() {
                 <Img 
                   src={leftCard.img[0]} 
                   alt={`${leftCard.title} ${leftCard.age}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover blur-sm"
                   loading="eager"
                   width={600}
                   height={450}
@@ -276,7 +337,7 @@ function MatchingCenter() {
                 <Img 
                   src={rightCard.img[0]} 
                   alt={`${rightCard.title} ${rightCard.age}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover blur-sm"
                   loading="eager"
                   width={600}
                   height={450}
@@ -382,7 +443,7 @@ function MatchingCenter() {
         )}
 
         <div className="flex flex-row justify-between">
-          <div className="sm:hidden absolute mt-15 left-8 sm:left-0 sm:right-0 cursor-pointer">
+          <div className="sm:hidden absolute mt-30 left-8 sm:left-0 sm:right-0 cursor-pointer">
             <button 
               className="text-[#C8CCDB] font-medium text-center text-sm flex flex-row gap-2 items-center"
               onClick={handleOpenFilter}
@@ -400,7 +461,7 @@ function MatchingCenter() {
             />
           )}
 
-          <div className={`absolute mt-15 right-8 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
+          <div className={`absolute mt-30 right-8 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
             <p className="text-[#646D89] text-center text-sm">
               Merry limit Today
               <span className={subscription?.merry_limit === 0 ? "text-red-500 ml-2" : "text-[#FF1659] ml-2"}>

@@ -3,6 +3,7 @@ import { Slider } from "@/components/ui/slider"
 import { useState, useEffect } from "react"
 import { useMatchingContext } from "@/context/MatchingContext"
 import { IoArrowBack } from "react-icons/io5"
+import ErrorPopup from "@/components/ui/ErrorPopup"
 
 interface MatchingRightProps {
     isModal?: boolean;
@@ -15,6 +16,7 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
     // ใช้ local state เพื่อให้ user ปรับแต่งได้ก่อนกด Search
     const [localGenders, setLocalGenders] = useState<string[]>(filters.selectedGenders);
     const [localAgeRange, setLocalAgeRange] = useState<number[]>(filters.ageRange);
+    const [showErrorPopup, setShowErrorPopup] = useState(false);
 
     // อัพเดท local state เมื่อ context เปลี่ยน
     useEffect(() => {
@@ -36,7 +38,7 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
         
         // ตรวจสอบว่ามีการเลือก gender หรือไม่
         if (localGenders.length === 0) {
-            alert("กรุณาเลือก gender อย่างน้อย 1 ตัวเลือก");
+            setShowErrorPopup(true);
             return;
         }
 
@@ -182,24 +184,47 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
 
     if (isModal) {
         return (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                {/* Backdrop */}
-                <div 
-                    className="absolute inset-0 bg-opacity-50"
-                    onClick={onClose}
-                />
-                
-                {/* Modal Content */}
-                <div className="relative bg-white w-full sm:w-96 sm:mx-4 rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-auto">
-                    <div className="p-6">
-                        {content}
+            <>
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                    {/* Backdrop */}
+                    <div 
+                        className="absolute inset-0 bg-opacity-50"
+                        onClick={onClose}
+                    />
+                    
+                    {/* Modal Content */}
+                    <div className="relative bg-white w-full sm:w-96 sm:mx-4 rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-auto">
+                        <div className="p-6">
+                            {content}
+                        </div>
                     </div>
                 </div>
-            </div>
+                
+                {/* Error Popup */}
+                <ErrorPopup 
+                    isOpen={showErrorPopup}
+                    onClose={() => setShowErrorPopup(false)}
+                    title="กรุณาเลือก Gender"
+                    message="กรุณาเลือก gender อย่างน้อย 1 ตัวเลือก"
+                />
+            </>
         );
     }
 
-    return content;
+    return (
+        <>
+            {content}
+            
+            {/* Error Popup */}
+            <ErrorPopup 
+                isOpen={showErrorPopup}
+                onClose={() => setShowErrorPopup(false)}
+                title="กรุณาเลือก Gender"
+                message="กรุณาเลือก gender อย่างน้อย 1 ตัวเลือก"
+            />
+        </>
+    );
 }
+
 
 export default MatchingRight;

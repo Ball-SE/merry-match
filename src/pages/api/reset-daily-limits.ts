@@ -13,6 +13,11 @@ interface SubscriptionWithPackage {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+
+  console.log('🚀 API Called at:', new Date().toISOString());
+  console.log('🌍 Request URL:', req.url);
+  console.log('📡 Request Method:', req.method);
+  console.log('🔗 Request Headers:', req.headers);
   
   // ✅ แยก token ออกมาเปรียบเทียบแทน
   const envSecret = process.env.CRON_SECRET?.trim();
