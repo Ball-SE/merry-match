@@ -13,7 +13,6 @@ import { supabase } from "@/lib/supabase/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { px } from "framer-motion";
 
 type ProfileLocation = {
     city?: string;
