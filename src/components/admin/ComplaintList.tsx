@@ -75,9 +75,12 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
   return (
     <div className="min-h-screen">
       {/* Fixed Top Navigation Bar */}
-      <div className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 z-40 md:border-l md:border-l-gray-100">
+      <div className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 z-40 md:border-l md:border-l-gray-200">
         <div className="px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Complaint List</h2>
+          <div className="relative">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">Complaint List</h2>
+      
+          </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
             {/* Search Input */}
             <div className="relative w-full sm:w-auto">
