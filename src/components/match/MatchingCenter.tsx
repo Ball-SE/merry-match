@@ -318,7 +318,7 @@ function MatchingCenter() {
                 <Img 
                   src={leftCard.img[0]} 
                   alt={`${leftCard.title} ${leftCard.age}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover blur-sm"
                   loading="eager"
                   width={600}
                   height={450}
@@ -337,7 +337,7 @@ function MatchingCenter() {
                 <Img 
                   src={rightCard.img[0]} 
                   alt={`${rightCard.title} ${rightCard.age}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover blur-sm"
                   loading="eager"
                   width={600}
                   height={450}

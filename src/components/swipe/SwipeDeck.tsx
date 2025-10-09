@@ -187,19 +187,19 @@ export default function SwipeDeck({
         </div>
         
         {/* แสดงจุดบอกจำนวนรูปภาพ */}
-        {top.img.length > 1 && (
+        {!isMobile && top.img.length > 1 && (
           <div style={{
             position: 'absolute',
-            top: 'clamp(12px, 3vw, 20px)', // Responsive positioning
+            top: 'clamp(12px, 3vw, 20px)',
             right: 'clamp(12px, 3vw, 20px)',
             display: 'flex',
-            gap: 'clamp(3px, 1vw, 6px)' // Responsive gap
+            gap: 'clamp(3px, 1vw, 6px)'
           }}>
             {top.img.map((_, index) => (
               <div
                 key={index}
                 style={{
-                  width: 'clamp(6px, 1.5vw, 10px)', // Responsive dot size
+                  width: 'clamp(6px, 1.5vw, 10px)',
                   height: 'clamp(6px, 1.5vw, 10px)',
                   borderRadius: '50%',
                   backgroundColor: index === currentImageIndex ? '#fff' : 'rgba(255,255,255,0.5)',
