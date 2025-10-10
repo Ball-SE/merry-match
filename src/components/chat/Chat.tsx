@@ -47,6 +47,9 @@ function Chat({ matchId }: ChatProps) {
   // States สำหรับ Image Modal
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
+  
+  // State สำหรับ Match Notification Modal
+  const [showMatchNotification, setShowMatchNotification] = useState(false);
 
   // Reset state เมื่อเปลี่ยน matchId
   useEffect(() => {
@@ -57,6 +60,7 @@ function Chat({ matchId }: ChatProps) {
     setLoadingMore(false);
     isLoadingRef.current = false;
     isInitialScrollRef.current = false; // Reset flag สำหรับ chat ใหม่
+    setShowMatchNotification(false); // Reset notification state
   }, [matchId]);
 
   // อัปเดต allMessages เมื่อ messages จาก hook เปลี่ยน
@@ -85,6 +89,11 @@ function Chat({ matchId }: ChatProps) {
         combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         setAllMessages(combined);
         
+        // ตรวจสอบว่าเคยมีข้อความหรือไม่ เพื่อแสดง Match Notification
+        // ถ้ามีข้อความใน match นี้แล้ว ไม่ต้องแสดง notification
+        // ถ้ายังไม่มีข้อความเลย (messagesForThisMatch.length === 0) ให้แสดง notification
+        setShowMatchNotification(messagesForThisMatch.length === 0);
+        
         // Scroll to bottom เมื่อมีข้อความใหม่
         setTimeout(() => {
           if (messagesContainerRef.current) {
@@ -101,6 +110,9 @@ function Chat({ matchId }: ChatProps) {
           }
         }, 100); // ลดเวลา delay
       }
+    } else if (messages && messages.length === 0) {
+      // ถ้าไม่มีข้อความเลย แสดง Match Notification
+      setShowMatchNotification(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, matchId]);
@@ -464,35 +476,37 @@ function Chat({ matchId }: ChatProps) {
       />
 
       <div className="h-full min-h-0 flex flex-col bg-[#160404] relative overflow-hidden">
-        {/* Match Notification Modal */}
-        <div className="absolute inset-0 z-50 flex items-start justify-center pt-8 md:pt-16 pointer-events-none">
-            <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
-                <div className="flex items-center gap-4">
-                    {/* Heart Icons */}
-                    <div className="flex relative w-8 h-8 flex-shrink-0 mr-4">
-                        <Heart color="#ff1659" fill="#ff1659" className="absolute" />
-                        <Heart 
-                            color="#ff1659" 
-                            fill="#ff1659" 
-                            stroke="#9B9EAD" 
-                            strokeWidth={1} 
-                            size={28} 
-                            className="relative left-3.5 bottom-0.5" 
-                        />
-                    </div>
+        {/* Match Notification Modal - แสดงเฉพาะเมื่อยังไม่เคยมีข้อความ */}
+        {showMatchNotification && (
+          <div className="absolute inset-0 z-50 flex items-start justify-center pt-8 md:pt-16 pointer-events-none">
+              <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
+                  <div className="flex items-center gap-4">
+                      {/* Heart Icons */}
+                      <div className="flex relative w-8 h-8 flex-shrink-0 mr-4">
+                          <Heart color="#ff1659" fill="#ff1659" className="absolute" />
+                          <Heart 
+                              color="#ff1659" 
+                              fill="#ff1659" 
+                              stroke="#9B9EAD" 
+                              strokeWidth={1} 
+                              size={28} 
+                              className="relative left-3.5 bottom-0.5" 
+                          />
+                      </div>
 
-                    {/* Text block */}
-                    <div className="flex flex-col flex-1">
-                        <p className="text-[#95002B] text-xs md:text-sm font-medium">
-                            Now you and {match.other_user.name} are Merry Match!
-                        </p>
-                        <p className="text-[#95002B] text-xs md:text-sm font-medium">
-                            You can messege something nice and make a good conversation. Happy Merry!
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+                      {/* Text block */}
+                      <div className="flex flex-col flex-1">
+                          <p className="text-[#95002B] text-xs md:text-sm font-medium">
+                              Now you and {match.other_user.name} are Merry Match!
+                          </p>
+                          <p className="text-[#95002B] text-xs md:text-sm font-medium">
+                              You can messege something nice and make a good conversation. Happy Merry!
+                          </p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+        )}
 
       {/* Messages Container */}
       <div 
