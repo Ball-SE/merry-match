@@ -121,14 +121,8 @@ export default function ResetPasswordPage() {
 
           {/* Error message for invalid link */}
           {errorMsg && !password && !confirmPassword && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-red-800 text-sm font-medium">{errorMsg}</p>
-              <button 
-                onClick={() => router.push('/login')}
-                className="text-[#C70039] hover:text-[#FF1659] font-medium underline mt-2"
-              >
-                Back to Login
-              </button>
             </div>
           )}
 
