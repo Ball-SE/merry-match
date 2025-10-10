@@ -2,7 +2,6 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import Image from 'next/image';
-import { useAuth } from '@/hooks/useAuth';
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -30,16 +29,6 @@ export default function ResetPasswordPage() {
       return 'Password must be at least 8 characters'
     }
     return null
-  }
-
-  const { isLoggedIn } = useAuth('/login');
-
-  if (isLoggedIn === null) {
-      return <div>Loading...</div>;
-  }
-
-  if (!isLoggedIn) {
-      return <div>Redirecting to login...</div>;
   }
 
   const handleResetPassword = async (e: FormEvent) => {
@@ -75,6 +64,10 @@ export default function ResetPasswordPage() {
         setErrorMsg(error.message || 'Failed to update password')
       } else {
         setMessage('Password updated successfully! Redirecting to login...')
+        
+        // Sign out user เพื่อให้ต้อง login ใหม่ด้วย password ใหม่
+        await supabase.auth.signOut()
+        
         // Redirect ไปหน้า login หลังจาก 2 วินาที
         setTimeout(() => {
           router.push('/login')
@@ -154,7 +147,7 @@ export default function ResetPasswordPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter new password"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A62D82] focus:border-transparent outline-none transition-all ${
                     passwordError ? 'border-red-500' : 'border-gray-300'
                   }`}
                   required
@@ -176,7 +169,7 @@ export default function ResetPasswordPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A62D82] focus:border-transparent outline-none transition-all ${
                     confirmPasswordError ? 'border-red-500' : 'border-gray-300'
                   }`}
                   required
