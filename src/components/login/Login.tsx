@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import { validateEmail } from '@/middleware/validation';
 import Image from 'next/image';
-import ForgotPassword from './ForgotPassword';
 import { useAuthContext } from '@/context/AuthContext';
 
 export default function LoginPage() {
@@ -13,7 +12,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const { isLoggedIn } = useAuthContext();
   
   useEffect(() => {
@@ -82,17 +80,7 @@ export default function LoginPage() {
   }
 
   const handleForgotPassword = () => {
-    setShowForgotPassword(true)
-    setErrorMsg(null)
-  }
-
-  const handleBackToLogin = () => {
-    setShowForgotPassword(false)
-  }
-
-  // ถ้าแสดง forgot password ให้ใช้ ForgotPassword component
-  if (showForgotPassword) {
-    return <ForgotPassword onBackToLogin={handleBackToLogin} />
+    router.push('/forgot-password')
   }
 
   return (
