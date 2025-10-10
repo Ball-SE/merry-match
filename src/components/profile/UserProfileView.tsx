@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/supabaseClient';
-import { ArrowLeft } from 'lucide-react';
+import { FaArrowLeft, FaArrowRight, FaHeart } from 'react-icons/fa';
+
 
 
 interface UserProfile {
@@ -255,7 +256,7 @@ export default function UserProfileView({
         {actionState.success && (
           <div className="absolute top-4 left-4 right-4 z-10 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
             <div className="flex items-center gap-3">
-              <Heart className="w-5 h-5" />
+              <FaHeart className="w-5 h-5" />
               <span>
                 {actionState.type === 'like' 
                   ? 'You liked this profile! ❤️' 
@@ -301,9 +302,9 @@ export default function UserProfileView({
           <button 
             onClick={handleClose}
             disabled={actionState.loading}
-            className="flex items-center gap-2 text-white font-medium"
+            className="flex items-center gap-2 text-red-500 font-medium"
           >
-            <ArrowLeft className="w-8 h-8" />
+            <FaArrowLeft className="w-6 h-6" />
           </button>
         </div>
 
@@ -358,14 +359,14 @@ export default function UserProfileView({
               <button 
                 onClick={handleLike}
                 disabled={actionState.loading}
-                className={`w-16 h-16 bg-[#C70039] rounded-xl grid place-items-center shadow-lg hover:shadow-xl transition-all ${
+                className={`w-16 h-16 bg-white rounded-xl border-2 border-gray-300 grid place-items-center shadow-lg hover:shadow-xl transition-all ${
                   actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:scale-105'
                 }`}
               >
                 {actionState.loading && actionState.type === 'like' ? (
                   <Loader2 className="w-6 h-6 animate-spin text-white" />
                 ) : (
-                  <Heart className="text-white w-6 h-6 fill-white" />
+                  <FaHeart className="text-red-500 w-6 h-6 " />
                 )}
               </button>
             </div>
@@ -376,20 +377,20 @@ export default function UserProfileView({
                 <button 
                   onClick={prevImage}
                   disabled={actionState.loading}
-                  className={`w-8 h-8 flex items-center justify-center text-gray-500 transition-all ${
+                  className={`w-10 h-8 flex items-center justify-center text-gray-500 transition-all ${
                     actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
                   }`}
                 >
-                  <span className="text-sm">←</span>
+                  <FaArrowLeft className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={nextImage}
                   disabled={actionState.loading}
-                  className={`w-8 h-8 flex items-center justify-center text-gray-500 transition-all ${
+                  className={`w-10 h-8 flex items-center justify-center text-gray-500 transition-all ${
                     actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
                   }`}
                 >
-                  <span className="text-sm">→</span>
+                  <FaArrowRight className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -472,7 +473,7 @@ export default function UserProfileView({
           {actionState.success && (
             <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
               <div className="flex items-center gap-3">
-                <Heart className="w-5 h-5" />
+                <FaHeart className="w-5 h-5" />
                 <span>
                   {actionState.type === 'like' 
                     ? 'You liked this profile! ❤️' 
@@ -584,7 +585,7 @@ export default function UserProfileView({
                   {actionState.loading && actionState.type === 'like' ? (
                     <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                   ) : (
-                    <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+                    <FaHeart className="w-5 h-5 text-red-500 " />
                   )}
                 </button>
               </div>
@@ -599,7 +600,8 @@ export default function UserProfileView({
                       actionState.loading ? 'text-gray-300 cursor-not-allowed' : 'text-[#9AA1B9] hover:text-[#C70039]'
                     }`}
                   >
-                    <span className="text-sm">←</span>
+                    <FaArrowLeft className="w-3 h-3" />
+                    {/* <span className="text-sm">←</span> */}
                   </button>
                   <button 
                     onClick={nextImage}
@@ -608,7 +610,8 @@ export default function UserProfileView({
                       actionState.loading ? 'text-gray-300 cursor-not-allowed' : 'text-[#9AA1B9] hover:text-[#C70039]'
                     }`}
                   >
-                    <span className="text-sm">→</span>
+                    <FaArrowRight className="w-3 h-3" />
+                    {/* <span className="text-sm">→</span> */}
                   </button>
                 </div>
               )}

@@ -461,7 +461,7 @@ function MatchingCenter() {
             />
           )}
 
-          <div className={`absolute mt-30 right-8 sm:left-0 sm:right-0 ${showMatch ? 'sm:hidden' : ''}`}>
+          <div className={`absolute mt-30 sm:mt-12 right-8 sm:left-0 sm:right-0 `}>
             <p className="text-[#646D89] text-center text-sm">
               Merry limit Today
               <span className={subscription?.merry_limit === 0 ? "text-red-500 ml-2" : "text-[#FF1659] ml-2"}>
