@@ -141,7 +141,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter Username or Email"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A62D82] focus:border-transparent outline-none transition-all ${
                   emailError ? 'border-red-500' : 'border-gray-300'
                 }`}
                 required
@@ -163,7 +163,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A62D82] focus:border-transparent outline-none transition-all"
                 required
               />
             </div>

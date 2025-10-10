@@ -154,7 +154,7 @@ export default function ResetPasswordPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter new password"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A62D82] focus:border-transparent outline-none transition-all ${
                     passwordError ? 'border-red-500' : 'border-gray-300'
                   }`}
                   required
@@ -176,7 +176,7 @@ export default function ResetPasswordPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A62D82] focus:border-transparent outline-none transition-all ${
                     confirmPasswordError ? 'border-red-500' : 'border-gray-300'
                   }`}
                   required
