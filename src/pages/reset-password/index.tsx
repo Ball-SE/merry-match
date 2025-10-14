@@ -195,7 +195,11 @@ export default function ResetPasswordPage() {
           <div className="mt-8 sm:mt-6 text-center">
             <button 
               type="button"
-              onClick={() => router.push('/login')}
+              onClick={async () => {
+                // Sign out เพื่อ clear session ก่อน redirect ไป login
+                await supabase.auth.signOut()
+                router.push('/login')
+              }}
               className="flex justify-center items-center text-[#C70039] hover:text-[#FF1659] font-medium bg-transparent border-none cursor-pointer underline"
             >
               Back to Login
