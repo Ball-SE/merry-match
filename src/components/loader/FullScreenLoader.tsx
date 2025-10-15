@@ -31,16 +31,16 @@ export default function FullScreenLoader({ show }: FullScreenLoaderProps) {
         
       {/* Heart animation */}
         <div className="animate-pulse relative flex justify-center items-center ">
-            <Heart color="#FF6390" fill="#FF6390" className='w-auto h-100'/>
+            <Heart color="#FF6390" fill="#FF6390" className='w-auto h-[40vh]'/>
             </div> 
-        <div className="animate-pulse absolute flex justify-center items-center bottom-85 md:bottom-85 lg:bottom-90 "> 
-            <Heart color="#FFE1EA" fill="#FFE1EA" className='w-auto h-70'/> 
+        <div className="animate-pulse absolute flex justify-center items-center bottom-[40vh]"> 
+            <Heart color="#FFE1EA" fill="#FFE1EA" className='w-auto h-[25vh]'/> 
         </div>
         <div className="animate-ping absolute flex justify-center items-center"> 
-            <Heart color="#FF6390" fill="#FF6390" className='w-auto h-80'/> 
+            <Heart color="#FF6390" fill="#FF6390" className='w-auto h-[60vh]'/> 
         </div> 
         <div className="animate-ping absolute flex justify-center items-center"> 
-            <Heart color="#FFE1EA" fill="#FFE1EA" className='w-auto h-80'/>
+            <Heart color="#FFE1EA" fill="#FFE1EA" className='w-auto h-[60vh]'/>
         </div>
 
       {/* Text animation */}
