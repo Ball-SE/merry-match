@@ -208,24 +208,28 @@ export default function MatchList({
           count={totalPages}
           page={currentPage}
           onChange={(event, value) => setCurrentPage(value)}
-          color="secondary"
           size="large"
+          shape="rounded"
           sx={{
             '& .MuiPaginationItem-root': {
-              color: '#ff1659',
+              color: '#ff1659 !important',
+              borderRadius: '8px',
               transition: 'all 0.3s ease-in-out',
               '&:hover': {
-                backgroundColor: '#FFD6E0',
-                color: '#C70039',
+                backgroundColor: '#FFD6E0 !important',
+                color: '#C70039 !important',
+                transform: 'scale(1.08)',
+                boxShadow: '0 0 8px rgba(255, 22, 89, 0.3)',
               },
             },
-            '& .Mui-selected': {
-              backgroundColor: '#ff1659',
-              color: '#fff',
+            '& .MuiPaginationItem-root.Mui-selected': {
+              backgroundColor: '#ff1659 !important',
+              color: '#fff !important',
               transition: 'all 0.3s ease-in-out',
               '&:hover': {
-                backgroundColor: '#ff1659',
-                color: '#fff',
+                backgroundColor: '#ff1659 !important',
+                transform: 'scale(1.08)',
+                boxShadow: '0 0 8px rgba(255, 22, 89, 0.4) !important',
               },
             },
           }}
