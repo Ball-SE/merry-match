@@ -300,10 +300,10 @@ export default function UserProfileView({
         
         <div className="flex flex-col lg:flex-row">
           {/* Left Side - Profile Image */}
-          <div className="lg:w-[50%] w-full h-[400px] lg:h-[450px] relative">
+          <div className="lg:w-[50%] w-full h-[400px] lg:h-[450px] relative top-10">
             
             {/* กล่องรูป */}
-            <div className="h-full w-full relative rounded-3xl overflow-hidden m-8 transform -translate-y-20 -translate-x-6 scale-75">
+            <div className="h-full w-full relative rounded-3xl overflow-hidden m-8 transform -translate-y-20 mt-10 mx-auto scale-85">
               {profile.photos && profile.photos.length > 0 ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -318,18 +318,20 @@ export default function UserProfileView({
                   <Camera className="w-16 h-16 text-gray-400" />
                 </div>
               )}
+
             </div>
             
             {/* กล่องตัวนับรูป */}
             {profile.photos && profile.photos.length > 0 && (
-              <div className="absolute bottom-20 left-[80px] lg:left-[80px] text-gray-500 text-sm font-medium">
+              <div className="absolute bottom-20 top-85 lg:top-96 left-12 lg:left-15 text-gray-500 text-sm font-medium">
                 {currentImageIndex + 1}/{profile.photos.length}
               </div>
             )}
             
+            
             {/* กล่องลูกศรซ้ายขวา */}
             {profile.photos && profile.photos.length > 1 && (
-              <div className="absolute bottom-18 left-1/2 transform translate-x-28 flex items-center">
+              <div className="absolute bottom-15 left-1/2 transform translate-x-28 flex gap-2 items-center left-25 lg:left-50 top-87.5 lg:top-97">
                 <button 
                   onClick={prevImage}
                   disabled={actionState.loading}
@@ -337,7 +339,7 @@ export default function UserProfileView({
                     actionState.loading ? 'text-gray-300 cursor-not-allowed' : 'text-[#9AA1B9] hover:text-[#C70039]'
                   }`}
                 >
-                  <span className="text-sm">←</span>
+                  <span className="text-2xl font-black">←</span>
                 </button>
                 <button 
                   onClick={nextImage}
@@ -346,7 +348,7 @@ export default function UserProfileView({
                     actionState.loading ? 'text-gray-300 cursor-not-allowed' : 'text-[#9AA1B9] hover:text-[#C70039]'
                   }`}
                 >
-                  <span className="text-sm">→</span>
+                  <span className="text-2xl font-black">→</span>
                 </button>
               </div>
             )}

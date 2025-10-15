@@ -39,12 +39,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log("[unswipe] deleting swipe", { swiper_id: user.id, swiped_id: id });
 
-    // หา swipe record
+    // ✅ หา swipe record ทั้ง 2 กรณี:
+    // 1. user ปัดคนอื่น (swiper_id = user.id, swiped_id = id)
+    // 2. คนอื่นปัด user (swiper_id = id, swiped_id = user.id)
     const { data: swipeRecord, error: findErr } = await admin
       .from("swipes")
-      .select("id")
-      .match({ swiper_id: user.id, swiped_id: id })
-      .maybeSingle();
+      .select("id, swiper_id, swiped_id")
+      .or(`and(swiper_id.eq.${user.id},swiped_id.eq.${id}),and(swiper_id.eq.${id},swiped_id.eq.${user.id})`);
 
     if (findErr) {
       console.error("[unswipe] find swipe error", findErr);
@@ -56,11 +57,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ success: false, message: "Swipe not found" });
     }
 
-    // ลบ swipe record
+    const idsToDelete = swipeRecord.map(r => r.id);
     const { error: delErr, count } = await admin
       .from("swipes")
       .delete({ count: "exact" })
-      .eq("id", swipeRecord.id);
+      .in("id", idsToDelete);
 
     if (delErr) {
       console.error("[unswipe] delete error", delErr);

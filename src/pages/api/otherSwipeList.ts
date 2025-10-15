@@ -38,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         user1:profiles!swipes_swiper_id_fkey (*),
         user2:profiles!swipes_swiped_id_fkey (*)
       `)
-      .eq("swiper_id", user.id)
+      .eq("swiped_id", user.id)
       .eq("action", "like")
       .order("created_at", { ascending: false });
 
@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // ✅ map ให้ return เฉพาะ user2 (คนที่เรา swipe) และกรอง null/undefined ออก
     const rows = (data ?? []) as unknown as SwipeRow[];
-    const swipedUsers = rows.map((item) => item.user2).filter((p): p is ProfileRow => p !== null);
+    const swipedUsers = rows.map((item) => item.user1).filter((p): p is ProfileRow => p !== null);
 
     res.status(200).json({
       success: true,

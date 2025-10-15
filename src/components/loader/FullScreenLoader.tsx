@@ -33,7 +33,7 @@ export default function FullScreenLoader({ show }: FullScreenLoaderProps) {
         <div className="animate-pulse relative flex justify-center items-center ">
             <Heart color="#FF6390" fill="#FF6390" className='w-auto h-100'/>
             </div> 
-        <div className="animate-pulse absolute flex justify-center items-center bottom-90"> 
+        <div className="animate-pulse absolute flex justify-center items-center bottom-85 md:bottom-85 lg:bottom-90 "> 
             <Heart color="#FFE1EA" fill="#FFE1EA" className='w-auto h-70'/> 
         </div>
         <div className="animate-ping absolute flex justify-center items-center"> 
