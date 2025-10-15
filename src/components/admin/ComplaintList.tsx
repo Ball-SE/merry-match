@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Search, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ComplaintListProps } from '../../types/admin';
 
 const ComplaintList: React.FC<ComplaintListProps> = ({
@@ -12,6 +12,9 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
   onStatusFilterChange,
   onComplaintClick
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   // Filter complaints based on search term and status - optimized with useMemo
   const filteredComplaints = useMemo(() => {
     return complaints.filter(complaint => {
@@ -25,6 +28,17 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
       return matchesSearch && matchesStatus;
     });
   }, [complaints, searchTerm, statusFilter]);
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredComplaints.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedComplaints = filteredComplaints.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, itemsPerPage]);
 
   // Get status badge color
   const getStatusColor = (status: string) => {
@@ -72,6 +86,55 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
     return text.substring(0, maxLength) + '...';
   };
 
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('ellipsis');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
   return (
     <div className="min-h-screen">
       {/* Fixed Top Navigation Bar */}
@@ -79,7 +142,6 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
         <div className="px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="relative">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">Complaint List</h2>
-      
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
             {/* Search Input */}
@@ -132,14 +194,14 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredComplaints.length === 0 ? (
+                {paginatedComplaints.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 md:px-6 py-4 text-center text-gray-500">
                       {complaints.length === 0 ? 'No complaints found.' : 'No complaints match your search criteria.'}
                     </td>
                   </tr>
                 ) : (
-                  filteredComplaints.map((complaint) => (
+                  paginatedComplaints.map((complaint) => (
                     <tr 
                       key={complaint.id} 
                       onClick={() => onComplaintClick?.(complaint)}
@@ -174,6 +236,79 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredComplaints.length > 0 && (
+            <div className="px-4 md:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Items per page selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">Show</span>
+  {/* Dropdown with repositioned arrow */}
+  <div className="relative inline-block">
+    <select
+      value={itemsPerPage}
+      onChange={(e) => setItemsPerPage(Number(e.target.value))}
+      className="appearance-none border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white pr-8"
+    >
+      <option value={5}>5</option>
+      <option value={10}>10</option>
+      <option value={25}>25</option>
+      <option value={50}>50</option>
+    </select>
+
+    {/* Custom arrow overlay */}
+    <ChevronDown
+      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+      size={16}
+    />
+  </div>
+                <span className="text-sm text-gray-700">
+                  entries (Showing {startIndex + 1}-{Math.min(endIndex, filteredComplaints.length)} of {filteredComplaints.length})
+                </span>
+              </div>
+
+              {/* Page navigation */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center space-x-1">
+                  {getPageNumbers().map((page, index) => (
+                    page === 'ellipsis' ? (
+                      <span key={`ellipsis-${index}`} className="px-3 py-1 text-gray-500">...</span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page as number)}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === page
+                            ? 'bg-gray-300 text-black'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
