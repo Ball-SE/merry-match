@@ -204,6 +204,34 @@ export default async function handler(
           .eq("id", user.id)
           .single();
 
+        const { data: swipeRecord, error: findErr } =   await supabase
+          .from("swipes")
+          .select("id, swiper_id, swiped_id")
+          .or(`and(swiper_id.eq.${user.id},swiped_id.eq.${swiped_id}),and(swiper_id.eq.${swiped_id},swiped_id.eq.${user.id})`);
+          
+          if (findErr) {
+            console.error("[unswipe] find swipe error", findErr);
+            return res.status(500).json({ success: false, message: findErr.message });
+          }
+      
+          if (!swipeRecord) {
+            console.log("[unswipe] swipe not found");
+            return res.status(404).json({ success: false, message: "Swipe not found" });
+          }
+
+          const idsToDelete = swipeRecord.map(r => r.id);
+          const { error: delErr, count } = await supabase
+            .from("swipes")
+            .delete({ count: "exact" })
+            .in("id", idsToDelete);
+
+          if (delErr) {
+            console.error("[unswipe] delete error", delErr);
+            return res.status(500).json({ success: false, message: delErr.message });
+          }
+
+          console.log("[unswipe] deleted swipe", { count });
+
         // เพิ่ม: สร้าง notification สำหรับทั้งสองฝ่าย
         await createMatchNotification(user.id, swiped_id, swipedUser);
         await createMatchNotification(swiped_id, user.id, {
