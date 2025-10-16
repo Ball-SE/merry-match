@@ -36,17 +36,17 @@ function Chat({ matchId }: ChatProps) {
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
   const isInitialScrollRef = useRef(false); // ป้องกัน auto-load หลัง mount
-  
+
   // States สำหรับการส่งรูปภาพ
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // States สำหรับ Image Modal
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
-  
+
   // State สำหรับ Match Notification Modal
   const [showMatchNotification, setShowMatchNotification] = useState(false);
 
@@ -67,14 +67,14 @@ function Chat({ matchId }: ChatProps) {
     if (messages && messages.length > 0) {
       // กรองเฉพาะข้อความที่เป็นของ match นี้
       const messagesForThisMatch = messages.filter((m: Message) => m.match_id === matchId);
-      
+
       // ตรวจสอบว่ามีข้อความใหม่หรือไม่
       const newMessageIds = messagesForThisMatch.map((m: Message) => m.id);
       const existingIds = allMessages.map(m => m.id);
-      
+
       // ถ้ามีข้อความใหม่ที่ไม่อยู่ใน allMessages ให้เพิ่มเข้าไป
       const hasNewMessages = newMessageIds.some((id: string) => !existingIds.includes(id));
-      
+
       if (hasNewMessages || allMessages.length === 0) {
         // รวมข้อความเก่ากับใหม่ โดยไม่ให้ซ้ำกัน
         const combined = [...allMessages];
@@ -83,23 +83,39 @@ function Chat({ matchId }: ChatProps) {
             combined.push(msg);
           }
         });
-        
+
         // เรียงตามเวลา
         combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         setAllMessages(combined);
-        
+
         // ตรวจสอบว่าเคยมีข้อความหรือไม่ เพื่อแสดง Match Notification
         // ถ้ามีข้อความใน match นี้แล้ว ไม่ต้องแสดง notification
         // ถ้ายังไม่มีข้อความเลย (messagesForThisMatch.length === 0) ให้แสดง notification
         setShowMatchNotification(messagesForThisMatch.length === 0);
-        
+
+        // 🆕 รีเซ็ต heartbeat เมื่อมีข้อความใหม่เข้ามา (ได้รับ notification)
+        if (hasNewMessages && allMessages.length > 0) {
+          // เช็คว่าข้อความใหม่มาจากคนอื่น (ไม่ใช่ที่เราส่งเอง)
+          const newMessages = messagesForThisMatch.filter(
+            (msg: Message) => !existingIds.includes(msg.id)
+          );
+          const hasIncomingMessage = newMessages.some(
+            (msg: Message) => msg.sender_id !== user?.id
+          );
+
+          if (hasIncomingMessage && (window as Window & typeof globalThis & { resetChatHeartbeat?: () => void }).resetChatHeartbeat) {
+            console.log('[Presence] Incoming message detected, resetting heartbeat');
+            (window as Window & typeof globalThis & { resetChatHeartbeat?: () => void }).resetChatHeartbeat?.();
+          }
+        }
+
         // Scroll to bottom เมื่อมีข้อความใหม่
         setTimeout(() => {
           if (messagesContainerRef.current) {
             // ใช้ instant scroll เพื่อไม่ให้ trigger scroll event
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
             console.log('📍 Auto scrolled to bottom after loading messages');
-            
+
             // ตั้ง flag เพื่อป้องกัน auto-load ในช่วงสั้นๆหลัง scroll
             isInitialScrollRef.current = true;
             setTimeout(() => {
@@ -119,7 +135,7 @@ function Chat({ matchId }: ChatProps) {
   // ตั้งค่า oldestMessageId เมื่อ allMessages เปลี่ยน
   useEffect(() => {
     if (allMessages.length > 0) {
-      const sorted = [...allMessages].sort((a, b) => 
+      const sorted = [...allMessages].sort((a, b) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       const newOldestId = sorted[0]?.id || null;
@@ -139,78 +155,134 @@ function Chat({ matchId }: ChatProps) {
   }, []);
 
   // Track active chat presence
-  useEffect(() => {
-    if (!matchId || !user?.id) return;
+useEffect(() => {
+  if (!matchId || !user?.id) return;
 
-    const joinChat = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+  // ป้องกัน double execution ใน Strict Mode
+  let isActive = true;
+  
+  // ใช้ object เพื่อให้สามารถแก้ไขค่าได้จาก function
+  const heartbeatState = {
+    count: 0,
+    interval: null as NodeJS.Timeout | null,
+    MAX_HEARTBEATS: 9
+  };
 
-      try {
-        await fetch('/api/chat-presence', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({ match_id: matchId })
-        });
-        console.log('[Presence] Joined chat:', matchId);
-      } catch (error) {
-        console.error('[Presence] Error joining chat:', error);
+  const joinChat = async () => {
+    if (!isActive) return;
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    try {
+      await fetch('/api/chat-presence', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ match_id: matchId })
+      });
+      console.log('[Presence] Joined chat:', matchId);
+      heartbeatState.count = 0;
+    } catch (error) {
+      console.error('[Presence] Error joining chat:', error);
+    }
+  };
+
+  const sendHeartbeat = async () => {
+    if (!isActive) return;
+    
+    if (heartbeatState.count >= heartbeatState.MAX_HEARTBEATS) {
+      console.log('[Presence] Max heartbeats reached, stopping...');
+      if (heartbeatState.interval) {
+        clearInterval(heartbeatState.interval);
+        heartbeatState.interval = null;
       }
-    };
+      return;
+    }
 
-    joinChat();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
 
-    // Heartbeat ทุก 20 วินาที
-    const heartbeatInterval = setInterval(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+    try {
+      await fetch('/api/chat-presence', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ match_id: matchId })
+      });
+      heartbeatState.count++;
+      console.log(`[Presence] Heartbeat sent (${heartbeatState.count}/${heartbeatState.MAX_HEARTBEATS})`);
+    } catch (error) {
+      console.error('[Presence] Error sending heartbeat:', error);
+    }
+  };
 
-      try {
-        await fetch('/api/chat-presence', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({ match_id: matchId })
-        });
-      } catch (error) {
-        console.error('[Presence] Error sending heartbeat:', error);
+  const resetHeartbeat = () => {
+    if (!isActive) return;
+    
+    const wasMaxed = heartbeatState.count >= heartbeatState.MAX_HEARTBEATS;
+    heartbeatState.count = 0;
+    
+    console.log('[Presence] Activity detected, heartbeat counter reset');
+    
+    // ถ้า interval หยุดไปแล้ว (ครบ 9 ครั้ง) ให้เริ่มใหม่
+    if (!heartbeatState.interval || wasMaxed) {
+      // Clear interval เก่าถ้ามี (เผื่อ)
+      if (heartbeatState.interval) {
+        clearInterval(heartbeatState.interval);
       }
-    }, 20000);
-
-    // Cleanup เมื่อออกจาก chat
-    return () => {
-      clearInterval(heartbeatInterval);
       
-      const leaveChat = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) return;
+      // สร้าง interval ใหม่
+      heartbeatState.interval = setInterval(sendHeartbeat, 20000);
+      console.log('[Presence] Heartbeat interval restarted');
+    }
+  };
 
-        try {
-          await fetch(`/api/chat-presence?match_id=${matchId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          });
-          console.log('[Presence] Left chat:', matchId);
-        } catch (error) {
-          console.error('[Presence] Error leaving chat:', error);
-        }
-      };
+  // เก็บฟังก์ชันไว้ใน window
+  (window as Window & typeof globalThis & { resetChatHeartbeat?: () => void }).resetChatHeartbeat = resetHeartbeat;
 
-      leaveChat();
+  joinChat();
+  heartbeatState.interval = setInterval(sendHeartbeat, 20000);
+
+  // Cleanup
+  return () => {
+    isActive = false;
+    
+    if (heartbeatState.interval) {
+      clearInterval(heartbeatState.interval);
+      heartbeatState.interval = null;
+    }
+    delete (window as Window & typeof globalThis & { resetChatHeartbeat?: () => void }).resetChatHeartbeat;
+    
+    const leaveChat = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      try {
+        await fetch(`/api/chat-presence?match_id=${matchId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+        console.log('[Presence] Left chat:', matchId);
+      } catch (error) {
+        console.error('[Presence] Error leaving chat:', error);
+      }
     };
-  }, [matchId, user?.id]);
+
+    leaveChat();
+  };
+}, [matchId, user?.id]);
 
   // โหลดข้อความเก่าเพิ่มเติม
   const loadMoreMessages = useCallback(async () => {
     console.log('📥 loadMoreMessages called', { loadingMore, hasMore, oldestMessageId });
-    
+
     if (loadingMore || !hasMore || !oldestMessageId) {
       console.log('❌ Skipped:', { loadingMore, hasMore, oldestMessageId });
       return;
@@ -244,19 +316,19 @@ function Chat({ matchId }: ChatProps) {
       if (response.ok) {
         const data = await response.json();
         const newMessages: Message[] = data.messages || [];
-        
+
         console.log('📦 Received messages:', newMessages.length, 'hasMore:', data.pagination?.hasMore);
-        
+
         if (newMessages.length > 0) {
           // เพิ่มข้อความเก่าเข้าไปข้างหน้า
           const combined = [...newMessages, ...allMessages];
-          
+
           // เรียงตามเวลา
           combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-          
+
           setAllMessages(combined);
           setHasMore(data.pagination?.hasMore || false);
-          
+
           console.log('✅ Messages updated, total:', combined.length);
 
           // คืน scroll position
@@ -266,7 +338,7 @@ function Chat({ matchId }: ChatProps) {
               const scrollDiff = newScrollHeight - previousScrollHeight.current;
               messagesContainerRef.current.scrollTop = scrollDiff;
               console.log('📍 Scroll position restored:', scrollDiff);
-              
+
               // Reset loading flag หลังจาก scroll position ถูกคืนค่าแล้ว
               setTimeout(() => {
                 isLoadingRef.current = false;
@@ -303,13 +375,13 @@ function Chat({ matchId }: ChatProps) {
   // ตรวจสอบ scroll position เพื่อโหลดข้อความเก่า
   const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return;
-    
+
     // ป้องกันการ load ข้อความในช่วงที่กำลัง auto-scroll หลัง mount
     if (isInitialScrollRef.current) {
       console.log('🔒 Initial scroll in progress, skip load-more');
       return;
     }
-    
+
     // ป้องกันการเรียกซ้ำๆ
     if (isLoadingRef.current) {
       console.log('⏸️ Already loading, skip');
@@ -318,20 +390,20 @@ function Chat({ matchId }: ChatProps) {
 
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
 
-    console.log('Scroll event:', { 
-      scrollTop, 
-      scrollHeight, 
+    console.log('Scroll event:', {
+      scrollTop,
+      scrollHeight,
       clientHeight,
-      hasMore, 
-      loadingMore, 
-      messagesCount: allMessages.length 
+      hasMore,
+      loadingMore,
+      messagesCount: allMessages.length
     });
 
     // ถ้า scroll ถึงด้านบน (scrollTop น้อยกว่า 200px)
     if (scrollTop < 200 && hasMore && !loadingMore && allMessages.length > 0) {
       console.log('✅ Triggering loadMoreMessages');
       isLoadingRef.current = true;
-      
+
       // Call loadMoreMessages
       // Flag จะถูก reset ภายใน loadMoreMessages หลังจาก scroll position ถูกคืนค่าแล้ว
       loadMoreMessages();
@@ -366,7 +438,7 @@ function Chat({ matchId }: ChatProps) {
     }
 
     setSelectedImage(file);
-    
+
     // สร้าง preview
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -404,7 +476,7 @@ function Chat({ matchId }: ChatProps) {
       try {
         // อัปโหลดรูปไปที่ Supabase Storage
         const result = await uploadChatPhoto(selectedImage, user.id);
-        
+
         if (!result.success || !result.url) {
           alert(result.error || 'Failed to upload image');
           setUploadingImage(false);
@@ -413,7 +485,7 @@ function Chat({ matchId }: ChatProps) {
 
         // ส่งเฉพาะรูปภาพ (ไม่มี caption)
         await sendMessage('', 'image', result.url);
-        
+
         // รีเซ็ต state
         handleCancelImage();
       } catch (error) {
@@ -497,7 +569,7 @@ function Chat({ matchId }: ChatProps) {
               </svg>
             </div>
           </div>
-          
+
           {/* Text animation */}
           <div className="flex space-x-3">
             {["Merry", "Match!"].map((word, wIndex) => (
@@ -548,222 +620,221 @@ function Chat({ matchId }: ChatProps) {
         {/* Match Notification Modal - แสดงเฉพาะเมื่อยังไม่เคยมีข้อความ */}
         {showMatchNotification && (
           <div className="absolute inset-0 z-50 flex items-start justify-center pt-8 md:pt-16 pointer-events-none">
-              <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
-                  <div className="flex items-center gap-4">
-                      {/* Heart Icons */}
-                      <div className="flex relative w-8 h-8 flex-shrink-0 mr-4">
-                          <Heart color="#ff1659" fill="#ff1659" className="absolute" />
-                          <Heart 
-                              color="#ff1659" 
-                              fill="#ff1659" 
-                              stroke="#9B9EAD" 
-                              strokeWidth={1} 
-                              size={28} 
-                              className="relative left-3.5 bottom-0.5" 
-                          />
-                      </div>
-
-                      {/* Text block */}
-                      <div className="flex flex-col flex-1">
-                          <p className="text-[#95002B] text-xs md:text-sm font-medium">
-                              Now you and {match.other_user.name} are Merry Match!
-                          </p>
-                          <p className="text-[#95002B] text-xs md:text-sm font-medium">
-                              You can messege something nice and make a good conversation. Happy Merry!
-                          </p>
-                      </div>
-                  </div>
-              </div>
-          </div>
-        )}
-
-      {/* Messages Container */}
-      <div 
-        ref={messagesContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto px-4 py-6 md:px-12 pb-4 space-y-3 md:space-y-4 scrollbar-hide"
-        style={{
-          scrollbarWidth: 'none', /* Firefox */
-          msOverflowStyle: 'none', /* IE and Edge */
-        }}
-      >
-        {/* Loading indicator ด้านบน */}
-        {loadingMore && (
-          <div className="flex justify-center py-3">
-            <div className="flex items-center gap-2 text-gray-400">
-              <LuLoader className="animate-spin" size={20} />
-              <span className="text-sm">Loading earlier messages...</span>
-            </div>
-          </div>
-        )}
-
-        {/* แสดงข้อความเมื่อไม่มีข้อความเก่าแล้ว */}
-        {!hasMore && allMessages.length > 0 && (
-          <div className="flex justify-center py-3">
-            <span className="text-xs text-gray-500">No more messages</span>
-          </div>
-        )}
-
-        {/* Messages */}
-        {allMessages.map((message, index) => {
-          const isCurrentUser = message.sender_id === user?.id;
-          const previousMessage = index > 0 ? allMessages[index - 1] : null;
-          const showDateDivider = shouldShowDateDivider(message, previousMessage);
-          
-          return (
-            <div key={message.id}>
-              {/* Date Divider */}
-              {showDateDivider && (
-                <div className="flex items-center justify-center my-4 md:my-6">
-                  <div className="bg-[#2A2439] text-white text-xs md:text-sm px-4 py-2 rounded-full">
-                    {formatDateDivider(message.created_at)}
-                  </div>
+            <div className="bg-[#F4EBF2] border border-[#DF89C6] rounded-2xl px-6 md:px-13 py-3 md:py-4 max-w-2xl w-full mx-4 animate-fade-in-out">
+              <div className="flex items-center gap-4">
+                {/* Heart Icons */}
+                <div className="flex relative w-8 h-8 flex-shrink-0 mr-4">
+                  <Heart color="#ff1659" fill="#ff1659" className="absolute" />
+                  <Heart
+                    color="#ff1659"
+                    fill="#ff1659"
+                    stroke="#9B9EAD"
+                    strokeWidth={1}
+                    size={28}
+                    className="relative left-3.5 bottom-0.5"
+                  />
                 </div>
-              )}
 
-              {/* Message */}
-              <div
-                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
-              >
-                {!isCurrentUser && (
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
-                    <Image
-                      src={match.other_user.photo_url || "/assets/user.jpg"}
-                      alt="Other User Avatar"
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                
-                <div
-                  className={`max-w-[50%] px-3 md:px-6 py-4 rounded-3xl ${
-                    isCurrentUser
-                      ? 'bg-[#7D2262] text-white rounded-br-none'
-                      : 'bg-[#EFC4E2] text-black rounded-bl-none'
-                  }`}
-                >
-                  {/* แสดงรูปภาพถ้าเป็น message type image */}
-                  {message.message_type === 'image' && message.media_url ? (
-                    <>
-                      <Image
-                        src={message.media_url}
-                        alt="Shared image"
-                        width={300}
-                        height={300}
-                        className="rounded-xl max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => handleImageClick(message.media_url || '')}
-                      />
-                      <p className={`text-xs opacity-70 mt-2 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                        {new Date(message.created_at).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </p>
-                    </>
-                  ) : (
-                    /* แสดงข้อความธรรมดา */
-                    <>
-                      <p className="text-xs md:text-sm break-words">{message.message_text}</p>
-                      <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                        {new Date(message.created_at).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </p>
-                    </>
-                  )}
+                {/* Text block */}
+                <div className="flex flex-col flex-1">
+                  <p className="text-[#95002B] text-xs md:text-sm font-medium">
+                    Now you and {match.other_user.name} are Merry Match!
+                  </p>
+                  <p className="text-[#95002B] text-xs md:text-sm font-medium">
+                    You can messege something nice and make a good conversation. Happy Merry!
+                  </p>
                 </div>
               </div>
             </div>
-          );
-        })}
-        
-        <div ref={messagesEndRef} />
-      </div>          
-
-      {/* Message Input */}
-      <div className="bg-[#160404] border-t border-[#424C6B] px-4 md:px-12 py-4 md:py-6">
-        {/* Image Preview */}
-        {imagePreview && (
-          <div className="mb-3 relative inline-block">
-            <div className="relative">
-              <Image
-                src={imagePreview}
-                alt="Preview"
-                width={200}
-                height={200}
-                className="rounded-xl max-h-40 w-auto object-cover"
-              />
-              <button
-                onClick={handleCancelImage}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                disabled={uploadingImage}
-              >
-                <LuX size={16} />
-              </button>
-            </div>
-            {uploadingImage && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
-                <LuLoader className="animate-spin text-white" size={24} />
-              </div>
-            )}
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-            onChange={handleImageSelect}
-            className="hidden"
-          />
-          
-          {/* Paperclip Button */}
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingImage || selectedImage !== null}
-            className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors"
-          >
-            <LuPaperclip size={18} className="md:w-5 md:h-5" />
-          </button>
-          
-          {/* Text Input - ซ่อนเมื่อมีรูปที่เลือก */}
-          {!selectedImage && (
-            <div className="flex-1">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Message here..."
-                disabled={uploadingImage}
-                className="w-full bg-transparent text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
-              />
+        {/* Messages Container */}
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 min-h-0 overflow-y-auto px-4 py-6 md:px-12 pb-4 space-y-3 md:space-y-4 scrollbar-hide"
+          style={{
+            scrollbarWidth: 'none', /* Firefox */
+            msOverflowStyle: 'none', /* IE and Edge */
+          }}
+        >
+          {/* Loading indicator ด้านบน */}
+          {loadingMore && (
+            <div className="flex justify-center py-3">
+              <div className="flex items-center gap-2 text-gray-400">
+                <LuLoader className="animate-spin" size={20} />
+                <span className="text-sm">Loading earlier messages...</span>
+              </div>
             </div>
           )}
-          
-          {/* Spacer เมื่อมีรูป */}
-          {selectedImage && <div className="flex-1"></div>}
-          
-          {/* Send Button */}
-          <button
-            onClick={handleSendMessage}
-            disabled={(!newMessage.trim() && !selectedImage) || uploadingImage}
-            className="w-8 h-8 md:w-10 md:h-10 bg-[#C70039] rounded-full flex items-center justify-center hover:bg-[#C2185B] transition-colors"
-          >
-            {uploadingImage ? (
-              <LuLoader className="animate-spin text-white" size={16} />
-            ) : (
-              <LuSend size={16} className="text-white md:w-[18px] md:h-[18px]" />
+
+          {/* แสดงข้อความเมื่อไม่มีข้อความเก่าแล้ว */}
+          {!hasMore && allMessages.length > 0 && (
+            <div className="flex justify-center py-3">
+              <span className="text-xs text-gray-500">No more messages</span>
+            </div>
+          )}
+
+          {/* Messages */}
+          {allMessages.map((message, index) => {
+            const isCurrentUser = message.sender_id === user?.id;
+            const previousMessage = index > 0 ? allMessages[index - 1] : null;
+            const showDateDivider = shouldShowDateDivider(message, previousMessage);
+
+            return (
+              <div key={message.id}>
+                {/* Date Divider */}
+                {showDateDivider && (
+                  <div className="flex items-center justify-center my-4 md:my-6">
+                    <div className="bg-[#2A2439] text-white text-xs md:text-sm px-4 py-2 rounded-full">
+                      {formatDateDivider(message.created_at)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Message */}
+                <div
+                  className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                >
+                  {!isCurrentUser && (
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full overflow-hidden flex-shrink-0">
+                      <Image
+                        src={match.other_user.photo_url || "/assets/user.jpg"}
+                        alt="Other User Avatar"
+                        width={32}
+                        height={32}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <div
+                    className={`max-w-[50%] px-3 md:px-6 py-4 rounded-3xl ${isCurrentUser
+                      ? 'bg-[#7D2262] text-white rounded-br-none'
+                      : 'bg-[#EFC4E2] text-black rounded-bl-none'
+                      }`}
+                  >
+                    {/* แสดงรูปภาพถ้าเป็น message type image */}
+                    {message.message_type === 'image' && message.media_url ? (
+                      <>
+                        <Image
+                          src={message.media_url}
+                          alt="Shared image"
+                          width={300}
+                          height={300}
+                          className="rounded-xl max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => handleImageClick(message.media_url || '')}
+                        />
+                        <p className={`text-xs opacity-70 mt-2 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                          {new Date(message.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </>
+                    ) : (
+                      /* แสดงข้อความธรรมดา */
+                      <>
+                        <p className="text-xs md:text-sm break-words">{message.message_text}</p>
+                        <p className={`text-xs opacity-70 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                          {new Date(message.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Message Input */}
+        <div className="bg-[#160404] border-t border-[#424C6B] px-4 md:px-12 py-4 md:py-6">
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="mb-3 relative inline-block">
+              <div className="relative">
+                <Image
+                  src={imagePreview}
+                  alt="Preview"
+                  width={200}
+                  height={200}
+                  className="rounded-xl max-h-40 w-auto object-cover"
+                />
+                <button
+                  onClick={handleCancelImage}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  disabled={uploadingImage}
+                >
+                  <LuX size={16} />
+                </button>
+              </div>
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
+                  <LuLoader className="animate-spin text-white" size={24} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Input Area */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+
+            {/* Paperclip Button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage || selectedImage !== null}
+              className="p-1.5 md:p-2 text-gray-400 hover:text-gray-300 transition-colors"
+            >
+              <LuPaperclip size={18} className="md:w-5 md:h-5" />
+            </button>
+
+            {/* Text Input - ซ่อนเมื่อมีรูปที่เลือก */}
+            {!selectedImage && (
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Message here..."
+                  disabled={uploadingImage}
+                  className="w-full bg-transparent text-white placeholder-[#9B9EAD] rounded-2xl px-3 md:px-4 py-2 md:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:ring-opacity-50"
+                />
+              </div>
             )}
-          </button>
+
+            {/* Spacer เมื่อมีรูป */}
+            {selectedImage && <div className="flex-1"></div>}
+
+            {/* Send Button */}
+            <button
+              onClick={handleSendMessage}
+              disabled={(!newMessage.trim() && !selectedImage) || uploadingImage}
+              className="w-8 h-8 md:w-10 md:h-10 bg-[#C70039] rounded-full flex items-center justify-center hover:bg-[#C2185B] transition-colors"
+            >
+              {uploadingImage ? (
+                <LuLoader className="animate-spin text-white" size={16} />
+              ) : (
+                <LuSend size={16} className="text-white md:w-[18px] md:h-[18px]" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

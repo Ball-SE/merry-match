@@ -77,7 +77,7 @@ export async function createMessageNotification(
       const secondsSinceActive = (now.getTime() - lastActiveAt.getTime()) / 1000;
 
       // ถ้า active ภายใน 25 วินาที ถือว่ากำลังอยู่ใน chat
-      if (secondsSinceActive < 15) {
+      if (secondsSinceActive < 25) {
         console.log(`⏸️ Receiver is active in chat (${secondsSinceActive.toFixed(1)}s ago), skipping notification`);
         return true;
       } else {
