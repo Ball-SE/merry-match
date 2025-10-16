@@ -86,40 +86,10 @@ export function useChat(matchId: string): UseChatReturn {
     hasLoadedRef.current = false; // Reset flag เมื่อเปลี่ยน match
   }, [matchId]);
 
-  // ดึงข้อความล่าสุด 20 ข้อความ (ใช้สำหรับ polling)
-  const fetchMessages = useCallback(async () => {
-    if (!session?.access_token) return;
-
-    try {
-      // โหลดแค่ 20 ข้อความล่าสุด
-      const response = await fetch(`/api/messages?match_id=${matchId}&limit=20`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch messages");
-      }
-      const data = await response.json();
-      setMessages(data.messages || []);
-
-      // นับข้อความที่ยังไม่ได้อ่าน
-      const unread =
-        data.messages?.filter(
-          (msg: Message) =>
-            !msg.is_read && msg.receiver_id === session?.user?.id
-        ).length || 0;
-      setUnreadCount(unread);
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-      setError("Failed to load messages");
-    }
-  }, [matchId, session?.access_token, session?.user?.id]);
-
   // ส่งข้อความ
   const sendMessage = useCallback(async (
-    messageText: string, 
-    messageType: 'text' | 'image' = 'text', 
+    messageText: string,
+    messageType: 'text' | 'image' = 'text',
     mediaUrl?: string
   ) => {
     if (!match || !session?.user?.id || !session?.access_token) return;
@@ -130,7 +100,7 @@ export function useChat(matchId: string): UseChatReturn {
       messageType,
       mediaUrl,
       receiverId: match.other_user.id,
-      senderId: session.user.id
+      senderId: session.user.id,
     });
 
     try {
@@ -143,7 +113,7 @@ export function useChat(matchId: string): UseChatReturn {
       } = {
         match_id: matchId,
         receiver_id: match.other_user.id,
-        message_type: messageType
+        message_type: messageType,
       };
 
       // เพิ่ม message_text ถ้ามี

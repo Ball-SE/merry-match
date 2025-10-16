@@ -56,25 +56,35 @@ export async function createMessageNotification(
 
     console.log("✅ Supabase client created");
 
-    // ตรวจสอบว่า receiver ยังไม่ได้อ่านข้อความล่าสุดใน chat นี้
-    const { data: recentMessages, error: recentError } = await supabase
-      .from('messages')
-      .select('is_read')
+    // เช็คว่า receiver กำลัง active ในห้อง chat นี้หรือไม่
+    const { data: activeChat, error: activeChatError } = await supabase
+      .from('user_active_chats')
+      .select('last_active_at')
+      .eq('user_id', receiverId)
       .eq('match_id', matchId)
-      .eq('receiver_id', receiverId)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .single();
 
-    if (recentError) {
-      console.error("❌ Error checking recent messages:", recentError);
+    if (activeChatError && activeChatError.code !== 'PGRST116') {
+      // PGRST116 = no rows returned (ไม่มี active chat)
+      console.error("❌ Error checking active chat:", activeChatError);
     } else {
-      console.log("📱 Recent messages check:", recentMessages);
+      console.log("📱 Active chat check:", activeChat);
     }
 
-    // ถ้า receiver กำลังอยู่ใน chat หรือเพิ่งอ่านข้อความล่าสุด ให้ไม่ส่ง notification
-    if (recentMessages && recentMessages.length > 0 && recentMessages[0].is_read) {
-      console.log("⏸️ Receiver is active in chat, skipping notification");
-      return true;
+    if (activeChat) {
+      const lastActiveAt = new Date(activeChat.last_active_at);
+      const now = new Date();
+      const secondsSinceActive = (now.getTime() - lastActiveAt.getTime()) / 1000;
+
+      // ถ้า active ภายใน 25 วินาที ถือว่ากำลังอยู่ใน chat
+      if (secondsSinceActive < 15) {
+        console.log(`⏸️ Receiver is active in chat (${secondsSinceActive.toFixed(1)}s ago), skipping notification`);
+        return true;
+      } else {
+        console.log(`📊 Receiver was active ${secondsSinceActive.toFixed(1)}s ago, will send notification`);
+      }
+    } else {
+      console.log("📊 Receiver is not in chat, will send notification");
     }
 
     console.log("🔔 Creating notification in database...");

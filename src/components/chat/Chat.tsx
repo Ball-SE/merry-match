@@ -6,7 +6,6 @@ import { useChat } from '@/hooks/useChat';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import { uploadChatPhoto } from '@/lib/supabase/uploadPhotoUtils';
 import ImageModal from './ImageModal';
-import FullScreenLoader from '../loader/FullScreenLoader';
 
 type ChatProps = {
   matchId: string;
@@ -138,6 +137,75 @@ function Chat({ matchId }: ChatProps) {
     };
     getUser();
   }, []);
+
+  // Track active chat presence
+  useEffect(() => {
+    if (!matchId || !user?.id) return;
+
+    const joinChat = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      try {
+        await fetch('/api/chat-presence', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ match_id: matchId })
+        });
+        console.log('[Presence] Joined chat:', matchId);
+      } catch (error) {
+        console.error('[Presence] Error joining chat:', error);
+      }
+    };
+
+    joinChat();
+
+    // Heartbeat ทุก 20 วินาที
+    const heartbeatInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      try {
+        await fetch('/api/chat-presence', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ match_id: matchId })
+        });
+      } catch (error) {
+        console.error('[Presence] Error sending heartbeat:', error);
+      }
+    }, 20000);
+
+    // Cleanup เมื่อออกจาก chat
+    return () => {
+      clearInterval(heartbeatInterval);
+      
+      const leaveChat = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+
+        try {
+          await fetch(`/api/chat-presence?match_id=${matchId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+          console.log('[Presence] Left chat:', matchId);
+        } catch (error) {
+          console.error('[Presence] Error leaving chat:', error);
+        }
+      };
+
+      leaveChat();
+    };
+  }, [matchId, user?.id]);
 
   // โหลดข้อความเก่าเพิ่มเติม
   const loadMoreMessages = useCallback(async () => {
@@ -339,6 +407,7 @@ function Chat({ matchId }: ChatProps) {
         
         if (!result.success || !result.url) {
           alert(result.error || 'Failed to upload image');
+          setUploadingImage(false);
           return;
         }
 

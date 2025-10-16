@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from "@supabase/supabase-js";
+import { createMessageNotification } from '@/lib/notification/notificationService';
 
 export default async function handler(
   req: NextApiRequest,
@@ -216,6 +217,17 @@ export default async function handler(
       if (insertError) {
         console.error('Error inserting message:', insertError);
         return res.status(500).json({ error: 'Failed to send message' });
+      }
+
+      // สร้าง notification (server จะตัดสินใจเองว่าควรส่งหรือไม่)
+      if (newMessage) {
+        await createMessageNotification(
+          receiver_id,
+          user.id,
+          { name: user.user_metadata.name, photo_url: user.user_metadata.avatar_url },
+          match_id,
+          newMessage.message_text || (newMessage.message_type === 'image' ? 'Sent an image' : '')
+        );
       }
 
       return res.status(201).json({ message: newMessage });
