@@ -113,9 +113,9 @@ function Step1({
     const hasError = touched[fieldName] && errors[fieldName];
 
     if (hasError) {
-      return `${baseClass} border-red-500 focus:ring-red-500`;
+      return `${baseClass} border-[#AF2758] focus:ring-[#AF2758]`;
     }
-    return `${baseClass} border-gray-300 focus:ring-[#C70039]`;
+    return `${baseClass} border-gray-300 focus:ring-[#A62D82]`;
   };
 
   useEffect(() => {
@@ -133,7 +133,7 @@ function Step1({
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Name
             </label>
@@ -147,7 +147,14 @@ function Step1({
               className={getInputClassName("name")}
             />
             {touched.name && errors.name && (
-              <p className="mt-1 text-sm text-[#C70039]">{errors.name}</p>
+              <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-3 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">{errors.name}</p>
+              </>
             )}
           </div>
 
@@ -279,7 +286,7 @@ function Step1({
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Username
             </label>
@@ -293,9 +300,16 @@ function Step1({
               className={getInputClassName("username")}
             />
             {touched.username && errors.username && (
-              <p className="mt-1 text-sm text-[#C70039]">{errors.username}</p>
+               <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-3 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">{errors.username}</p>
+              </>
             )}
-            {touched.username && (
+            {touched.username && !errors.username && (
               <div className="mt-2 flex items-center gap-2">
                 {usernameValidation.isChecking && (
                   <>
@@ -351,7 +365,7 @@ function Step1({
             )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Email
             </label>
@@ -364,6 +378,13 @@ function Step1({
               placeholder="name@website.com"
               className={getInputClassName("email")}
             />
+            {touched.email && errors.email && (
+              <img
+                src="/assets/inputError.svg"
+                alt="Error"
+                className="absolute right-3 top-[42px] h-5 w-5"
+              />
+            )}
             {/* แสดงสถานะการตรวจสอบ email ด้านล่าง input */}
             {touched.email && (
               <div className="mt-2 flex items-center gap-2">
@@ -421,7 +442,7 @@ function Step1({
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Password
             </label>
@@ -435,11 +456,18 @@ function Step1({
               className={getInputClassName("password")}
             />
             {touched.password && errors.password && (
-              <p className="mt-1 text-sm text-[#C70039]">{errors.password}</p>
+              <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-3 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">{errors.password}</p>
+              </>
             )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Confirm password
             </label>
@@ -453,9 +481,16 @@ function Step1({
               className={getInputClassName("confirmPassword")}
             />
             {touched.confirmPassword && errors.confirmPassword && (
-              <p className="mt-1 text-sm text-[#C70039]">
-                {errors.confirmPassword}
-              </p>
+              <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-3 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">
+                  {errors.confirmPassword}
+                </p>
+              </>
             )}
           </div>
         </div>
@@ -492,9 +527,9 @@ function Step2({
     const hasError = touched[fieldName] && errors[fieldName];
 
     if (hasError) {
-      return `${baseClass} border-red-500 focus:ring-red-500`;
+      return `${baseClass} border-[#AF2758] focus:ring-[#AF2758]`;
     }
-    return `${baseClass} border-gray-300 focus:ring-[#C70039]`;
+    return `${baseClass} border-gray-300 focus:ring-[#A62D82]`;
   };
 
   const addChip = () => {
@@ -519,7 +554,7 @@ function Step2({
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Sexual identities
             </label>
@@ -547,13 +582,20 @@ function Step2({
               <option value="lgbtq+">LGBTQ+</option>
             </select>
             {touched.sexualIdentities && errors.sexualIdentities && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.sexualIdentities}
-              </p>
+              <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-12 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">
+                  {errors.sexualIdentities}
+                </p>
+              </>
             )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Sexual preferences
             </label>
@@ -581,15 +623,22 @@ function Step2({
               <option value="lgbtq+">LGBTQ+</option>
             </select>
             {touched.sexualPreferences && errors.sexualPreferences && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.sexualPreferences}
-              </p>
+              <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-12 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">
+                  {errors.sexualPreferences}
+                </p>
+              </>
             )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Racial preferences
             </label>
@@ -619,13 +668,20 @@ function Step2({
               <option value="mixed">Mixed</option>
             </select>
             {touched.racialPreferences && errors.racialPreferences && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.racialPreferences}
-              </p>
+              <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-12 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">
+                  {errors.racialPreferences}
+                </p>
+              </>
             )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Meeting interests
             </label>
@@ -654,9 +710,16 @@ function Step2({
               <option value="casual">Casual meeting</option>
             </select>
             {touched.meetingInterests && errors.meetingInterests && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.meetingInterests}
-              </p>
+              <>
+                <img
+                  src="/assets/inputError.svg"
+                  alt="Error"
+                  className="absolute right-12 top-[42px] h-5 w-5"
+                />
+                <p className="mt-1 text-sm text-[#C70039]">
+                  {errors.meetingInterests}
+                </p>
+              </>
             )}
           </div>
         </div>

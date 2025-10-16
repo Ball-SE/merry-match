@@ -26,30 +26,36 @@ export default function FooterSummitStep({
         <button
           onClick={onBack}
           disabled={isFirst}
-          className={`flex gap-2 button-ghost ${
-            isFirst
+          className={`flex gap-2 button-ghost group ${isFirst
               ? "cursor-not-allowed text-gray-300"
-              : "text-[#C70039] hover:text-gray-700"
-          }`}
+              : "text-[#C70039] hover:text-gray-300"
+            }`}
         >
+          {/* Default icon (normal), hide on hover; hidden entirely if first step */}
           <Image
-            src={
-              isFirst ? "/assets/backArrowGhost.svg" : "/assets/backArrow.svg"
-            }
+            src="/assets/backArrow.svg"
             alt="Back arrow"
             width={12}
             height={12}
+            className={`${isFirst ? "hidden" : "inline"} group-hover:hidden`}
+          />
+          {/* Ghost icon, shown when first step or on hover */}
+          <Image
+            src="/assets/backArrowGhost.svg"
+            alt="Back arrow (hover)"
+            width={12}
+            height={12}
+            className={`${isFirst ? "inline" : "hidden"} group-hover:inline`}
           />
           Back
         </button>
         <button
           onClick={onNext}
           disabled={!canProceed}
-          className={`button-primary ${
-            canProceed
+          className={`button-primary ${canProceed
               ? "bg-[#C70039] text-white hover:bg-[#950028]"
               : "button-disabled cursor-not-allowed"
-          }`}
+            }`}
         >
           {isLast ? "Confirm" : "Next step"}
         </button>
