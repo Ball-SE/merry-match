@@ -174,7 +174,7 @@ function Step1({
               }}
               onBlur={() => handleBlur("dateOfBirth")}
               placeholder="01/01/2022"
-              className={getInputClassName("dateOfBirth")}
+              className={`${getInputClassName("dateOfBirth")} h-12.5`}
               dateFormat="dd/MM/yyyy"
               minDate={
                 new Date(
