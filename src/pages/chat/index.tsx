@@ -6,6 +6,8 @@ import { MatchingProvider } from "@/context/MatchingContext";
 import { useState, useEffect } from 'react';
 import { LuArrowLeft } from 'react-icons/lu';
 import { useRouter } from 'next/router';
+import { useChat } from '@/hooks/useChat'; // EDIT
+import { useNotifications } from '@/hooks/useNotifications'; // EDIT
 
 function ChatPage() {
     const { isLoggedIn } = useAuth('/login');
@@ -13,6 +15,12 @@ function ChatPage() {
     const [showChat, setShowChat] = useState(false);
     const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
     const [selectedMatchName, setSelectedMatchName] = useState<string>('');
+
+    const { isOtherOnlineInThisRoom } = useChat(selectedMatchId || ''); // EDIT
+    const { notifications, unreadCount } = useNotifications({           // EDIT
+        activeMatchId: selectedMatchId || undefined,                    // EDIT
+        isOtherOnlineInThisRoom,                                        // EDIT
+    });                                                                  // EDIT
 
     // Handle initial navigation from matching page
     useEffect(() => {
