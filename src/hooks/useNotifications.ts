@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-type Notification = {
+type AppNotification = {
   id: string;
   user_id: string;
   type: string;
@@ -17,7 +17,6 @@ type Notification = {
     sender_id: string;
     sender_name: string;
     sender_photo: string;
-    // ✅ เพิ่ม fields สำหรับ like
     liker_user_id?: string;
     liker_user_name?: string;
     liker_user_photo?: string;
@@ -27,46 +26,41 @@ type Notification = {
 };
 
 type Session = {
-  user: {
-    id: string;
-  };
+  user: { id: string };
   access_token: string;
 };
 
-export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+export function useNotifications(
+  presence?: { activeMatchId?: string; isOtherOnlineInThisRoom?: boolean }
+) {
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
 
+  // Load auth session
   useEffect(() => {
     const getSession = async () => {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
     };
     getSession();
   }, []);
 
+  // Initial fetch
   const fetchNotifications = useCallback(async () => {
     if (!session?.access_token) return;
 
     try {
       const response = await fetch("/api/notifications", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch notifications");
-      }
+      if (!response.ok) throw new Error("Failed to fetch notifications");
 
       const data = await response.json();
       setNotifications(data.notifications || []);
@@ -79,6 +73,11 @@ export function useNotifications() {
     }
   }, [session?.access_token]);
 
+  useEffect(() => {
+    if (session?.access_token) fetchNotifications();
+  }, [session?.access_token, fetchNotifications]);
+
+  // Mark as read
   const markAsRead = useCallback(
     async (notificationIds: string[]) => {
       if (!session?.access_token) return;
@@ -93,19 +92,13 @@ export function useNotifications() {
           body: JSON.stringify({ notification_ids: notificationIds }),
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to mark as read");
-        }
+        if (!response.ok) throw new Error("Failed to mark as read");
 
-        // Update local state
         setNotifications((prev) =>
-          prev.map((notif) =>
-            notificationIds.includes(notif.id)
-              ? { ...notif, is_read: true }
-              : notif
+          prev.map((n) =>
+            notificationIds.includes(n.id) ? { ...n, is_read: true } : n
           )
         );
-
         setUnreadCount((prev) => Math.max(0, prev - notificationIds.length));
       } catch (err) {
         console.error("Error marking as read:", err);
@@ -114,63 +107,76 @@ export function useNotifications() {
     [session?.access_token]
   );
 
+  // Realtime subscription with presence suppression
   useEffect(() => {
-    if (session?.access_token) {
-      fetchNotifications();
-    }
-  }, [session?.access_token, fetchNotifications]);
-  // Realtime: subscribe ตาราง notifications ของผู้ใช้คนนี้ // EDIT
-  useEffect(() => {
-    if (!session?.access_token) return; // EDIT
-    const supabase = createClient(
-      // EDIT
-      process.env.NEXT_PUBLIC_SUPABASE_URL!, // EDIT
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // EDIT
-      {
-        global: {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        },
-      }
-    ); // EDIT
+    if (!session?.access_token) return;
 
-    // helper อัปเดต state แบบทันที // EDIT
-    const upsertLocal = (n: Notification) => {
-      // EDIT
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${session.access_token}` } } }
+    );
+
+    const autoRead = async (id: string) => {
+      try {
+        await fetch("/api/notifications", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ notification_ids: [id] }),
+        });
+      } catch (e) {
+        console.error("autoRead failed:", e);
+      }
+    };
+
+    const upsertLocal = (n: AppNotification) => {
+      const suppress =
+        presence?.activeMatchId &&
+        presence?.isOtherOnlineInThisRoom &&
+        n.type === "message" &&
+        n.data?.match_id === presence.activeMatchId;
+
+      if (suppress) {
+        n = { ...n, is_read: true };
+        autoRead(n.id);
+      }
+
       setNotifications((prev) => {
         const idx = prev.findIndex((x) => x.id === n.id);
-        if (idx === -1) return [n, ...prev]; // แทรกใหม่บนสุด // EDIT
+        if (idx === -1) return [n, ...prev];
         const next = [...prev];
-        next[idx] = { ...prev[idx], ...n }; // อัปเดต // EDIT
+        next[idx] = { ...prev[idx], ...n };
         return next;
       });
-      if (!n.is_read) setUnreadCount((c) => c + 1); // เพิ่ม badge ถ้ายังไม่อ่าน // EDIT
+
+      if (!n.is_read) setUnreadCount((c) => c + 1);
     };
 
     const updateLocalRead = (id: string, is_read: boolean) => {
-      // EDIT
       setNotifications((prev) =>
         prev.map((p) => (p.id === id ? { ...p, is_read } : p))
       );
-      if (is_read) setUnreadCount((c) => Math.max(0, c - 1)); // ลด badge เมื่ออ่าน // EDIT
+      if (is_read) setUnreadCount((c) => Math.max(0, c - 1));
     };
 
-    const channel = supabase.channel("realtime:notifications"); // EDIT
+    const channel = supabase.channel("realtime:notifications");
     channel
       .on(
-        // EDIT
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
-        (payload: { new: Notification }) => {
-          const row = payload.new as Notification;
-          // กรองเฉพาะของ user นี้เท่านั้น // EDIT
-          if (row.user_id === session?.user?.id) upsertLocal(row); // ✅ เช็ค user ปัจจุบัน
+        (payload: { new: AppNotification }) => {
+          const row = payload.new as AppNotification;
+          if (row.user_id === session?.user?.id) upsertLocal(row);
         }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "notifications" },
-        (payload: { new: Notification }) => {
-          const row = payload.new as Notification;
+        (payload: { new: AppNotification }) => {
+          const row = payload.new as AppNotification;
           updateLocalRead(row.id, row.is_read);
         }
       )
@@ -178,8 +184,8 @@ export function useNotifications() {
 
     return () => {
       supabase.removeChannel(channel);
-    }; // cleanup // EDIT
-  }, [session?.access_token]);
+    };
+  }, [session?.access_token, presence?.activeMatchId, presence?.isOtherOnlineInThisRoom]);
 
   return {
     notifications,

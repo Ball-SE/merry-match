@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from "@supabase/supabase-js";
+import { createMessageNotification } from "@/lib/notification/notificationService";
 
 export default async function handler(
   req: NextApiRequest,
@@ -65,9 +66,7 @@ export default async function handler(
         `)
         .eq('match_id', match_id);
 
-      // ถ้ามี before_message_id ให้ดึงข้อความที่เก่ากว่า
       if (before_message_id && typeof before_message_id === 'string') {
-        // หา created_at ของ message ที่ระบุ
         const { data: beforeMessage } = await supabase
           .from('messages')
           .select('created_at')
@@ -118,8 +117,6 @@ export default async function handler(
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // สำหรับข้อความแบบ text ต้องมี message_text
-    // สำหรับข้อความแบบ image ต้องมี media_url
     if (message_type === 'text' && !message_text) {
       return res.status(400).json({ error: 'message_text is required for text messages' });
     }
@@ -182,15 +179,11 @@ export default async function handler(
         message_type
       };
 
-      // Add message_text หรือ media_url ตาม message_type
       if (message_type === 'text') {
         messageData.message_text = message_text;
       } else if (message_type === 'image') {
         messageData.media_url = media_url;
-        // สามารถมี caption เป็น message_text ได้
-        if (message_text) {
-          messageData.message_text = message_text;
-        }
+        if (message_text) messageData.message_text = message_text;
       }
 
       const { data: newMessage, error: insertError } = await supabase
@@ -216,6 +209,25 @@ export default async function handler(
       if (insertError) {
         console.error('Error inserting message:', insertError);
         return res.status(500).json({ error: 'Failed to send message' });
+      }
+
+      // 🔔 สร้าง notification สำหรับผู้รับ (จะถูกฟังแบบ realtime ที่ useNotifications)
+      try {
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('name, photo_url')
+          .eq('id', user.id)
+          .single();
+
+        await createMessageNotification(
+          receiver_id,                                   // ผู้รับ
+          user.id,                                       // ผู้ส่ง
+          { name: senderProfile?.name, photo_url: senderProfile?.photo_url },
+          match_id,
+          (messageData.message_text || '') as string
+        );
+      } catch (e) {
+        console.error('createMessageNotification error:', e);
       }
 
       return res.status(201).json({ message: newMessage });
