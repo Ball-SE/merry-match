@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Loader2, AlertCircle, Camera, Heart, X } from 'lucide-react';
+import { Loader2, AlertCircle, Camera, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/supabaseClient';
 import { FaArrowLeft, FaArrowRight, FaHeart } from 'react-icons/fa';
 
@@ -324,24 +324,18 @@ export default function UserProfileView({
               </div>
             )}
             
-          </div>
-
-          {/* Mobile Controls - Below Image */}
-          <div className="flex-shrink-0 bg-white px-2 flex flex-row justify-between items-center">
-            {/* Photo Counter - Left */}
+            {/* Gradient overlay for better button visibility */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+            
+            {/* Photo Counter - Top Left */}
             {profile.photos && profile.photos.length > 1 && (
-              <div className="text-gray-500 text-sm font-medium">
+              <div className="absolute top-4 left-4 text-white text-sm font-medium bg-black bg-opacity-50 px-2 py-1 rounded">
                 {currentImageIndex + 1}/{profile.photos.length}
               </div>
             )}
             
-            {/* Empty div when no multiple photos */}
-            {(!profile.photos || profile.photos.length <= 1) && (
-              <div></div>
-            )}
-
-            {/* Action Buttons - Center */}
-            <div className="flex items-center gap-4 absolute bottom-[335px] left-1/2 -translate-x-1/2  ">
+            {/* Action Buttons - Bottom Center */}
+            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 z-50">
               <button 
                 onClick={handlePass}
                 disabled={actionState.loading}
@@ -370,47 +364,64 @@ export default function UserProfileView({
                 )}
               </button>
             </div>
-
-            {/* Navigation Arrows - Right */}
-            {profile.photos && profile.photos.length > 1 && (
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={prevImage}
-                  disabled={actionState.loading}
-                  className={`w-10 h-8 flex items-center justify-center text-gray-500 transition-all ${
-                    actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
-                  }`}
-                >
-                  <FaArrowLeft className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={nextImage}
-                  disabled={actionState.loading}
-                  className={`w-10 h-8 flex items-center justify-center text-gray-500 transition-all ${
-                    actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
-                  }`}
-                >
-                  <FaArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
           </div>
+
+          {/* Empty spacer div to maintain layout */}
+          <div className="flex-shrink-0 bg-white"></div>
 
           {/* Profile Info Section - Scrollable */}
           <div className="flex-1 overflow-y-auto bg-white">
             <div className="p-6 space-y-6">
               {/* Name and Location */}
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                  {profile.name}, {profile.age}
-                </h1>
-                <div className="flex items-center text-gray-600">
-                  <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
-                  <span className="text-base">
-                    {profile.location?.location}, {profile.location?.city}
-                  </span>
+              <div className="flex flex-row justify-between">
+                {/* Photo Counter - Left */}
+                  {profile.photos && profile.photos.length > 1 && (
+                    <div className="text-gray-500 text-sm font-medium">
+                      {currentImageIndex + 1}/{profile.photos.length}
+                    </div>
+                  )}
+
+                  {/* Empty div when no multiple photos */}
+                  {(!profile.photos || profile.photos.length <= 1) && (
+                    <div></div>
+                  )}
+                {/* Navigation Arrows - Right */}
+                  {profile.photos && profile.photos.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={prevImage}
+                        disabled={actionState.loading}
+                        className={`w-10 h-8 flex items-center justify-center text-gray-500 transition-all ${
+                          actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
+                        }`}
+                      >
+                        <FaArrowLeft className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={nextImage}
+                        disabled={actionState.loading}
+                        className={`w-10 h-8 flex items-center justify-center text-gray-500 transition-all ${
+                          actionState.loading ? 'cursor-not-allowed opacity-50' : 'hover:text-[#C70039]'
+                        }`}
+                      >
+                        <FaArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
+
+                <div className="flex flex-col">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                    {profile.name}, <span className="text-[#646D89]">{profile.age}</span>
+                  </h1>
+                  <div className="flex items-center text-gray-600">
+                    <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
+                    <span className="text-base">
+                      {profile.location?.location}, {profile.location?.city}
+                    </span>
+                  </div>
+                </div>
+              
               
               {/* Profile Details */}
               <div className="space-y-3">
@@ -623,7 +634,7 @@ export default function UserProfileView({
               {/* Name and Location */}
               <div className="flex flex-col gap-2">
                 <h1 className="text-3xl lg:text-4xl font-bold text-gray-800">
-                  {profile.name} {profile.age}
+                  {profile.name}, <span className="text-[#646D89]">{profile.age}</span>
                 </h1>
                 <div className="flex items-center text-gray-600">
                   <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />

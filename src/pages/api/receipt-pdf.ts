@@ -7,15 +7,22 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== 'POST') {
+  if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const auth = req.headers.authorization || "";
-    const token = auth.replace(/^Bearer\s+/i, "");
+    // รับ token จาก query parameter
+    const token = req.query.token as string;
+    const subscriptionId = req.query.subscriptionId as string;
+    const isMobile = req.query.mobile === 'true';
+    
     if (!token) {
       return res.status(401).json({ error: "Missing bearer token" });
+    }
+
+    if (!subscriptionId) {
+      return res.status(400).json({ error: "Missing subscription ID" });
     }
 
     const supabase = createClient(
@@ -29,7 +36,6 @@ export default async function handler(
       return res.status(401).json({ error: "Invalid token" });
     }
 
-    const { subscriptionId } = req.body;
 
     // ดึงข้อมูล subscription และ profile
     const { data: subscription, error: subError } = await supabase
@@ -53,7 +59,7 @@ export default async function handler(
       .single();
 
     // ดึงข้อมูล Stripe Charge
-    const paymentIntentId = subscription.stripe_subscription_id;
+    const paymentIntentId = subscription.stripe_payment_intent_id || subscription.stripe_subscription_id;
     if (!paymentIntentId) {
       return res.status(400).json({ error: 'No payment record found' });
     }
@@ -69,13 +75,13 @@ export default async function handler(
 
     // สร้าง PDF
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
-    
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="receipt-${subscriptionId}.pdf"`);
+    const chunks: Buffer[] = [];
 
-    // Pipe PDF to response
-    doc.pipe(res);
+    doc.on('data', chunk => chunks.push(chunk));
+    
+    await new Promise<void>((resolve, reject) => {
+      doc.on('end', () => resolve());
+      doc.on('error', reject);
 
     // --- Header ---
     doc.fontSize(28)
@@ -205,6 +211,26 @@ export default async function handler(
 
     // Finalize PDF
     doc.end();
+
+  });
+
+  const pdfBuffer = Buffer.concat(chunks);
+
+  // Set headers for direct download
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Length', pdfBuffer.length.toString());
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Pragma', 'no-cache');
+
+  if (isMobile) {
+    // สำหรับ mobile: เปิด inline (ไม่ดาวน์โหลด)
+    res.setHeader('Content-Disposition', `inline; filename="receipt-${subscriptionId}.pdf"`);
+  } else {
+    // สำหรับ desktop: ดาวน์โหลดไฟล์
+    res.setHeader('Content-Disposition', `attachment; filename="receipt-${subscriptionId}.pdf"`);
+  }
+
+  res.send(pdfBuffer);
 
   } catch (error) {
     console.error('Error generating receipt PDF:', error);

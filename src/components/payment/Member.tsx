@@ -3,6 +3,7 @@ import { useBillingHistory } from "@/hooks/useBillingHistory";
 import Image from "next/image";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/supabaseClient";
+import { IoCloseCircleOutline } from "react-icons/io5";
 
 function Member() {
     const { subscription, loading: subLoading, hasActiveSubscription, refetch: refetchSubscription } = useUserSubscription();
@@ -25,40 +26,58 @@ function Member() {
 
         const handleRequestPDF = async (subscriptionId: number) => {
             try {
-                setAlert({ type: 'success', message: 'Generating receipt PDF...' });
-        
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session?.access_token) {
                     throw new Error('Not authenticated');
                 }
         
-                const response = await fetch('/api/receipt-pdf', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${session.access_token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ subscriptionId }),
-                });
-        
-                if (!response.ok) {
-                    const result = await response.json();
-                    throw new Error(result.error || 'Failed to generate receipt PDF');
-                }
-        
-                // แปลง response เป็น blob และดาวน์โหลด
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `receipt-${subscriptionId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent);
+                const url = `/api/receipt-pdf?token=${encodeURIComponent(session.access_token)}&subscriptionId=${subscriptionId}&mobile=${isMobile}`;
                 
-                setAlert({ type: 'success', message: 'Receipt PDF downloaded!' });
-        
+                if (isMobile) {
+                    // สำหรับ mobile: ใช้ fetch แล้วเปิด blob URL
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to generate PDF: ${response.statusText}`);
+                    }
+                    
+                    const blob = await response.blob();
+                    const pdfUrl = URL.createObjectURL(blob);
+                    
+                    // เปิดใน new tab โดยไม่ใช้ window.open()
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // ล้าง URL หลังจากใช้
+                    setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
+                    
+                } else {
+                    // สำหรับ desktop: ดาวน์โหลดไฟล์
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to generate PDF: ${response.statusText}`);
+                    }
+                    
+                    const blob = await response.blob();
+                    const pdfUrl = URL.createObjectURL(blob);
+                    
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.download = `receipt-${subscriptionId}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    URL.revokeObjectURL(pdfUrl);
+                }
+                
             } catch (error) {
                 console.error('Error requesting PDF:', error);
                 setAlert({ 
@@ -318,7 +337,18 @@ function Member() {
             {/* Cancel Modal */}
             {showCancelModal && (
                 <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl border-1 max-w-2xl w-full">
+                    <div className="bg-white rounded-2xl border-1 max-w-2xl w-full relative">
+
+                        {/* Close button */}
+                        <button
+                            onClick={() => setShowCancelModal(false)}
+                            disabled={cancelling}
+                            className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors "
+                            aria-label="Close modal"
+                        >
+                            <IoCloseCircleOutline className="w-6 h-6" />
+                        </button>
+
                         <h3 className="text-2xl font-bold p-5 text-gray-800 mb-4 border-b">
                             Cancel confirmation?
                         </h3>
