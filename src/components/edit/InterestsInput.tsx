@@ -22,74 +22,66 @@ export default function InterestsInput({
   return (
     <div className="mt-6 md:mt-8">
       <label className="block text-sm md:text-base font-medium text-gray-900 mb-2 md:mb-3">
-        Hobbies and Interests (Choose up to 10)
+        Hobbies / Interests (Maximum 10)
       </label>
-      
-      <div className="flex gap-2 items-center">
-        <div className="flex-1 min-h-[48px] border border-gray-300 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-[#A62D82] focus-within:border-transparent">
-          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto" style={{ gap: '8px' }}>
-            {interests.map((interest, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-[#7D2262] whitespace-nowrap flex-shrink-0"
-                style={{ backgroundColor: '#F4EBF2' }}
-              >
-                {interest}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newInterests = interests.filter((_, i) => i !== index);
-                    handleInputChange('interests', newInterests);
-                  }}
-                  className="text-[#7D2262] hover:text-red-500 text-lg font-bold leading-none"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-            
-            <input
-              type="text"
-              value={chipInput}
-              onChange={(e) => setChipInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addChip();
-                }
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {(interests || []).map((chip, i) => (
+          <span
+            key={`${chip}-${i}`}
+            className="flex items-center gap-2 rounded-sm bg-[#F4EBF2] px-3 py-1 text-md font-bold text-[#7D2262]"
+          >
+            {chip}
+            <button
+              type="button"
+              onClick={() => {
+                const newInterests = interests.filter((_, idx) => idx !== i);
+                handleInputChange('interests', newInterests);
               }}
-              placeholder={interests.length === 0 ? "Type and press Enter to add" : ""}
-              disabled={interests.length >= 10}
-              className="flex-1 min-w-[120px] border-none outline-none bg-transparent text-sm md:text-base disabled:bg-transparent"
-            />
-          </div>
-        </div>
-        
+              className="rounded-full bg-[#F4EBF2] px-0 text-[#7D2262] text-xl font-bold hover:bg-[#950028]"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={chipInput}
+          onChange={(e) => setChipInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addChip();
+            }
+          }}
+          placeholder="Type and press Enter to add"
+          disabled={(interests || []).length >= 10}
+          className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#A62D82] disabled:bg-gray-100"
+        />
         <button
           type="button"
           onClick={addChip}
-          disabled={interests.length >= 10 || !chipInput.trim()}
-          className="bg-[#C70039] text-white disabled:opacity-50 px-6 py-3 rounded-lg font-semibold text-sm hover:bg-[#950028] transition-colors flex-shrink-0"
+          disabled={(interests || []).length >= 10 || !chipInput.trim()}
+          className="button-primary bg-[#C70039] text-white disabled:opacity-50 px-6 py-3 rounded-lg font-semibold text-sm hover:bg-[#950028] transition-colors"
         >
           Add
         </button>
       </div>
-      
-      <div className="flex justify-between items-center mt-2">
-        <p className="text-xs md:text-sm text-gray-500">
-          {interests.length}/10 interests
+
+      {(interests || []).length >= 10 && (
+        <p className="mt-1 text-sm text-yellow-600">
+          Maximum 10 interests reached
         </p>
-        {interests.length >= 10 && (
-          <p className="text-sm text-yellow-600">
-            Maximum 10 interests reached
-          </p>
-        )}
-        {(validationErrors.interests || fieldErrors.interests) && (
-          <p className="text-xs md:text-sm text-red-600">
-            {validationErrors.interests || fieldErrors.interests}
-          </p>
-        )}
-      </div>
+      )}
+
+      {(validationErrors.interests || fieldErrors.interests) && (
+        <p className="mt-1 text-sm text-[#C70039]">
+          {validationErrors.interests || fieldErrors.interests}
+        </p>
+      )}
     </div>
   );
 }
