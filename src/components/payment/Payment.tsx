@@ -210,7 +210,7 @@ function PaymentForm() {
                                                     value={cardOwnerName}
                                                     onChange={(e) => setCardOwnerName(e.target.value)}
                                                     placeholder="Holder of Card"
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C70039] focus:border-transparent"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#A62D82] focus:border-transparent"
                                                     required
                                                 />
                                             </div>
@@ -309,7 +309,8 @@ function Payment() {
         appearance: {
             theme: 'stripe' as const,
             variables: {
-                colorPrimary: '#C70039',
+                colorPrimary: '#A62D82',
+                borderRadius: '6px',
             },
         },
         locale: 'en' as const,
