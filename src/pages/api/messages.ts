@@ -110,7 +110,7 @@ export default async function handler(
 
   if (req.method === 'POST') {
     // ส่งข้อความใหม่
-    const { match_id, message_text, receiver_id, message_type = 'text', media_url } = req.body;
+    const { match_id, message_text, receiver_id, message_type = 'text', media_url, receiver_is_online = false } = req.body;
 
     // Validate required fields based on message type
     if (!match_id || !receiver_id) {
@@ -224,7 +224,8 @@ export default async function handler(
           user.id,                                       // ผู้ส่ง
           { name: senderProfile?.name, photo_url: senderProfile?.photo_url },
           match_id,
-          (messageData.message_text || '') as string
+          (messageData.message_text || '') as string,
+          receiver_is_online
         );
       } catch (e) {
         console.error('createMessageNotification error:', e);
