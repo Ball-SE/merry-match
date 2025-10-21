@@ -176,7 +176,7 @@ export default async function handler(
         sender_id: user.id,
         receiver_id,
         is_read: false,
-        message_type
+        message_type,
       };
 
       if (message_type === 'text') {
