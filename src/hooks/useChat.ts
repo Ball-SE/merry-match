@@ -64,6 +64,13 @@ export function useChat(matchId: string): UseChatReturn {
     string[]
   >([]);
   const [isOtherOnlineInThisRoom, setIsOtherOnlineInThisRoom] = useState(false);
+  useEffect(() => {
+    console.log("🟢 Presence updated:", {
+      matchId,
+      isOtherOnlineInThisRoom,
+      othersOnlineInThisRoom
+    });
+  }, [matchId, isOtherOnlineInThisRoom, othersOnlineInThisRoom]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [session, setSession] = useState<{
