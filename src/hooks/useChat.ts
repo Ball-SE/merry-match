@@ -145,6 +145,7 @@ export function useChat(matchId: string): UseChatReturn {
         mediaUrl,
         receiverId: match.other_user.id,
         senderId: session.user.id,
+        isOtherOnline: isOtherOnlineInThisRoom,
       });
 
       try {
@@ -154,10 +155,12 @@ export function useChat(matchId: string): UseChatReturn {
           message_type: string;
           message_text?: string;
           media_url?: string;
+          receiver_is_online?: boolean;
         } = {
           match_id: matchId,
           receiver_id: match.other_user.id,
           message_type: messageType,
+          receiver_is_online: isOtherOnlineInThisRoom,
         };
 
         // เพิ่ม message_text ถ้ามี
@@ -193,7 +196,7 @@ export function useChat(matchId: string): UseChatReturn {
         throw err; // Re-throw เพื่อให้ component จัดการได้
       }
     },
-    [match, matchId, session?.user?.id, session?.access_token]
+    [match, matchId, session?.user?.id, session?.access_token, isOtherOnlineInThisRoom]
   );
 
   // ทำเครื่องหมายว่าอ่านแล้ว
