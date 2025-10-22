@@ -99,6 +99,7 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
                         id="default"
                         checked={localGenders.includes("default")}
                         onCheckedChange={(checked) => handleGenderChange("default", !!checked)}
+                        className="data-[state=checked]:bg-[#A62D82]"
                     />
                     <label htmlFor="default">Default</label>
                 </div>
@@ -107,6 +108,7 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
                         id="male"
                         checked={localGenders.includes("male")}
                         onCheckedChange={(checked) => handleGenderChange("male", !!checked)}
+                        className="data-[state=checked]:bg-[#A62D82]"
                     />
                     <label htmlFor="male">Male</label>
                 </div>
@@ -115,6 +117,7 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
                         id="female"
                         checked={localGenders.includes("female")}
                         onCheckedChange={(checked) => handleGenderChange("female", !!checked)}
+                        className="data-[state=checked]:bg-[#A62D82]"
                     />
                     <label htmlFor="female">Female</label>
                 </div>
@@ -123,6 +126,7 @@ function MatchingRight({ isModal = false, onClose }: MatchingRightProps) {
                         id="non-binary"
                         checked={localGenders.includes("lgbtq+")}
                         onCheckedChange={(checked) => handleGenderChange("lgbtq+", !!checked)}
+                        className="data-[state=checked]:bg-[#A62D82]"
                     />
                     <label htmlFor="non-binary">Non-binary people</label>
                 </div>
