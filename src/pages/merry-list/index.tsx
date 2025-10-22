@@ -409,10 +409,10 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
           </div>
         </div>
 
-        <div className="flex justify-evenly mx-1 p-2 gap-1 rounded-xl lg:gap-5 lg:relative lg:right-95 select-none">
+        <div className="flex justify-evenly mx-0.5 p-2 gap-0 rounded-xl lg:gap-5 lg:relative lg:right-95 select-none">
           <button
             onClick={() => setActiveTab("matches")}
-            className={`p-2 px-4 text-sm rounded-xl font-semibold transition-all cursor-pointer w-30 h-10 ${
+            className={`p-2 px-4 text-sm rounded-xl font-semibold transition-all cursor-pointer w-[20vh] h-[6vh] lg:w-[12vh] lg:h-[4.5vh] ${
               activeTab === "matches"
                 ? "bg-[#C70039] text-white shadow-lg"
                 : "bg-red-200/70 text-[#C70039] hover:bg-red-300/70 transition-all ease-in-out duration-150 hover:scale-101"
@@ -422,7 +422,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
           </button>
           <button
             onClick={() => setActiveTab("swipes")}
-            className={`p-2 px-4 text-sm rounded-xl font-semibold transition-all cursor-pointer mx-1.5 lg:mx-0 w-30 h-10 ${
+            className={`p-2 px-4 text-sm rounded-xl font-semibold transition-all cursor-pointer mx-1.5 lg:mx-0 w-[20vh] h-[6vh] lg:w-[12vh] lg:h-[4.5vh] ${
               activeTab === "swipes"
                 ? "bg-[#C70039] text-white shadow-lg"
                 : "bg-red-200/70 text-[#C70039] hover:bg-red-300/70 transition-all ease-in-out duration-150 hover:scale-101"
@@ -432,7 +432,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
           </button>
           <button
             onClick={() => setActiveTab("other")}
-            className={`p-2 px-4 text-sm rounded-xl font-semibold transition-all cursor-pointer w-30 h-10 ${
+            className={`p-2 px-4 text-sm rounded-xl font-semibold transition-all cursor-pointer w-[20vh] h-[6vh] lg:w-[12vh] lg:h-[4.5vh] ${
               activeTab === "other"
                 ? "bg-[#C70039] text-white shadow-lg"
                 : "bg-red-200/70 text-[#C70039] hover:bg-red-300/70 transition-all ease-in-out duration-150 hover:scale-101"
