@@ -204,39 +204,78 @@ export default async function handler(
           .eq("id", user.id)
           .single();
 
-        const { data: swipeRecord, error: findErr } =   await supabase
+        if (action === "like") {
+          // ... check reciprocal ...
+
+          if (reciprocal) {
+            // ใช้ currentUserProfile ที่ query ไว้แล้ว
+            await createMatchNotification(user.id, swiped_id, swipedUser);
+            await createMatchNotification(swiped_id, user.id, {
+              name:
+                currentUserProfile?.name ||
+                user.user_metadata?.name ||
+                user.email ||
+                "",
+              photo_url: currentUserProfile?.photo_url || null,
+            });
+          } else {
+            // ใช้ currentUserProfile ที่ query ไว้แล้ว
+            await createLikeNotification(swiped_id, user.id, {
+              name:
+                currentUserProfile?.name ||
+                user.user_metadata?.name ||
+                user.email ||
+                "",
+              photo_url: currentUserProfile?.photo_url || null,
+            });
+          }
+        }
+
+        const { data: swipeRecord, error: findErr } = await supabase
           .from("swipes")
           .select("id, swiper_id, swiped_id")
-          .or(`and(swiper_id.eq.${user.id},swiped_id.eq.${swiped_id}),and(swiper_id.eq.${swiped_id},swiped_id.eq.${user.id})`);
-          
-          if (findErr) {
-            console.error("[unswipe] find swipe error", findErr);
-            return res.status(500).json({ success: false, message: findErr.message });
-          }
-      
-          if (!swipeRecord) {
-            console.log("[unswipe] swipe not found");
-            return res.status(404).json({ success: false, message: "Swipe not found" });
-          }
+          .or(
+            `and(swiper_id.eq.${user.id},swiped_id.eq.${swiped_id}),and(swiper_id.eq.${swiped_id},swiped_id.eq.${user.id})`
+          );
 
-          const idsToDelete = swipeRecord.map(r => r.id);
-          const { error: delErr, count } = await supabase
-            .from("swipes")
-            .delete({ count: "exact" })
-            .in("id", idsToDelete);
+        if (findErr) {
+          console.error("[unswipe] find swipe error", findErr);
+          return res
+            .status(500)
+            .json({ success: false, message: findErr.message });
+        }
 
-          if (delErr) {
-            console.error("[unswipe] delete error", delErr);
-            return res.status(500).json({ success: false, message: delErr.message });
-          }
+        if (!swipeRecord) {
+          console.log("[unswipe] swipe not found");
+          return res
+            .status(404)
+            .json({ success: false, message: "Swipe not found" });
+        }
 
-          console.log("[unswipe] deleted swipe", { count });
+        const idsToDelete = swipeRecord.map((r) => r.id);
+        const { error: delErr, count } = await supabase
+          .from("swipes")
+          .delete({ count: "exact" })
+          .in("id", idsToDelete);
+
+        if (delErr) {
+          console.error("[unswipe] delete error", delErr);
+          return res
+            .status(500)
+            .json({ success: false, message: delErr.message });
+        }
+
+        console.log("[unswipe] deleted swipe", { count });
 
         // เพิ่ม: สร้าง notification สำหรับทั้งสองฝ่าย
         await createMatchNotification(user.id, swiped_id, swipedUser);
         await createMatchNotification(swiped_id, user.id, {
-          name: currentUserProfile?.name || user.user_metadata?.name || user.email || "",
-          photo_url: currentUserProfile?.photo_url || null  // ✅ ใช้จาก profiles
+          name:
+            currentUserProfile?.name ||
+            user.user_metadata?.name ||
+            user.email ||
+            "",
+          photo_url: currentUserProfile?.photo_url || null, // ✅ ใช้จาก profiles
         });
       } else {
         // ✅ ดึงข้อมูล profile ของ current user ก่อน

@@ -84,24 +84,8 @@ export async function createMessageNotification(
     //   return true;
     // }
 
-    // ตรวจสอบว่า receiver ยังไม่ได้อ่านข้อความล่าสุดใน chat นี้
-    const { data: recentMessages, error: recentError } = await supabase
-      .from('messages')
-      .select('is_read')
-      .eq('match_id', matchId)
-      .eq('receiver_id', receiverId)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (recentError) {
-      console.error("❌ Error checking recent messages:", recentError);
-    } else {
-      console.log("📱 Recent messages check:", recentMessages);
-    }
-
-    // ถ้า receiver กำลังอยู่ใน chat หรือเพิ่งอ่านข้อความล่าสุด ให้ไม่ส่ง notification
-    if (recentMessages && recentMessages.length > 0 && recentMessages[0].is_read) {
-      console.log("⏸️ Receiver is active in chat, skipping notification");
+    if (receiverIsOnline) {
+      console.log("⏸️ Receiver is online in chat room, skipping notification");
       return true;
     }
 
