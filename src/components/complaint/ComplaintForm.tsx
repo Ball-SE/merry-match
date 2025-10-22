@@ -81,7 +81,7 @@ const ComplaintForm: React.FC = () => {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full bg-[#C70039] hover:bg-[#950028] text-white rounded-full py-3 px-6 mt-4 transition-colors ${
+          className={`bg-[#C70039] hover:bg-[#950028] text-white rounded-full py-2 px-6 transition-colors self-start ${
             loading ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
