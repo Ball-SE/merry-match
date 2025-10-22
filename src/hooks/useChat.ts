@@ -8,7 +8,7 @@ type Message = {
   sender_id: string;
   receiver_id: string;
   message_text: string | null;
-  message_type?: 'text' | 'image';
+  message_type?: "text" | "image";
   media_url?: string | null;
   created_at: string;
   is_read: boolean;
@@ -24,7 +24,7 @@ type Message = {
     photo_url: string;
     username: string;
   };
-}
+};
 
 type Match = {
   id: string;
@@ -36,17 +36,22 @@ type Match = {
     photo_url: string;
     username: string;
   };
-}
+};
 
 type UseChatReturn = {
   messages: Message[];
   match: Match | null;
   loading: boolean;
   error: string | null;
-  sendMessage: (messageText: string, messageType?: 'text' | 'image', mediaUrl?: string) => Promise<void>;
+  sendMessage: (
+    messageText: string,
+    messageType?: "text" | "image",
+    mediaUrl?: string
+  ) => Promise<void>;
   markAsRead: (messageIds: string[]) => Promise<void>;
   unreadCount: number;
-}
+  isOtherOnlineInThisRoom: boolean;
+};
 
 export function useChat(matchId: string): UseChatReturn {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,6 +59,20 @@ export function useChat(matchId: string): UseChatReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const [othersOnlineInThisRoom, setOthersOnlineInThisRoom] = useState<
+    string[]
+  >([]);
+  const [isOtherOnlineInThisRoom, setIsOtherOnlineInThisRoom] = useState(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log("🟢 Presence updated:", {
+        matchId,
+        isOtherOnlineInThisRoom,
+        othersOnlineInThisRoom
+      });
+    }
+  }, [matchId, isOtherOnlineInThisRoom, othersOnlineInThisRoom]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [session, setSession] = useState<{
@@ -92,11 +111,14 @@ export function useChat(matchId: string): UseChatReturn {
 
     try {
       // โหลดแค่ 20 ข้อความล่าสุด
-      const response = await fetch(`/api/messages?match_id=${matchId}&limit=20`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/messages?match_id=${matchId}&limit=20`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch messages");
       }
@@ -117,68 +139,74 @@ export function useChat(matchId: string): UseChatReturn {
   }, [matchId, session?.access_token, session?.user?.id]);
 
   // ส่งข้อความ
-  const sendMessage = useCallback(async (
-    messageText: string, 
-    messageType: 'text' | 'image' = 'text', 
-    mediaUrl?: string
-  ) => {
-    if (!match || !session?.user?.id || !session?.access_token) return;
+  const sendMessage = useCallback(
+    async (
+      messageText: string,
+      messageType: "text" | "image" = "text",
+      mediaUrl?: string
+    ) => {
+      if (!match || !session?.user?.id || !session?.access_token) return;
 
-    console.log('Sending message:', {
-      matchId,
-      messageText,
-      messageType,
-      mediaUrl,
-      receiverId: match.other_user.id,
-      senderId: session.user.id
-    });
-
-    try {
-      const body: {
-        match_id: string;
-        receiver_id: string;
-        message_type: string;
-        message_text?: string;
-        media_url?: string;
-      } = {
-        match_id: matchId,
-        receiver_id: match.other_user.id,
-        message_type: messageType
-      };
-
-      // เพิ่ม message_text ถ้ามี
-      if (messageText && messageText.trim()) {
-        body.message_text = messageText;
-      }
-
-      // เพิ่ม media_url สำหรับข้อความแบบรูปภาพ
-      if (messageType === 'image' && mediaUrl) {
-        body.media_url = mediaUrl;
-      }
-
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(body),
+      console.log("Sending message:", {
+        matchId,
+        messageText,
+        messageType,
+        mediaUrl,
+        receiverId: match.other_user.id,
+        senderId: session.user.id,
+        isOtherOnline: isOtherOnlineInThisRoom,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message');
+      try {
+        const body: {
+          match_id: string;
+          receiver_id: string;
+          message_type: string;
+          message_text?: string;
+          media_url?: string;
+          receiver_is_online?: boolean;
+        } = {
+          match_id: matchId,
+          receiver_id: match.other_user.id,
+          message_type: messageType,
+          receiver_is_online: isOtherOnlineInThisRoom,
+        };
+
+        // เพิ่ม message_text ถ้ามี
+        if (messageText && messageText.trim()) {
+          body.message_text = messageText;
+        }
+
+        // เพิ่ม media_url สำหรับข้อความแบบรูปภาพ
+        if (messageType === "image" && mediaUrl) {
+          body.media_url = mediaUrl;
+        }
+
+        const response = await fetch("/api/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to send message");
+        }
+
+        const result = await response.json();
+        console.log("Message sent successfully:", result);
+
+        // ข้อความจะถูกเพิ่มผ่าน realtime subscription
+      } catch (err) {
+        console.error("Error sending message:", err);
+        setError("Failed to send message");
+        throw err; // Re-throw เพื่อให้ component จัดการได้
       }
-
-      const result = await response.json();
-      console.log('Message sent successfully:', result);
-
-      // ข้อความจะถูกเพิ่มผ่าน realtime subscription
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError('Failed to send message');
-      throw err; // Re-throw เพื่อให้ component จัดการได้
-    }
-  }, [match, matchId, session?.user?.id, session?.access_token]);
+    },
+    [match, matchId, session?.user?.id, session?.access_token, isOtherOnlineInThisRoom]
+  );
 
   // ทำเครื่องหมายว่าอ่านแล้ว
   const markAsRead = useCallback(
@@ -219,15 +247,19 @@ export function useChat(matchId: string): UseChatReturn {
 
   // ตั้งค่า realtime subscription
   useEffect(() => {
-    if (!matchId || !session?.user?.id || !session?.access_token) {
-      console.log('Missing required data for realtime:', { matchId, userId: session?.user?.id, hasToken: !!session?.access_token });
+    if (!matchId || matchId === '' || !session?.user?.id || !session?.access_token) {
+      console.log("Missing required data for realtime:", {
+        matchId,
+        userId: session?.user?.id,
+        hasToken: !!session?.access_token,
+      });
       return;
     }
 
-    console.log('Setting up realtime with:', {
+    console.log("Setting up realtime with:", {
       matchId,
       userId: session.user.id,
-      token: session.access_token.substring(0, 20) + '...'
+      token: session.access_token.substring(0, 20) + "...",
     });
 
     // สร้าง supabase client ด้วย user context
@@ -242,9 +274,30 @@ export function useChat(matchId: string): UseChatReturn {
     );
 
     // สร้าง channel สำหรับ match นี้
-    console.log('Setting up realtime subscription for match:', matchId);
-    const channel = supabase
-      .channel(`match-${matchId}`)
+    console.log("Setting up realtime subscription for match:", matchId);
+    const channel = supabase.channel(`match-${matchId}`, {
+      config: { presence: { key: session.user.id } },
+    }); // EDIT
+
+    // Presence: helper ดึงรายชื่อคนอื่นที่อยู่ในห้องนี้ // EDIT
+    const computeOthers = () => {
+      // EDIT
+      const state = channel.presenceState() as Record<
+        string,
+        Array<{ user_id: string; match_id: string }>
+      >; // EDIT
+      const others = Object.values(state) // EDIT
+        .flat() // EDIT
+        .filter((p) => p.user_id !== session.user.id && p.match_id === matchId) // EDIT
+        .map((p) => p.user_id); // EDIT
+      setOthersOnlineInThisRoom(others); // EDIT
+      setIsOtherOnlineInThisRoom(others.length > 0); // EDIT
+    }; // EDIT
+
+    channel // EDIT
+      .on("presence", { event: "sync" }, computeOthers) // EDIT
+      .on("presence", { event: "join" }, computeOthers) // EDIT
+      .on("presence", { event: "leave" }, computeOthers) // EDIT
       .on(
         "postgres_changes",
         {
@@ -254,15 +307,15 @@ export function useChat(matchId: string): UseChatReturn {
           filter: `match_id=eq.${matchId}`,
         },
         (payload) => {
-          console.log('Realtime INSERT payload:', payload);
+          console.log("Realtime INSERT payload:", payload);
           const newMessage = payload.new as Message;
-          
+
           // เพิ่มข้อความใหม่
-          setMessages(prev => {
-            console.log('Adding new message:', newMessage);
+          setMessages((prev) => {
+            console.log("Adding new message:", newMessage);
             return [...prev, newMessage];
           });
-          
+
           // ถ้าเป็นข้อความที่ส่งมาหาเรา ให้เพิ่มจำนวน unread
           if (newMessage.receiver_id === session.user.id) {
             setUnreadCount((prev) => prev + 1);
@@ -289,15 +342,20 @@ export function useChat(matchId: string): UseChatReturn {
         }
       )
       .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to realtime channel');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Channel error occurred');
-        } else if (status === 'TIMED_OUT') {
-          console.error('Subscription timed out');
-        } else if (status === 'CLOSED') {
-          console.log('Channel closed');
+        console.log("Realtime subscription status:", status);
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to realtime channel");
+          channel.track({
+            user_id: session.user.id,
+            match_id: matchId,
+            online_at: new Date().toISOString(),
+          }); // EDIT
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("Channel error occurred");
+        } else if (status === "TIMED_OUT") {
+          console.error("Subscription timed out");
+        } else if (status === "CLOSED") {
+          console.log("Channel closed");
         }
       });
 
@@ -329,17 +387,17 @@ export function useChat(matchId: string): UseChatReturn {
     const loadData = async () => {
       // รอให้ session พร้อมก่อน
       if (!session?.access_token || !matchId) {
-        console.log('⏳ Waiting for session and matchId...');
+        console.log("⏳ Waiting for session and matchId...");
         return;
       }
 
       // ป้องกันการโหลดซ้ำ
       if (hasLoadedRef.current) {
-        console.log('⚠️ Data already loaded, skipping');
+        console.log("⚠️ Data already loaded, skipping");
         return;
       }
 
-      console.log('📥 Loading match and messages data...');
+      console.log("📥 Loading match and messages data...");
       setLoading(true);
       setError(null);
       hasLoadedRef.current = true;
@@ -357,15 +415,18 @@ export function useChat(matchId: string): UseChatReturn {
         }
 
         // Fetch messages
-        const messagesResponse = await fetch(`/api/messages?match_id=${matchId}&limit=20`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
+        const messagesResponse = await fetch(
+          `/api/messages?match_id=${matchId}&limit=20`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        );
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json();
           setMessages(messagesData.messages || []);
-          
+
           // นับข้อความที่ยังไม่ได้อ่าน
           const unread =
             messagesData.messages?.filter(
@@ -375,12 +436,12 @@ export function useChat(matchId: string): UseChatReturn {
           setUnreadCount(unread);
         }
       } catch (err) {
-        console.error('Error loading data:', err);
-        setError('Failed to load data');
+        console.error("Error loading data:", err);
+        setError("Failed to load data");
       }
 
       setLoading(false);
-      console.log('✅ Data loaded successfully');
+      console.log("✅ Data loaded successfully");
     };
 
     loadData();
@@ -409,5 +470,6 @@ export function useChat(matchId: string): UseChatReturn {
     sendMessage,
     markAsRead,
     unreadCount,
+    isOtherOnlineInThisRoom, // EDIT
   };
 }

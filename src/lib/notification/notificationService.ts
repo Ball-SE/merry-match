@@ -42,7 +42,8 @@ export async function createMessageNotification(
   senderId: string,
   senderData: { name?: string; photo_url?: string },
   matchId: string,
-  messageText: string
+  messageText: string,
+  receiverIsOnline: boolean = false
 ) {
   try {
     console.log("🔔 createMessageNotification called with:");
@@ -51,29 +52,40 @@ export async function createMessageNotification(
     console.log("- senderData:", senderData);
     console.log("- matchId:", matchId);
     console.log("- messageText:", messageText);
+    console.log("- receiverIsOnline:", receiverIsOnline);
 
     const supabase = createServiceRoleSupabaseClient();
-
+    
     console.log("✅ Supabase client created");
 
-    // ตรวจสอบว่า receiver ยังไม่ได้อ่านข้อความล่าสุดใน chat นี้
-    const { data: recentMessages, error: recentError } = await supabase
-      .from('messages')
-      .select('is_read')
-      .eq('match_id', matchId)
-      .eq('receiver_id', receiverId)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (recentError) {
-      console.error("❌ Error checking recent messages:", recentError);
-    } else {
-      console.log("📱 Recent messages check:", recentMessages);
+    // ✅ EDIT: ถ้า receiver online ให้ skip ทันที
+    if (receiverIsOnline) {
+      console.log("⏸️ Receiver is online in chat room, skipping notification");
+      return true;
     }
 
-    // ถ้า receiver กำลังอยู่ใน chat หรือเพิ่งอ่านข้อความล่าสุด ให้ไม่ส่ง notification
-    if (recentMessages && recentMessages.length > 0 && recentMessages[0].is_read) {
-      console.log("⏸️ Receiver is active in chat, skipping notification");
+    // // ✅ EDIT: เพิ่มการตรวจสอบ presence ก่อน
+    // // ตรวจสอบว่า receiver อยู่ online ในห้อง chat นี้หรือไม่
+    // const channelName = `match-${matchId}`;
+    
+    // // อ่าน presence state จาก Supabase Realtime
+    // const presenceChannel = supabase.channel(channelName);
+    // await presenceChannel.subscribe();
+    
+    // const presenceState = presenceChannel.presenceState();
+    // const isReceiverOnline = Object.values(presenceState)
+    //   .flat()
+    //   .some((p: any) => p.user_id === receiverId && p.match_id === matchId);
+    
+    // await supabase.removeChannel(presenceChannel);
+    
+    // if (isReceiverOnline) {
+    //   console.log("⏸️ Receiver is online in chat room, skipping notification");
+    //   return true;
+    // }
+
+    if (receiverIsOnline) {
+      console.log("⏸️ Receiver is online in chat room, skipping notification");
       return true;
     }
 
