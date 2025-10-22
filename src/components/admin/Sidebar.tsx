@@ -85,8 +85,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 bg-white shadow-lg flex-col min-h-screen">
+      {/* Desktop Sidebar - Added border-r */}
+      <div className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col min-h-screen">
         <SidebarContent />
       </div>
 

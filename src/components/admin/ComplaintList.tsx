@@ -64,19 +64,23 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
     );
   };
 
-  // Format date
+  // Format date - compact version
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: '2-digit'
+      });
+      const timeStr = date.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
       });
+      return { dateStr, timeStr };
     } catch {
-      return dateString;
+      return { dateStr: dateString, timeStr: '' };
     }
   };
 
@@ -137,31 +141,31 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
 
   return (
     <div className="min-h-screen">
-      {/* Fixed Top Navigation Bar */}
-      <div className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 z-40 md:border-l md:border-l-gray-200">
-        <div className="px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* Fixed Top Navigation Bar - FIXED HEIGHT */}
+      <div className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 z-40">
+        <div className="h-[72px] px-4 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 py-3 md:py-0">
           <div className="relative">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">Complaint List</h2>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
+          <div className="flex flex-row items-center space-x-2 md:space-x-4 w-full md:w-auto">
             {/* Search Input */}
-            <div className="relative w-full sm:w-auto">
+            <div className="relative flex-1 md:flex-initial">
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full sm:w-auto pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 h-12"
+                className="w-full md:w-auto pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 h-10"
               />
             </div>
             
             {/* Status Filter Dropdown */}
-            <div className="relative w-full sm:w-auto">
+            <div className="relative">
               <select
                 value={statusFilter}
                 onChange={(e) => onStatusFilterChange(e.target.value)}
-                className="w-full appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-gray-700 h-12"
+                className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-gray-700 h-10"
               >
                 <option value="All status">All status</option>
                 <option value="New">New</option>
@@ -175,63 +179,67 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
         </div>
       </div>
 
-      {/* Spacer for fixed navbar */}
-      <div className="h-24 md:h-20"></div>
+      {/* Spacer for fixed navbar - MATCHES NAVBAR HEIGHT */}
+      <div className="h-[72px]"></div>
 
       {/* Complaints Table */}
       <div className="p-4 md:p-6">
         <div className="rounded-lg shadow overflow-hidden bg-white w-full">
           <div className="overflow-x-auto">
-            <table className="w-full bg-transparent min-w-[800px]">
+            <table className="w-full bg-transparent min-w-[900px]">
               <caption className="sr-only">List of user complaints</caption>
               <thead className="bg-[#D6D9E4]">
                 <tr>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">User</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Issue</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Description</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Date submitted</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Status</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">User</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Issue</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider w-1/4">Description</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Date</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {paginatedComplaints.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 md:px-6 py-4 text-center text-gray-500">
+                    <td colSpan={5} className="px-3 py-4 text-center text-gray-500">
                       {complaints.length === 0 ? 'No complaints found.' : 'No complaints match your search criteria.'}
                     </td>
                   </tr>
                 ) : (
-                  paginatedComplaints.map((complaint) => (
-                    <tr 
-                      key={complaint.id} 
-                      onClick={() => onComplaintClick?.(complaint)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                    >
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {truncateText(complaint.user, 20)}
-                        </div>
-                      </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {truncateText(complaint.issue, 25)}
-                        </div>
-                      </td>
-                      <td className="px-4 md:px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate" title={complaint.description}>
-                          {truncateText(complaint.description, 60)}
-                        </div>
-                      </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                        <div className="text-xs md:text-sm text-[#424C6B]">
-                          {formatDate(complaint.dateSubmitted)}
-                        </div>
-                      </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(complaint.status)}
-                      </td>
-                    </tr>
-                  ))
+                  paginatedComplaints.map((complaint) => {
+                    const { dateStr, timeStr } = formatDate(complaint.dateSubmitted);
+                    return (
+                      <tr 
+                        key={complaint.id} 
+                        onClick={() => onComplaintClick?.(complaint)}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                      >
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {truncateText(complaint.user, 18)}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {truncateText(complaint.issue, 20)}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="text-sm text-gray-900 line-clamp-2" title={complaint.description}>
+                            {complaint.description}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="text-xs text-[#424C6B]">
+                            <div>{dateStr}</div>
+                            <div className="text-gray-400">{timeStr}</div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          {getStatusBadge(complaint.status)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -243,25 +251,22 @@ const ComplaintList: React.FC<ComplaintListProps> = ({
               {/* Items per page selector */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-700">Show</span>
-  {/* Dropdown with repositioned arrow */}
-  <div className="relative inline-block">
-    <select
-      value={itemsPerPage}
-      onChange={(e) => setItemsPerPage(Number(e.target.value))}
-      className="appearance-none border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white pr-8"
-    >
-      <option value={5}>5</option>
-      <option value={10}>10</option>
-      <option value={25}>25</option>
-      <option value={50}>50</option>
-    </select>
-
-    {/* Custom arrow overlay */}
-    <ChevronDown
-      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-      size={16}
-    />
-  </div>
+                <div className="relative inline-block">
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="appearance-none border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white pr-8"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <ChevronDown
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                    size={16}
+                  />
+                </div>
                 <span className="text-sm text-gray-700">
                   entries (Showing {startIndex + 1}-{Math.min(endIndex, filteredComplaints.length)} of {filteredComplaints.length})
                 </span>

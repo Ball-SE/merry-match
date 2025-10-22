@@ -13,8 +13,9 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
   onSearchChange
 }) => {
   return (
-    <div className="fixed top-0 left-0 md:left-64 right-0 bg-white shadow-sm border-b border-gray-200 z-40">
-      <div className="px-4 md:px-8 py-4 flex justify-between items-center">
+    <div className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 z-40">
+      {/* Main navbar - fixed height */}
+      <div className="h-[72px] px-4 md:px-8 flex justify-between items-center">
         <div className="flex items-center space-x-2 md:space-x-4">
           {(currentView === 'add' || currentView === 'edit') && (
             <button 
@@ -110,10 +111,11 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
           </div>
         )}
       </div>
-      {/* Mobile Search Bar */}
+      
+      {/* Mobile Search Bar - only shows on mobile for list view */}
       {currentView === 'list' && (
-        <div className="sm:hidden px-4 pb-4">
-          <div className="relative">
+        <div className="sm:hidden h-[60px] px-4 flex items-center border-t border-gray-100">
+          <div className="relative w-full">
             <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
