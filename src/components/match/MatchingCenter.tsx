@@ -404,7 +404,7 @@ function MatchingCenter() {
         {/* Location - Mobile only */}
           <div className={`sm:hidden absolute bottom-[570px] left-6 flex flex-row gap-2 items-center z-30 ${showMatch ? 'sm:hidden' : ''}`}>
             <RiMapPin2Fill className="text-[#BEBFF1] text-2xl" />
-            <p className="text-[#D6D9E4] text-xl">
+            <p className="text-[#D6D9E4] text-xl capitalize">
               {currentCard?.location?.city && currentCard?.location?.location 
               ? `${currentCard.location.city}, ${currentCard.location.location}`
               : currentCard?.location?.city || currentCard?.location?.location || 'Location not available'}

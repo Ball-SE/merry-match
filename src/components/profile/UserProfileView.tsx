@@ -416,7 +416,7 @@ export default function UserProfileView({
                   </h1>
                   <div className="flex items-center text-gray-600">
                     <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
-                    <span className="text-base">
+                    <span className="text-base capitalize">
                       {profile.location?.location}, {profile.location?.city}
                     </span>
                   </div>
@@ -638,7 +638,7 @@ export default function UserProfileView({
                 </h1>
                 <div className="flex items-center text-gray-600">
                   <img src="/assets/map.png" alt="Location" className="w-4 h-4 mr-2" />
-                  <span className="text-base">
+                  <span className="text-base capitalize">
                     {profile.location?.location}, {profile.location?.city}
                   </span>
                 </div>
