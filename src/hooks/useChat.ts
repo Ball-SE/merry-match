@@ -65,11 +65,13 @@ export function useChat(matchId: string): UseChatReturn {
   >([]);
   const [isOtherOnlineInThisRoom, setIsOtherOnlineInThisRoom] = useState(false);
   useEffect(() => {
-    console.log("🟢 Presence updated:", {
-      matchId,
-      isOtherOnlineInThisRoom,
-      othersOnlineInThisRoom
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log("🟢 Presence updated:", {
+        matchId,
+        isOtherOnlineInThisRoom,
+        othersOnlineInThisRoom
+      });
+    }
   }, [matchId, isOtherOnlineInThisRoom, othersOnlineInThisRoom]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -245,7 +247,7 @@ export function useChat(matchId: string): UseChatReturn {
 
   // ตั้งค่า realtime subscription
   useEffect(() => {
-    if (!matchId || !session?.user?.id || !session?.access_token) {
+    if (!matchId || matchId === '' || !session?.user?.id || !session?.access_token) {
       console.log("Missing required data for realtime:", {
         matchId,
         userId: session?.user?.id,
