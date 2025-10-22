@@ -379,15 +379,8 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
           <p className="text-4xl font-extrabold text-[#A62D82]">Let&apos;s know each other with Merry!</p>
           
           <div className="mt-15">
-            <div className="flex justify-between mx-8 items-center lg:justify-start lg:gap-20">
-              <div>
-                <div className="flex ">
-                  <p className="text-[#C70039] font-extrabold text-xl">{otherSwipe.length}</p>
-                  <Heart color="#ff1659" fill="#ff1659" className="ml-2"/>
-                </div>
-                <p className="text-[#646D89]">Merry to you</p>
-              </div>
-              <div>
+            <div className="flex justify-between items-center lg:justify-start lg:gap-15 lg:ml-[1vh]">
+              <div className="lg:relative lg:left-3.5">
                 <div className="flex">
                   <p className="text-[#C70039] font-extrabold text-xl">{matchList.length}</p>
                   <div className="ml-2">
@@ -395,7 +388,21 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
                     <Heart color="#ff1659" fill="#ff1659" stroke="white" strokeWidth={1} size={28} className="relative left-3.5" />
                   </div>
                 </div>
-                <p className="text-[#646D89]">Merry match</p>
+                <p className="text-[#646D89]">Merry Match</p>
+              </div>
+              <div>
+                <div className="flex ">
+                  <p className="text-[#C70039] font-extrabold text-xl">{swipeList.length}</p>
+                  <Heart color="#ff1659" fill="#ff1659" className="ml-2"/>
+                </div>
+                <p className="text-[#646D89]">Your Merry</p>
+              </div>
+              <div className="lg:relative lg:right-2">
+                <div className="flex">
+                  <p className="text-[#C70039] font-extrabold text-xl">{otherSwipe.length}</p>
+                  <Heart color="#ff1659" fill="#ff1659" className="ml-2"/>
+                </div>
+                <p className="text-[#646D89]">Merry to you</p>
               </div>
             </div>
           </div>
@@ -409,7 +416,7 @@ function MerryList ({ onChatSelect }: MatchingLeftProps) {
           </div>
         </div>
 
-        <div className="flex justify-evenly mx-0.5 p-2 gap-0 rounded-xl lg:gap-5 lg:relative lg:right-95 select-none">
+        <div className="flex justify-evenly mx-0.5 p-2 gap-0 rounded-xl lg:p-0 lg:gap-5 lg:relative lg:right-96.5 select-none">
           <button
             onClick={() => setActiveTab("matches")}
             className={`p-2 px-4 text-sm rounded-xl font-semibold transition-all cursor-pointer w-[20vh] h-[6vh] lg:w-[12vh] lg:h-[4.5vh] ${
