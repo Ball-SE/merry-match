@@ -5,8 +5,6 @@ import Image from 'next/image';
 import { Trash2, Edit, GripVertical, ChevronLeft, ChevronRight, ChevronDown} from 'lucide-react';
 import { PackageListProps } from '../../types/admin';
 
-
-
 const PackageList: React.FC<PackageListProps> = ({ 
   packages, 
   handleDeletePackage, 
@@ -17,19 +15,23 @@ const PackageList: React.FC<PackageListProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Format date to match complaint list format
+  // Format date - compact version
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: '2-digit'
+      });
+      const timeStr = date.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
       });
+      return { dateStr, timeStr };
     } catch {
-      return dateString;
+      return { dateStr: dateString, timeStr: '' };
     }
   };
 
@@ -113,38 +115,41 @@ const PackageList: React.FC<PackageListProps> = ({
 
   return (
     <div className="min-h-screen bg-[#F6F7FC]">
-      {/* Spacer for fixed TopNavigation navbar */}
-      <div className="h-20 md:h-20"></div>
+      {/* Spacer for fixed TopNavigation navbar - MATCHES 72px HEIGHT */}
+      <div className="h-[72px]"></div>
 
       {/* Table Content */}
       <div className="p-4 md:p-6 pb-6">
         <div className="rounded-lg shadow overflow-hidden bg-white w-full">
           {/* Responsive table wrapper */}
           <div className="overflow-x-auto">
-            <table className="w-full bg-white min-w-[1000px]">
+            <table className="w-full bg-white min-w-[900px]">
               <caption className="sr-only">List of Merry Packages</caption>
               <thead className="bg-[#D6D9E4]">
                 <tr>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider w-20">ID</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider w-24">Icon</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Package name</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Merry Limit</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Price</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Created date</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Updated date</th>
-                  <th className="px-4 md:px-6 py-4 text-left text-xs md:text-sm font-medium text-[#424C6B] uppercase tracking-wider">Actions</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider w-16">ID</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider w-16">Icon</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Package</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Limit</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Price</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Created</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider">Updated</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-[#424C6B] uppercase tracking-wider w-20">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {paginatedPackages.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 md:px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-3 py-8 text-center text-gray-500">
                       {searchTerm ? `No packages found matching "${searchTerm}"` : 'No packages available.'}
                     </td>
                   </tr>
                 ) : (
                   paginatedPackages.map((pkg, index) => {
                     const actualIndex = startIndex + index;
+                    const { dateStr: createdDateStr, timeStr: createdTimeStr } = formatDate(pkg.createdDate);
+                    const { dateStr: updatedDateStr, timeStr: updatedTimeStr } = formatDate(pkg.updatedDate);
+                    
                     return (
                       <tr 
                         key={pkg.id} 
@@ -172,44 +177,50 @@ const PackageList: React.FC<PackageListProps> = ({
                           }
                         }}
                       >
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2 md:space-x-3">
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
                             <GripVertical className="w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing" />
                             <span className="text-sm font-medium text-gray-900">
                               {pkg.id}
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
                           <div className="flex items-center justify-center">
-                            <div className="w-12 h-12 relative rounded-lg bg-pink-50 p-1 overflow-hidden">
+                            <div className="w-10 h-10 relative rounded-lg bg-pink-50 p-1 overflow-hidden">
                               <Image 
                                 src={pkg.icon} 
                                 alt={pkg.name}
-                                width={48}
-                                height={48}
+                                width={40}
+                                height={40}
                                 className="object-contain"
                                 unoptimized
                               />
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{pkg.name}</div>
                         </td>
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{pkg.dailySwipeLimit}</div>
                         </td>
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-sm text-gray-900 font-medium">{formatPrice(pkg.price)}</div>
                         </td>
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                          <div className="text-xs md:text-sm text-[#424C6B]">{formatDate(pkg.createdDate)}</div>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="text-xs text-[#424C6B]">
+                            <div>{createdDateStr}</div>
+                            <div className="text-gray-400">{createdTimeStr}</div>
+                          </div>
                         </td>
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                          <div className="text-xs md:text-sm text-[#424C6B]">{formatDate(pkg.updatedDate)}</div>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="text-xs text-[#424C6B]">
+                            <div>{updatedDateStr}</div>
+                            <div className="text-gray-400">{updatedTimeStr}</div>
+                          </div>
                         </td>
-                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
                             <button 
                               onClick={() => handleDeletePackage(pkg.id)}
@@ -242,28 +253,23 @@ const PackageList: React.FC<PackageListProps> = ({
             <div className="px-4 md:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
               {/* Items per page selector */}
               <div className="flex items-center space-x-2">
-                 <span className="text-sm text-gray-700">Show</span>
-
-                  {/* Dropdown with repositioned arrow */}
-                  <div className="relative inline-block">
-                    <select
-                      value={itemsPerPage}
-                      onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                      className="appearance-none border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white pr-8"
-                    >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={25}>25</option>
-                      <option value={50}>50</option>
-                    </select>
-
-                    {/* Custom arrow overlay */}
-                    <ChevronDown
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                      size={16}
-                    />
-                  </div>
-
+                <span className="text-sm text-gray-700">Show</span>
+                <div className="relative inline-block">
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="appearance-none border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white pr-8"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <ChevronDown
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                    size={16}
+                  />
+                </div>
                 <span className="text-sm text-gray-700">
                   entries (Showing {startIndex + 1}-{Math.min(endIndex, filteredPackages.length)} of {filteredPackages.length})
                 </span>

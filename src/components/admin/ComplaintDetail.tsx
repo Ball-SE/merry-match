@@ -27,9 +27,9 @@ const ComplaintDetail: React.FC<ComplaintDetailProps> = ({
 
   return (
     <div className="min-h-screen bg-[#F6F7FC]">
-      {/* Fixed Header at the top */}
-     <div className="fixed top-0 left-0 md:left-64 right-0 bg-white shadow-sm border-b border-gray-100 px-8 py-4 z-40">
-        <div className="flex justify-between items-center">
+      {/* Fixed Header - FIXED HEIGHT 72px to match other navbars */}
+      <div className="fixed top-0 left-0 md:left-64 right-0 bg-white border-b border-gray-200 z-40">
+        <div className="h-[72px] px-4 md:px-8 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
@@ -38,7 +38,7 @@ const ComplaintDetail: React.FC<ComplaintDetailProps> = ({
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center space-x-3">
-              <h2 className="text-2xl font-bold text-gray-900">{complaint.issue}</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">{complaint.issue}</h2>
               {getStatusBadge(complaint.status)}
             </div>
           </div>
@@ -62,8 +62,8 @@ const ComplaintDetail: React.FC<ComplaintDetailProps> = ({
         </div>
       </div>
 
-      {/* Spacer for fixed navbar */}
-      <div className="h-20"></div>
+      {/* Spacer for fixed navbar - MATCHES NAVBAR HEIGHT */}
+      <div className="h-[72px]"></div>
 
       {/* Content */}
       <div className="p-6">
