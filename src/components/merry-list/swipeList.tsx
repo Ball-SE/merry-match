@@ -66,7 +66,7 @@ export default function SwipeList({
                   />
                   <div className="mt-7 mr-2 lg:mt-0 lg:mr-0 lg:order-3 justify-items-end">
                     <div className="flex items-center px-3 pr-4.5 p-1 border-2 border-gray-300 rounded-2xl bg-[#FCFCFE] select-none">
-                      <p className="ml-2 text-gray-600">Not Match yet</p>
+                      <p className="ml-2 text-gray-600">Not Match Yet</p>
                     </div>
                     <div className="flex justify-between items-center w-24 mt-6">
                       <button
@@ -98,7 +98,7 @@ export default function SwipeList({
                     <p className="font-bold text-[#2A2E3F] text-lg">{swipe.name}</p>
                     <p className="ml-2 font-bold text-[#646D89] text-lg">{swipe.age}</p>
                     <MapPin color="white" fill="#FFB1C8" size={15} className="ml-1" />
-                    <p className="text-[#646D89]">
+                    <p className="text-[#646D89] capitalize">
                       {formatLocation ? formatLocation(swipe.location) : ""}
                     </p>
                   </div>

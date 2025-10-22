@@ -101,7 +101,7 @@ export default function MatchList({
                   <div className="mt-7 mr-2 lg:mt-0 lg:mr-0 lg:order-3 justify-items-end">
                     {isUnmatched ? (
                       <span className="flex items-end w-35 px-2.5 p-1 border-1 border-gray-300 rounded-2xl select-none">
-                        <p className="ml-2 text-gray-600">Not Match yet</p>
+                        <p className="ml-2 text-gray-600">Not Match Yet</p>
                       </span>
                     ) : (
                       <p className="flex items-center px-4 pr-4.5 p-1 border-2 border-red-700 rounded-2xl bg-[#FCFCFE] select-none">
@@ -173,7 +173,7 @@ export default function MatchList({
                     <p className="font-bold text-[#2A2E3F] text-lg">{match.name}</p>
                     <p className="ml-2 font-bold text-[#646D89] text-lg">{match.age}</p>
                     <MapPin color="white" fill="#FFB1C8" size={15} className="ml-1" />
-                    <p className="text-[#646D89]">
+                    <p className="text-[#646D89] capitalize">
                       {formatLocation ? formatLocation(match.location) : ""}
                     </p>
                   </div>
