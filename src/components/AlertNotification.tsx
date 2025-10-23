@@ -41,9 +41,8 @@ export const AlertNotiNavbar = ({
 }: NotificationsProps) => {
   const router = useRouter();
   // แสดงเฉพาะที่ยังไม่อ่าน และจำกัด 5 รายการล่าสุด
-  const visible = notifications ?? []
+  const visible = (notifications ?? []).slice(0, 15);
     //  .filter(n => !n.is_read)      // ยังไม่อ่านเท่านั้น
-    .slice(0, 5);                 // จำกัด 5 รายการ    
 
   const handleNotificationClick = async (notification: Notification) => {
     // ไม่ mark read ทันทีเมื่อคลิก เพื่อให้ยังคงเป็น unread ระหว่างเปิดดู // EDIT
@@ -65,7 +64,7 @@ export const AlertNotiNavbar = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-full sm:w-[300px] sm:h-auto sm:max-w-[300px] bg-white border-0 sm:border-[1px] sm:border-[#E4E6ED] rounded-none sm:rounded-2xl shadow-none sm:shadow-lg p-4 overflow-y-auto">
+    <div className="flex flex-col w-full h-full sm:w-[300px] sm:h-[400px] sm:max-h-[400px] bg-white border-0 sm:border-[1px] sm:border-[#E4E6ED] rounded-none sm:rounded-2xl shadow-none sm:shadow-lg p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100 scrollbar-track-gray-100">
       <div className="flex flex-col gap-3">
         {visible.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
