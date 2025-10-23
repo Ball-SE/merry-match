@@ -155,23 +155,23 @@ export const AlertNotification = ({
   const notiRef = useRef<HTMLDivElement>(null);
   const router = useRouter(); // ใช้สำหรับดัก route change
 
-  // เคยเปิดดรอปดาวน์ไหม และกันยิงซ้ำ // EDIT
-  const hasOpenedRef = useRef(false);   // เปิดครั้งแรกแล้วหรือยัง // EDIT
-  const markingRef = useRef(false);     // กัน PUT ซ้ำซ้อน // EDIT
+  // เคยเปิดดรอปดาวน์ไหม และกันยิงซ้ำ 
+  const hasOpenedRef = useRef(false);   // เปิดครั้งแรกแล้วหรือยัง 
+  const markingRef = useRef(false);     // กัน PUT ซ้ำซ้อน 
 
-  const handleOpenAlertNotification = async () => {                   // EDIT
-    const next = !isOpenAlertNotification;                            // EDIT
-    // ถ้ากำลังปิด → mark read (ครั้งเดียว)                          // EDIT
-    if (!next && hasOpenedRef.current) {                              // EDIT
-      const toRead = (notifications ?? []).filter(n => !n.is_read).map(n => n.id); // EDIT
-      if (toRead.length > 0 && !markingRef.current) {                 // EDIT
-        markingRef.current = true;                                    // EDIT
-        await markAsRead?.(toRead);                                     // EDIT
-        markingRef.current = false;                                   // EDIT
+  const handleOpenAlertNotification = async () => {                   
+    const next = !isOpenAlertNotification;                            
+    // ถ้ากำลังปิด → mark read (ครั้งเดียว)                          
+    if (!next && hasOpenedRef.current) {                              
+      const toRead = (notifications ?? []).filter(n => !n.is_read).map(n => n.id); 
+      if (toRead.length > 0 && !markingRef.current) {                 
+        markingRef.current = true;                                    
+        await markAsRead?.(toRead);                                     
+        markingRef.current = false;                                   
       }
     }
-    if (next) hasOpenedRef.current = true;                            // EDIT
-    setIsOpenAlertNotification(next);                                 // EDIT
+    if (next) hasOpenedRef.current = true;                            
+    setIsOpenAlertNotification(next);                                 
   };
 
   useEffect(() => {
