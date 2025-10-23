@@ -13,8 +13,8 @@ export async function createMatchNotification(
       .insert({
         user_id: userId,
         type: 'match',
-        title: 'New Match! 🎉',
-        message: `You and ${matchedUserData?.name || 'Someone'} liked each other!`,
+        title: `${matchedUserData?.name || 'Someone'} Merry you back!`,
+        message: "Let's start conversation now",
         data: {
           match_type: 'mutual_like',
           matched_user_id: matchedUserId,
@@ -140,8 +140,8 @@ export async function createLikeNotification(
       .insert({
         user_id: targetUserId,
         type: 'like',                                               
-        title: 'Someone Merry you 💖',                              
-        message: `${likerData?.name || 'Someone'} Merry you!`,      
+        title: `${likerData?.name || 'Someone'} Merry you 💖`,                              
+        message: "Click here to see profile",      
         data: {                                                     
           liker_user_id: likerUserId,                               
           liker_user_name: likerData?.name,                         

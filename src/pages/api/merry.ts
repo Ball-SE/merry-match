@@ -268,15 +268,15 @@ export default async function handler(
         console.log("[unswipe] deleted swipe", { count });
 
         // เพิ่ม: สร้าง notification สำหรับทั้งสองฝ่าย
-        await createMatchNotification(user.id, swiped_id, swipedUser);
-        await createMatchNotification(swiped_id, user.id, {
-          name:
-            currentUserProfile?.name ||
-            user.user_metadata?.name ||
-            user.email ||
-            "",
-          photo_url: currentUserProfile?.photo_url || null, // ✅ ใช้จาก profiles
-        });
+        // await createMatchNotification(user.id, swiped_id, swipedUser);
+        // await createMatchNotification(swiped_id, user.id, {
+        //   name:
+        //     currentUserProfile?.name ||
+        //     user.user_metadata?.name ||
+        //     user.email ||
+        //     "",
+        //   photo_url: currentUserProfile?.photo_url || null, // ✅ ใช้จาก profiles
+        // });
       } else {
         // ✅ ดึงข้อมูล profile ของ current user ก่อน
         const { data: currentUserProfile } = await supabase
