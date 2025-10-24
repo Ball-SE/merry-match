@@ -1065,7 +1065,7 @@ const Step3 = React.forwardRef<
                 value={item}
                 as="div"
                 className="relative"
-                dragListener={hasFile} // ให้ลากได้เฉพาะเมื่อมีรูป
+                dragListener={hasFile && window.innerWidth >= 1024} // ให้ลากได้เฉพาะเมื่อมีรูป
                 whileDrag={{
                   scale: 1.05,
                   rotate: 2,

@@ -973,7 +973,7 @@ export default function EditProfilePage() {
                           value={item}
                           as="div"
                           className="relative"
-                          dragListener={hasImage}
+                          dragListener={hasImage && window.innerWidth >= 1024}
                           whileDrag={{
                             scale: 1.05,
                             rotate: 2,
