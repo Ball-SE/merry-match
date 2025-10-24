@@ -36,7 +36,6 @@ You can check the project at : https://merry-match-nine.vercel.app/
 - **Match Notifications**: Instant notifications for new matches and messages
 - **Message History**: Complete chat history with read receipts
 - **Image Sharing**: Share photos and media in conversations
-- **Online Status**: Real-time user presence indicators
 
 ### Subscription & Payment System
 - **Flexible Packages**: Multiple subscription tiers with different swipe limits
@@ -62,6 +61,7 @@ You can check the project at : https://merry-match-nine.vercel.app/
 
 ### Frontend
 - **Framework**: Next.js (Page Router)
+- **TypeScript**: Full type safety throughout the application
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **UI Components**: shadcn/ui for consistent, accessible design
 - **Animations**: Framer Motion for smooth interactions
@@ -76,8 +76,3 @@ You can check the project at : https://merry-match-nine.vercel.app/
 ### Payment & Integration
 - **Payment Gateway**: Stripe for secure payment processing
 - **Subscription Management**: Integrated subscription system with package tiers
-
-### Development Tools
-- **TypeScript**: Full type safety throughout the application
-- **ESLint**: Code quality and consistency
-- **PostCSS**: CSS processing and optimization
