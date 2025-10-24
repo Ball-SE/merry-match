@@ -65,7 +65,7 @@ function ChatPage() {
 
                 <div className="flex flex-1 w-full h-full relative min-h-0 overflow-hidden">
                     {/* Desktop Sidebar */}
-                    <div className="hidden md:block md:basis-1/4 lg:basis-1/5 overflow-auto bg-[#F6F7FC] ">
+                    <div className="hidden md:block md:basis-1/4 lg:basis-1/6 overflow-auto bg-[#F6F7FC] ">
                         <div className="w-full p-4 h-full">
                             <MatchingLeft onChatSelect={(matchId: string, matchName: string) => {
                                 setSelectedMatchId(matchId);
