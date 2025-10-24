@@ -21,7 +21,7 @@ function NavBarNonUser() {
                         to="why-merry-match" 
                         smooth={true}
                         duration={500}  
-                        className="button-ghost cursor-pointer select-none hover:text-red-500 transition-colors duration-250"
+                        className="button-ghost cursor-pointer select-none text-[#64001D] hover:text-red-500 transition-colors duration-250"
                     >
                         Why Merry Match?
                     </ScrollLink>
@@ -29,7 +29,7 @@ function NavBarNonUser() {
                         to="how-to-merry" 
                         smooth={true} 
                         duration={500} 
-                        className="button-ghost cursor-pointer select-none hover:text-red-500 transition-colors duration-250"
+                        className="button-ghost cursor-pointer select-none text-[#64001D] hover:text-red-500 transition-colors duration-250"
                     >
                         How to Merry
                     </ScrollLink>

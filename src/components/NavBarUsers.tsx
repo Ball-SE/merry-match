@@ -55,12 +55,12 @@ function NavBarUsers() {
                 {/* Desktop menu */}
                 <div className="hidden md:flex flex-row gap-2">
                     <Link href="/matching"
-                        className="button-ghost cursor-pointer select-none hover:text-red-500 transition-colors duration-250"
+                        className="button-ghost cursor-pointer select-none text-[#64001D] hover:text-red-500 transition-colors duration-250"
                     >
                         Start Matching!
                     </Link>
                     <Link href="/package"
-                        className="button-ghost cursor-pointer select-none hover:text-red-500 transition-colors duration-250"
+                        className="button-ghost cursor-pointer select-none text-[#64001D] hover:text-red-500 transition-colors duration-250"
                     >
                         Merry Membership
                     </Link>
