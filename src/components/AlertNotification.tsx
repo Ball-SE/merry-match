@@ -41,9 +41,8 @@ export const AlertNotiNavbar = ({
 }: NotificationsProps) => {
   const router = useRouter();
   // แสดงเฉพาะที่ยังไม่อ่าน และจำกัด 5 รายการล่าสุด
-  const visible = notifications ?? []
-    //  .filter(n => !n.is_read)      // ยังไม่อ่านเท่านั้น
-    .slice(0, 5);                 // จำกัด 5 รายการ    
+  const visible = (notifications ?? []).slice(0, 15);
+  //  .filter(n => !n.is_read)      // ยังไม่อ่านเท่านั้น
 
   const handleNotificationClick = async (notification: Notification) => {
     // ไม่ mark read ทันทีเมื่อคลิก เพื่อให้ยังคงเป็น unread ระหว่างเปิดดู // EDIT
@@ -65,7 +64,7 @@ export const AlertNotiNavbar = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-full sm:w-[300px] sm:h-auto sm:max-w-[300px] bg-white border-0 sm:border-[1px] sm:border-[#E4E6ED] rounded-none sm:rounded-2xl shadow-none sm:shadow-lg p-4 overflow-y-auto">
+    <div className="flex flex-col w-full h-full sm:w-[300px] sm:h-[400px] sm:max-h-[400px] bg-white border-0 sm:border-[1px] sm:border-[#E4E6ED] rounded-none sm:rounded-2xl shadow-none sm:shadow-lg p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100 scrollbar-track-gray-100">
       <div className="flex flex-col gap-3">
         {visible.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
@@ -81,35 +80,52 @@ export const AlertNotiNavbar = ({
                 : ""
                 }`}
             >
-              <div className="relative">
-                <Image
-                  src={
-                    notification.type === "like"
-                      ? notification.data?.liker_user_photo || "/assets/user.jpg"
-                      : notification.data?.matched_user_photo ||
-                      notification.data?.sender_photo ||
-                      "/assets/user.jpg"
-                  }
-                  alt={notification.data?.matched_user_name || notification.data?.sender_name || "User"}
-                  className="w-12 h-12 rounded-full object-cover"
-                  width={56}
-                  height={56}
-                  onError={(e) => {
-                    e.currentTarget.src = "/assets/user.jpg";  // ✅ fallback เมื่อโหลดไม่ได้
-                  }}
-                />
-                {notification.type === "match" && (
-                  <div className="absolute -bottom-1 -right-1">
-                    <div className="w-6 h-6 flex items-center justify-center">
+                            <div className="relative">
+                {notification.type === "like" || notification.type === "swipe" ? (
+                  // แสดงรูปเฉพาะเมื่อมีข้อมูล (Platinum users)
+                  notification.data?.liker_user_photo ? (
+                    <Image
+                      src={notification.data.liker_user_photo}
+                      alt={notification.data?.liker_user_name || "User"}
+                      className="w-12 h-12 rounded-full object-cover"
+                      width={56}
+                      height={56}
+                      onError={(e) => {
+                        e.currentTarget.src = "/assets/user.jpg";
+                      }}
+                    />
+                  ) : (
+                    // แสดง hearchsearch.png สำหรับ non-Platinum users
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center border border-gray-200"
+                      style={{
+                        background: "radial-gradient(circle at 70% 30%, #A878BF 0%, #742138 100%)",
+                      }}
+                    >
                       <Image
-                        src="/assets/twoheart.png"
-                        alt="heart"
-                        className="w-6 h-3.5"
-                        width={20}
-                        height={20}
+                        src="/assets/someuser.svg"
+                        alt="Search"
+                        className="w-8 h-8"
+                        width={32}
+                        height={32}
                       />
                     </div>
-                  </div>
+                  )
+                ) : (
+                  <Image
+                    src={
+                      notification.data?.matched_user_photo ||
+                      notification.data?.sender_photo ||
+                      "/assets/user.jpg"
+                    }
+                    alt={notification.data?.matched_user_name || notification.data?.sender_name || "User"}
+                    className="w-12 h-12 rounded-full object-cover"
+                    width={56}
+                    height={56}
+                    onError={(e) => {
+                      e.currentTarget.src = "/assets/user.jpg";
+                    }}
+                  />
                 )}
                 {notification.type === "like" && (
                   <div className="absolute -bottom-1 -right-1">
@@ -155,23 +171,23 @@ export const AlertNotification = ({
   const notiRef = useRef<HTMLDivElement>(null);
   const router = useRouter(); // ใช้สำหรับดัก route change
 
-  // เคยเปิดดรอปดาวน์ไหม และกันยิงซ้ำ // EDIT
-  const hasOpenedRef = useRef(false);   // เปิดครั้งแรกแล้วหรือยัง // EDIT
-  const markingRef = useRef(false);     // กัน PUT ซ้ำซ้อน // EDIT
+  // เคยเปิดดรอปดาวน์ไหม และกันยิงซ้ำ 
+  const hasOpenedRef = useRef(false);   // เปิดครั้งแรกแล้วหรือยัง 
+  const markingRef = useRef(false);     // กัน PUT ซ้ำซ้อน 
 
-  const handleOpenAlertNotification = async () => {                   // EDIT
-    const next = !isOpenAlertNotification;                            // EDIT
-    // ถ้ากำลังปิด → mark read (ครั้งเดียว)                          // EDIT
-    if (!next && hasOpenedRef.current) {                              // EDIT
-      const toRead = (notifications ?? []).filter(n => !n.is_read).map(n => n.id); // EDIT
-      if (toRead.length > 0 && !markingRef.current) {                 // EDIT
-        markingRef.current = true;                                    // EDIT
-        await markAsRead?.(toRead);                                     // EDIT
-        markingRef.current = false;                                   // EDIT
+  const handleOpenAlertNotification = async () => {
+    const next = !isOpenAlertNotification;
+    // ถ้ากำลังปิด → mark read (ครั้งเดียว)                          
+    if (!next && hasOpenedRef.current) {
+      const toRead = (notifications ?? []).filter(n => !n.is_read).map(n => n.id);
+      if (toRead.length > 0 && !markingRef.current) {
+        markingRef.current = true;
+        await markAsRead?.(toRead);
+        markingRef.current = false;
       }
     }
-    if (next) hasOpenedRef.current = true;                            // EDIT
-    setIsOpenAlertNotification(next);                                 // EDIT
+    if (next) hasOpenedRef.current = true;
+    setIsOpenAlertNotification(next);
   };
 
   useEffect(() => {
@@ -222,7 +238,7 @@ export const AlertNotification = ({
       </div>
     );
   }
-  
+
 
   return (
     <div className="relative" ref={notiRef}>

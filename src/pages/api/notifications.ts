@@ -21,12 +21,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
+      // ดึงข้อมูล subscription ของ user เพื่อเช็ค package
+      const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select(`
+        packages (
+          name
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+      const isPlatinum = subscription?.packages?.[0]?.name === 'Platinum';
+
       const { data: notifications, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(15);
 
     if (error) {
       console.error('Error fetching notifications:', error);
@@ -66,13 +82,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           n.data.sender_name = n.data.sender_name || p.name;
           n.data.sender_photo = p.photo_url || n.data.sender_photo;
         }
-      } else if (n.type === 'like' && n?.data?.liker_user_id) {  // ✅ เพิ่ม case นี้
+      } else if (n.type === 'like' && n?.data?.liker_user_id) {
         const p = profileMap[n.data.liker_user_id];
         if (p) {
           n.data.liker_user_name = n.data.liker_user_name || p.name;
           n.data.liker_user_photo = p.photo_url || n.data.liker_user_photo;
         }
       }
+      
+      // ✨ ซ่อนข้อมูลสำหรับ non-Platinum users
+      if (!isPlatinum && (n.type === 'like' || n.type === 'swipe')) {
+        n.data.liker_user_name = 'Someone';
+        n.data.liker_user_photo = null;
+        n.data.sender_name = 'Someone';
+        n.data.sender_photo = null;
+      }
+      
       return n;
     });
 
