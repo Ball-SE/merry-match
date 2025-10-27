@@ -104,7 +104,7 @@ function MatchingLeft({ onChatSelect }: MatchingLeftProps) {
         <div className="w-full h-full flex flex-col pt-5">
             <div className="mx-auto">
             <button 
-            className="sm:w-[282px] w-[330px] h-[187px] flex flex-col items-center cursor-pointer justify-center mb-7 border-1 bg-[#E4E6ED] border-[#A62D82] rounded-lg p-4"
+            className="w-full max-w-[330px] h-[187px] flex flex-col items-center cursor-pointer justify-center mb-7 border-1 bg-[#E4E6ED] border-[#A62D82] rounded-lg p-4"
             onClick={handleDiscoverMatch}
             >
                 <Image src="/assets/hearchsearch.png" alt="discover" width={50} height={50} />
